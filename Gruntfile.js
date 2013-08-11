@@ -113,7 +113,7 @@ module.exports = function(grunt) {
 
     'gh-pages': {
       options: {
-        base: './'
+        base: 'dist'
       },
       src: ['*.html', 'js/**/*', 'css/**/*']
     },
@@ -134,7 +134,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-clean');
   grunt.loadNpmTasks('grunt-contrib-less');
   grunt.loadNpmTasks('grunt-css');
-  grunt.loadNpmTasks('grunt-gh-pages');
 
   grunt.registerTask('test', ['jshint', 'qunit']);
   grunt.registerTask('default', ['jshint', 'concat', 'uglify', 'copy', 'dotlit', 'md2html', 'clean', 'connect', 'watch']);
