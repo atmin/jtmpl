@@ -1,0 +1,117 @@
+<h1>jtmpl<br>MVVM Templating Engine for the Browser</h1>
+<p>jtmpl renders <a href="https://github.com/janl/mustache.js">Mustache</a>-compatible template using a <code>model</code> object and automatically binds fields and events to DOM elements.</p>
+<h2>What</h2>
+<ul>
+<li><p>it&#39;s a templating engine</p>
+</li>
+<li><p>it&#39;s a <a href="http://en.wikipedia.org/wiki/Model_View_ViewModel">MVVM</a> micro-framework</p>
+</li>
+<li><p>based on <a href="http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe">Object.observe</a></p>
+</li>
+<li><p>no dependencies (Object.observe <a href="https://github.com/jdarling/Object.observe">polyfill</a> is built-in)</p>
+</li>
+<li><p>IE 8+, Firefox, Chrome, Opera</p>
+</li>
+<li><p>Check <a href="kitchensink.html">Kitchen Sink</a> example (extracted from this file) to see it in action</p>
+</li>
+<li><p>Downloads: <a href="js/jtmpl.js">jtmpl.js</a>, <a href="js/jtmpl.min.js">jtmpl.min.js</a></p>
+</li>
+</ul>
+<h2>Kitchen Sink</h2>
+<pre><code class="lang-html">&lt;!doctype html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;link href=&quot;css/styles.css&quot;&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;Kitchen Sink&lt;/h1&gt;
+    &lt;p&gt;Demo of all features jtmpl provides&lt;/p&gt;
+    &lt;a href=&quot;#&quot; id=&quot;runAutomatedTests&quot;&gt;run automated tests&lt;/a&gt;
+    &lt;div id=&quot;view-target&quot;&gt;&lt;/div&gt;
+    &lt;script src=&quot;jtmpl.latest.min.js&quot;&gt;&lt;/script&gt;
+    &lt;script&gt;
+        var model = {
+            dynamicText: &#39;lowercase&#39;,
+            array: [&#39;one&#39;, &#39;two&#39;, &#39;three&#39;],
+            objArray: [
+                {
+                    f1: &#39;A_f1&#39;,
+                    f2: &#39;A_f2&#39;
+                },
+                {
+                    f1: &#39;B_f1&#39;,
+                    f2: &#39;B_f2&#39;
+                }
+            ],
+            field: null,
+
+            checkboxes: {
+                fooCheck: true,
+                barCheck: false
+            },
+
+            // &quot;option 2&quot; will be initially selected
+            radioGroupIndex: 1,
+
+            // event handlers
+            &#39;#toggleDynamicTextCase:click&#39;: function() {
+                this.dynamicText = this.dynamicText == &#39;lowercase&#39; ?
+                    &#39;UPPERCASE&#39;: &#39;lowercase&#39;;
+            },
+            &#39;#addToArray:click&#39;: function() {
+                this.array.push(Math.random());
+            },
+            &#39;#removeLastFromArray:click&#39;: function() {
+                this.array.pop();
+            }
+        };
+
+        jtmpl(&#39;#view-target&#39;, &#39;#view-template&#39;, model);
+    &lt;/script&gt;
+    &lt;script id=&quot;view-template&quot; type=&quot;text/html&quot;&gt;
+        &lt;h5&gt;model.array&lt;/h5&gt;
+        &lt;ul&gt;
+            {{#array}}
+            &lt;li&gt;{{.}}&lt;/li&gt;
+            {{/array}}
+            {{^array}}
+            &lt;li&gt;&amp;lt; empty &amp;gt;&lt;/li&gt;
+            {{/array}}
+        &lt;/ul&gt;
+        &lt;a href=&quot;#&quot; id=&quot;addToArray&quot;&gt;Add random element to model.array&lt;/a&gt;
+        &lt;a href=&quot;#&quot; id=&quot;removeLastFromArray&quot;&gt;Remove last model.array element&lt;/a&gt;
+
+        &lt;h5&gt;model.objArray&lt;/h5&gt;
+        &lt;ul&gt;
+            {{#objArray}}
+            &lt;li&gt;{ f1: &quot;&lt;span&gt;{{f1}}&lt;/span&gt;&quot;, f2: &quot;&lt;span&gt;{{f2}}&lt;/span&gt;&quot; }&lt;li&gt;
+            {{/objArray}}
+            {{^objArray}}
+            &lt;li&gt;&amp;lt; empty &amp;gt;&lt;/li&gt;
+            {{/objArray}}
+        &lt;/ul&gt;
+
+        &lt;a href=&quot;#&quot; id=&quot;toggleDynamicTextCase&quot;&gt;Toggle&lt;/a&gt;
+        &lt;p&gt;{{dynamicText}}&lt;/p&gt;
+
+        &lt;label for=&quot;field&quot;&gt;Enter something&lt;/label&gt; &lt;input id=&quot;field&quot; value=&quot;{{field}}&quot;&gt;
+        {{#field}}&lt;p&gt;
+            You entered &quot;&lt;span&gt;{{field}}&lt;/span&gt;&quot;. Delete it and this message will disappear
+        &lt;/p&gt;{{/field}}
+
+        &lt;h5&gt;model.checkboxes&lt;/h5&gt;
+        &lt;div&gt;
+            {{#checkboxes}}
+            &lt;label&gt;&lt;input type=&quot;checkbox&quot; {{fooCheck}}&gt; fooCheck&lt;/label&gt;
+            &lt;label&gt;&lt;input type=&quot;checkbox&quot; {{barCheck}}&gt; barCheck&lt;/label&gt;
+            {{/checkboxes}}
+        &lt;/div&gt;
+
+        &lt;h5&gt;model.radioGroupIndex == &lt;span&gt;{{radioGroupIndex}}&lt;/span&gt;&lt;/h5&gt;
+        &lt;div&gt;
+            &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; {{radioGroupIndex}}&gt; option 1&lt;/label&gt;
+            &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; {{radioGroupIndex}}&gt; option 2&lt;/label&gt;
+        &lt;/div&gt;
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>

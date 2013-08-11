@@ -1,0 +1,100 @@
+// Based on nib reset.styl (https://github.com/visionmedia/nib/blob/master/lib/nib/reset.styl)
+// Based on [Eric Meyer's reset](http://meyerweb.com/eric/thoughts/2007/05/01/reset-reloaded/)
+
+.bl-reset() {
+  html, body, div, span, applet, object, iframe,
+  h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+  a, abbr, acronym, address, big, cite, code,
+  del, dfn, em, img, ins, kbd, q, s, samp,
+  small, strike, strong, sub, sup, tt, var,
+  dl, dt, dd, ol, ul, li,
+  fieldset, form, label, legend,
+  table, caption, tbody, tfoot, thead, tr, th, td {
+    .bl-reset-box-model();
+    .bl-reset-font();
+  }
+  body {
+    .bl-reset-body();
+  }
+  ol, ul {
+    list-style: none;
+  }
+  table {
+    .bl-reset-table();
+  }
+  caption, th, td {
+    .bl-reset-table-cell();
+  }
+  a img {
+    border: none;
+  }
+}
+
+.bl-nested-reset() {
+  div, span, object, iframe, h1, h2, h3, h4, h5, h6, p,
+  pre, a, abbr, acronym, address, code, del, dfn, em, img,
+  dl, dt, dd, ol, ul, li, fieldset, form, label,
+  legend, caption, tbody, tfoot, thead, tr {
+    .bl-reset-box-model();
+    .bl-reset-font();
+  }
+  table {
+    .bl-reset-table();
+  }
+  caption, th, td {
+    .bl-reset-table-cell();
+  }
+  a img {
+    border: none;
+  }
+}
+
+.bl-reset-box-model() {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+}
+
+.bl-reset-font() {
+  font-weight: inherit;
+  font-style: inherit;
+  font-family: inherit;
+  font-size: 100%;
+  vertical-align: baseline;
+}
+
+.bl-reset-body() {
+  line-height: 1;
+  color: black;
+  background: white;
+}
+
+.bl-reset-table() {
+  border-collapse: separate;
+  border-spacing: 0;
+  vertical-align: middle;
+}
+
+.bl-reset-table-cell() {
+  text-align: left;
+  font-weight: normal;
+  vertical-align: middle;
+}
+
+.bl-reset-html5() {
+  article, aside, canvas, details, figcaption,
+  figure, footer, header, hgroup, menu, nav,
+  section, summary {
+    .bl-reset-box-model();
+    display: block;
+  }
+  audio, canvas, video {
+    display: inline-block;
+    *display: inline;
+    *zoom: 1;
+  }
+  audio:not([controls]),[hidden] {
+    display: none;
+  }
+}

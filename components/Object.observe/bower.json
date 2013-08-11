@@ -1,0 +1,9 @@
+{
+  "name": "Object.observe",
+  "version": "0.0.0",
+  "commit": "1d41bcfac51c3c409a65b373c75c656b459c821d",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jdarling/Object.observe.git"
+  }
+}

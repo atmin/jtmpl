@@ -1,0 +1,11 @@
+
+.bl-box-sizing(@boxmodel) {
+  -webkit-box-sizing: @boxmodel;
+  -moz-box-sizing: @boxmodel;
+  box-sizing: @boxmodel;
+}
+
+.bl-transition(@prop: all, @duration:0.2s, @ease:ease-out) {
+  -webkit-transition: @prop @duration @ease;
+  transition: @prop @duration @ease;
+}

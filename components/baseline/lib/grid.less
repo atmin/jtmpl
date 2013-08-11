@@ -1,0 +1,90 @@
+//  grid
+//
+//  Less Usage:
+//
+//    @import "baseline";
+//    .bl-grid(); //defaults to 12 column, 20px gutter size and prefix of grid
+//    .bl-grid(16, 40px); //16 column with 40px gutter size
+//    .bl-grid(16, 40px, "row"); //16 column with 40px gutter size, set prefix to row: <div class="row12">
+//
+//  HTML Usage:
+//
+//    <div class="grid12">
+//      <div class="column2">Sidebar</div>
+//      <div class="column10">Content</div>
+//    </div>
+//
+//  Offset:
+//
+//    <div class="grid12">
+//      <div class="column2 offset2">This content will be offset to the left by 2 columns</div>
+//    </div>
+.bl-grid(@columnCount: 12, @gutterSize: 20px, @prefix: "grid") {
+
+  (~".@{prefix}@{columnCount}") {
+    .bl-border-box();
+    .bl-clearfix();
+    margin-left: -@gutterSize;
+
+    [class*=column] {
+      float: left;
+      .bl-border-box();
+      padding: 0 0 0 @gutterSize;
+
+    }
+
+    .columnLoop (@index) when (@index > 0) {
+      (~".column@{index}") { 
+        width: @index/@columnCount * 100%;
+      }
+      (~".offset@{index}") {
+        margin-left: @index/@columnCount * 100%;
+      }
+      .columnLoop(@index - 1);
+
+    }
+    .columnLoop (0) {}
+
+    .columnLoop(@columnCount);
+
+  }
+
+  .grid-pad {
+    padding: @gutterSize;
+  }
+
+}
+
+.bl-grid-fixed(@columnSize: 100px, @gutterSize: 20px) {
+
+  @size: @columnSize + @gutterSize;
+  padding-left: @size;
+
+  .column-fixed {
+    margin-left: -@size;
+    width: @size;
+  }
+}
+
+.bl-grid-fixed-left(@columnSize, @gutterSize) {
+  .bl-grid-fixed(@columnSize, @gutterSize);
+}
+
+.bl-grid-fixed-right(@columnSize: 100px, @gutterSize: 20px) {
+
+  @size: @columnSize + @gutterSize;
+  padding-right: @size;
+
+  .column-fixed {
+    margin-right: -@size;
+    width: @size;
+  }
+
+}
+
+.bl-grid-debug(@color: red) {
+
+  [class*=column] {
+    outline: 1px solid @color;
+  }
+}
