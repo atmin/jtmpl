@@ -24,7 +24,7 @@ What
 
 
 Kitchen Sink
-------------------------------
+------------
 
 	<!doctype html>
 	<html>
@@ -129,5 +129,3 @@ Kitchen Sink
 		</script>
 	</body>
 	</html>
-
-<iframe src="kitchensink.html"></iframe>
