@@ -1,4 +1,4 @@
-jtmpl<br>MVVM Templating Engine for the Browser
+_{{_ jtmpl _}}_<br>MVVM Templating Engine for the Browser
 ===============================================
 
 jtmpl renders [Mustache](https://github.com/janl/mustache.js)-compatible template using a `model` object and automatically binds fields and events to DOM elements.
