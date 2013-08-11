@@ -1,4 +1,15 @@
-<h1>jtmpl<br>MVVM Templating Engine for the Browser</h1>
+<!doctype html>
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="css/baseline.css">
+        <link rel="stylesheet" type="text/css" href="css/highlight.css">
+    	<style>
+    		body {padding: 1% 5%}
+    	</style>
+        <title>jtmpl&mdash;MVVM Templating Engine for the Browser</title>
+    </head>
+    <body>
+        <h1>jtmpl<br>MVVM Templating Engine for the Browser</h1>
 <p>jtmpl renders <a href="https://github.com/janl/mustache.js">Mustache</a>-compatible template using a <code>model</code> object and automatically binds fields and events to DOM elements.</p>
 <h2>What</h2>
 <ul>
@@ -18,56 +29,23 @@
 </li>
 </ul>
 <h2>Kitchen Sink</h2>
-<pre><code class="lang-html">&lt;!doctype html&gt;
+<pre><code>&lt;!doctype html&gt;
 &lt;html&gt;
 &lt;head&gt;
-    &lt;link href=&quot;css/styles.css&quot;&gt;
+    &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;css/baseline.css&quot;&gt;
 &lt;/head&gt;
 &lt;body&gt;
     &lt;h1&gt;Kitchen Sink&lt;/h1&gt;
     &lt;p&gt;Demo of all features jtmpl provides&lt;/p&gt;
     &lt;a href=&quot;#&quot; id=&quot;runAutomatedTests&quot;&gt;run automated tests&lt;/a&gt;
     &lt;div id=&quot;view-target&quot;&gt;&lt;/div&gt;
-    &lt;script src=&quot;jtmpl.latest.min.js&quot;&gt;&lt;/script&gt;
-    &lt;script&gt;
-        var model = {
-            dynamicText: &#39;lowercase&#39;,
-            array: [&#39;one&#39;, &#39;two&#39;, &#39;three&#39;],
-            objArray: [
-                {
-                    f1: &#39;A_f1&#39;,
-                    f2: &#39;A_f2&#39;
-                },
-                {
-                    f1: &#39;B_f1&#39;,
-                    f2: &#39;B_f2&#39;
-                }
-            ],
-            field: null,
 
-            checkboxes: {
-                fooCheck: true,
-                barCheck: false
-            },
+    &lt;!-- For production use
+    &lt;script src=&quot;js/jtmpl.min.js&quot;&gt;&lt;/script&gt;
+    --&gt;
+    &lt;script src=&quot;js/Object.observe.poly.js&quot;&gt;&lt;/script&gt;
+    &lt;script src=&quot;js/jtmpl.js&quot;&gt;&lt;/script&gt;
 
-            // &quot;option 2&quot; will be initially selected
-            radioGroupIndex: 1,
-
-            // event handlers
-            &#39;#toggleDynamicTextCase:click&#39;: function() {
-                this.dynamicText = this.dynamicText == &#39;lowercase&#39; ?
-                    &#39;UPPERCASE&#39;: &#39;lowercase&#39;;
-            },
-            &#39;#addToArray:click&#39;: function() {
-                this.array.push(Math.random());
-            },
-            &#39;#removeLastFromArray:click&#39;: function() {
-                this.array.pop();
-            }
-        };
-
-        jtmpl(&#39;#view-target&#39;, &#39;#view-template&#39;, model);
-    &lt;/script&gt;
     &lt;script id=&quot;view-template&quot; type=&quot;text/html&quot;&gt;
         &lt;h5&gt;model.array&lt;/h5&gt;
         &lt;ul&gt;
@@ -113,5 +91,49 @@
             &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; {{radioGroupIndex}}&gt; option 2&lt;/label&gt;
         &lt;/div&gt;
     &lt;/script&gt;
+    &lt;script&gt;
+        var model = {
+            dynamicText: &#39;lowercase&#39;,
+            array: [&#39;one&#39;, &#39;two&#39;, &#39;three&#39;],
+            objArray: [
+                {
+                    f1: &#39;A_f1&#39;,
+                    f2: &#39;A_f2&#39;
+                },
+                {
+                    f1: &#39;B_f1&#39;,
+                    f2: &#39;B_f2&#39;
+                }
+            ],
+            field: null,
+
+            checkboxes: {
+                fooCheck: true,
+                barCheck: false
+            },
+
+            // &quot;option 2&quot; will be initially selected
+            radioGroupIndex: 1,
+
+            // event handlers
+            &#39;#toggleDynamicTextCase:click&#39;: function() {
+                this.dynamicText = this.dynamicText == &#39;lowercase&#39; ?
+                    &#39;UPPERCASE&#39;: &#39;lowercase&#39;;
+            },
+            &#39;#addToArray:click&#39;: function() {
+                this.array.push(Math.random());
+            },
+            &#39;#removeLastFromArray:click&#39;: function() {
+                this.array.pop();
+            }
+        };
+
+        jtmpl(&#39;#view-target&#39;, &#39;#view-template&#39;, model);
+    &lt;/script&gt;
 &lt;/body&gt;
 &lt;/html&gt;</code></pre>
+<iframe src="kitchensink.html"></iframe>
+        <script src="js/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script>
+    </body>
+</html>

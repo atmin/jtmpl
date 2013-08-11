@@ -1,11 +1,11 @@
 /**
- * jTmpl
+ * jtmpl
  * @author Atanas Minev
  * MIT license
  */
 
 
-function JT(tpl, context) {
+function jtmpl(el, tpl, context) {
 	var RE_TAG = '{{({)?(\\#|\\^|\\/)?([\\w\\.]+)(})?}}';
 
 	this.re = new RegExp(RE_TAG, 'g');
@@ -58,4 +58,6 @@ function JT(tpl, context) {
 	};
 
 	this.html = this._process(tpl, context);
+
+	document.getElementById(el.substring(1)).innerHTML = this.html;
 }

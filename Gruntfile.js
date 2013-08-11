@@ -63,6 +63,10 @@ module.exports = function(grunt) {
         options: {
           nospawn: true
         }
+      },
+      templates: {
+        files: ['src/templates/*'],
+        tasks: ['copy', 'dotlit', 'md2html', 'clean']
       }
     },
 
@@ -79,6 +83,7 @@ module.exports = function(grunt) {
       main: { 
         files: [
           {src: 'README.md', dest: 'kitchensink.html.lit.md'},
+          {src: 'components/Object.observe/Object.observe.poly.js', dest: 'js/Object.observe.poly.js'},
           {src: 'components/highlightjs/highlight.pack.js', dest: 'js/highlight.min.js'},
           {src: 'components/highlightjs/styles/solarized_dark.css', dest: 'css/highlight.css'},
           {src: 'components/baseline/examples/baseline.css', dest: 'css/baseline.css'}
@@ -96,7 +101,9 @@ module.exports = function(grunt) {
 
     md2html: {
       index: {
-        options: {},
+        options: {
+          layout: 'src/templates/layout.html'
+        },
         files: [{
           src: ['README.md'],
           dest: 'index.html'
