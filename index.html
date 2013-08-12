@@ -21,11 +21,11 @@
 </li>
 <li><p>based on <a href="http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe">Object.observe</a></p>
 </li>
-<li><p>no dependencies (Object.observe <a href="https://github.com/jdarling/Object.observe">polyfill</a> is built-in)</p>
+<li><p>no external dependencies</p>
 </li>
-<li><p>IE 8+, Firefox, Chrome, Opera</p>
+<li><p>IE 8+, Firefox, Chrome, Opera (<a href="https://github.com/jdarling/Object.observe">polyfill</a> built-in)</p>
 </li>
-<li><p>Check <a href="kitchensink.html">Kitchen Sink</a> example (extracted from this file) to see it in action</p>
+<li><p><a href="kitchensink.html">Kitchen Sink</a> (extracted from this file) illustrates capabilities</p>
 </li>
 <li><p>Downloads: <a href="js/jtmpl.js">jtmpl.js</a>, <a href="js/jtmpl.min.js">jtmpl.min.js</a></p>
 </li>
@@ -36,18 +36,21 @@
 &lt;head&gt;
     &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;css/baseline.css&quot;&gt;
 &lt;/head&gt;
+
 &lt;body&gt;
     &lt;h1&gt;Kitchen Sink&lt;/h1&gt;
     &lt;p&gt;Demo of all features jtmpl provides&lt;/p&gt;
     &lt;a href=&quot;#&quot; id=&quot;runAutomatedTests&quot;&gt;run automated tests&lt;/a&gt;
+
+    &lt;!-- view target --&gt;
     &lt;div id=&quot;view-target&quot;&gt;&lt;/div&gt;
 
     &lt;!-- For production use
     &lt;script src=&quot;js/jtmpl.min.js&quot;&gt;&lt;/script&gt;
     --&gt;
-    &lt;script src=&quot;js/Object.observe.poly.js&quot;&gt;&lt;/script&gt;
     &lt;script src=&quot;js/jtmpl.js&quot;&gt;&lt;/script&gt;
 
+    &lt;!-- view --&gt;
     &lt;script id=&quot;view-template&quot; type=&quot;text/html&quot;&gt;
         &lt;h5&gt;model.array&lt;/h5&gt;
         &lt;ul&gt;
@@ -93,6 +96,8 @@
             &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; {{radioGroupIndex}}&gt; option 2&lt;/label&gt;
         &lt;/div&gt;
     &lt;/script&gt;
+
+    &lt;!-- model --&gt;
     &lt;script&gt;
         var model = {
             dynamicText: &#39;lowercase&#39;,

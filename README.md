@@ -1,5 +1,5 @@
 _{{_ jtmpl _}}_<br>MVVM Templating Engine for the Browser
-===============================================
+=========================================================
 
 `jtmpl` renders [Mustache](https://github.com/janl/mustache.js)-compatible template using a `model` object and automatically binds fields and events to DOM elements.
 
@@ -13,11 +13,11 @@ What
 
 * based on [Object.observe](http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe)
 
-* no dependencies (Object.observe [polyfill](https://github.com/jdarling/Object.observe) is built-in)
+* no external dependencies
 
-* IE 8+, Firefox, Chrome, Opera
+* IE 8+, Firefox, Chrome, Opera ([polyfill](https://github.com/jdarling/Object.observe) built-in)
 
-* Check [Kitchen Sink](kitchensink.html) example (extracted from this file) to see it in action
+* [Kitchen Sink](kitchensink.html) (extracted from this file) illustrates capabilities
 
 * Downloads: [jtmpl.js](js/jtmpl.js), [jtmpl.min.js](js/jtmpl.min.js)
 
@@ -31,18 +31,21 @@ Kitchen Sink
 	<head>
 		<link rel="stylesheet" type="text/css" href="css/baseline.css">
 	</head>
+	
 	<body>
 		<h1>Kitchen Sink</h1>
 		<p>Demo of all features jtmpl provides</p>
 		<a href="#" id="runAutomatedTests">run automated tests</a>
+
+		<!-- view target -->
 		<div id="view-target"></div>
 
 		<!-- For production use
 		<script src="js/jtmpl.min.js"></script>
 		-->
-		<script src="js/Object.observe.poly.js"></script>
 		<script src="js/jtmpl.js"></script>
 
+		<!-- view -->
 		<script id="view-template" type="text/html">
 			<h5>model.array</h5>
 			<ul>
@@ -88,6 +91,8 @@ Kitchen Sink
 				<label><input type="radio" name="radio-group" {{radioGroupIndex}}> option 2</label>
 			</div>
 		</script>
+
+		<!-- model -->
 		<script>
 			var model = {
 				dynamicText: 'lowercase',

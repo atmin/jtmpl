@@ -3,18 +3,21 @@
 <head>
 	<link rel="stylesheet" type="text/css" href="css/baseline.css">
 </head>
+
 <body>
 	<h1>Kitchen Sink</h1>
 	<p>Demo of all features jtmpl provides</p>
 	<a href="#" id="runAutomatedTests">run automated tests</a>
+
+	<!-- view target -->
 	<div id="view-target"></div>
 
 	<!-- For production use
 	<script src="js/jtmpl.min.js"></script>
 	-->
-	<script src="js/Object.observe.poly.js"></script>
 	<script src="js/jtmpl.js"></script>
 
+	<!-- view -->
 	<script id="view-template" type="text/html">
 		<h5>model.array</h5>
 		<ul>
@@ -60,6 +63,8 @@
 			<label><input type="radio" name="radio-group" {{radioGroupIndex}}> option 2</label>
 		</div>
 	</script>
+
+	<!-- model -->
 	<script>
 		var model = {
 			dynamicText: 'lowercase',

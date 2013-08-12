@@ -54,7 +54,7 @@ function jtmpl(el, tpl, context) {
 			throw 'Unclosed tag ' + tag[0];
 		}
 
-		return out;
+		return out || tpl;
 	};
 
 	this.html = this._process(tpl, context);
