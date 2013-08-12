@@ -57,7 +57,8 @@ function jtmpl(el, tpl, context) {
 		return out || tpl;
 	};
 
-	this.html = this._process(tpl, context);
+	this.html = this._process(tpl.match(/\#\w+/) ? 
+		document.getElementById(tpl.substring(1)).innerHTML : tpl, context);
 
 	document.getElementById(el.substring(1)).innerHTML = this.html;
 };
