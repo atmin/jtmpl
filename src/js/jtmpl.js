@@ -36,7 +36,7 @@ function jtmpl(el, tpl, context) {
 				pos = this.re.lastIndex;
 			}
 
-			// {{#block_tag_end}}
+			// {{/block_tag_end}}
 			if (t[2] === '/') {
 				// end tag matches begin tag?
 				if (tag && t[3] !== tag[3]) {
@@ -54,7 +54,7 @@ function jtmpl(el, tpl, context) {
 			throw 'Unclosed tag ' + tag[0];
 		}
 
-		return out || tpl;
+		return out + tpl.substring(pos);
 	};
 
 	this.html = this._process(tpl.match(/\#\w+/) ? 
