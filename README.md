@@ -62,7 +62,7 @@ Kitchen Sink
 			<h5>model.objArray</h5>
 			<ul>
 				{{#objArray}}
-				<li>{ f1: "<span>{{f1}}</span>", f2: "<span>{{f2}}</span>" }<li>
+				<li>{ f1: "<span>{{f1}}</span>", f2: "<span>{{f2}}</span>" }</li>
 				{{/objArray}}
 				{{^objArray}}
 				<li>&lt; empty &gt;</li>
