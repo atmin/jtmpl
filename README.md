@@ -34,8 +34,7 @@ Kitchen Sink
 	
 	<body>
 		<h1>Kitchen Sink</h1>
-		<p>Demo of all features jtmpl provides</p>
-		<a href="#" id="runAutomatedTests">run automated tests</a>
+		<p>Demo of each jtmpl feature</p>
 
 		<!-- view target -->
 		<div id="view-target"></div>
@@ -57,7 +56,7 @@ Kitchen Sink
 				{{/array}}
 			</ul>
 			<a href="#" id="addToArray">Add random element to model.array</a>
-			<a href="#" id="removeLastFromArray">Remove last model.array element</a>
+			<a href="#" id="removeLastFromArray" disabled="disabled">Remove last model.array element</a>
 
 			<h5>model.objArray</h5>
 			<ul>
