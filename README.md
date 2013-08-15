@@ -3,7 +3,7 @@ _{{_ jtmpl _}}_<br>MVVM Templating Engine for the Browser
 
 _Code is work in progress, feel free to explore concept_
 
-`jtmpl` renders [Mustache](https://github.com/janl/mustache.js)-compatible template using a `model` object and automatically binds fields and events to DOM elements.
+`jtmpl` renders [Mustache](https://github.com/janl/mustache.js)-compatible template using a `model` object and automatically binds fields and events to DOM elements. When model changes, DOM is updated and vice versa.
 
 
 What
