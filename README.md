@@ -1,6 +1,8 @@
 _{{_ jtmpl _}}_<br>MVVM Templating Engine for the Browser
 =========================================================
 
+_Code is work in progress, feel free to explore concept_
+
 `jtmpl` renders [Mustache](https://github.com/janl/mustache.js)-compatible template using a `model` object and automatically binds fields and events to DOM elements.
 
 
@@ -17,7 +19,7 @@ What
 
 * IE 8+, Firefox, Chrome, Opera ([polyfill](https://github.com/jdarling/Object.observe) built-in)
 
-* [Kitchen Sink](kitchensink.html) (extracted from this file) illustrates capabilities
+* [Kitchen Sink](kitchensink.html) (extracted from this file) enumerates features and executes automated tests
 
 * Downloads: [jtmpl.js](js/jtmpl.js), [jtmpl.min.js](js/jtmpl.min.js)
 
