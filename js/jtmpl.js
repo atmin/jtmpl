@@ -23,7 +23,7 @@ function jtmpl(el, tpl, model) {
 			var out = '', s, t, v, i, idx, collection,
 				// emit `s` or markup between `pos` and current tag, if `s` empty
 				emit = function(s) {
-					out += s ? s : tpl.slice(pos, self.re.lastIndex - t[0].length);
+					out += s !== undefined ? s : tpl.slice(pos, self.re.lastIndex - t[0].length);
 				},
 				// detect HTML element index and property to bind model to, remember tag
 				pushTag = function(t) {
@@ -97,6 +97,7 @@ function jtmpl(el, tpl, model) {
 						for (i = 0; i < collection.length; i++) {
 							// model.context_block is an object? pass as context
 							emit();
+							pos = self.re.lastIndex;
 							emit(
 								self._build(tpl, 
 									typeof v === 'object' ? collection[i] : context, 
@@ -144,6 +145,12 @@ function jtmpl(el, tpl, model) {
 			});
 		}
 	};
+
+	// called like: jtmpl('#element') ?
+	if (tpl === undefined) {
+		// return bound jtmpl object
+		return document.getElementById(el.substring(1))._jtmpl;
+	}
 
 	self.html = self._build(tpl.match(/\#\w+/) ? 
 		document.getElementById(tpl.substring(1)).innerHTML : tpl, model);
