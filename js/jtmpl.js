@@ -21,15 +21,15 @@ function jtmpl(el, tpl, model) {
 
 		_build: function (tpl, context, pos, tag) {
 			var out = '', s, t, v, i, idx, collection,
-				// return unemitted markup
-				catchUp = function() {
-					return tpl.slice(pos, self.re.lastIndex - t[0].length);
+				// emit `s` or markup between `pos` and current tag, if `s` empty
+				emit = function(s) {
+					out += s ? s : tpl.slice(pos, self.re.lastIndex - t[0].length);
 				},
 				// detect HTML element index and property to bind model to, remember tag
 				pushTag = function(t) {
 					// will match backwards to count opening HTML tags
-					var reHtmlTag = /(<)?[^>]*([\w-]+)>/g,
-						reTpl = tpl.slice(0, pos).split('').reverse().join('');
+					// var reHtmlTag = /(<)?[^>]*([\w-]+)>/g,
+					// reTpl = tpl.slice(0, pos).split('').reverse().join('');
 					(tag ? self.tags[self.tags.length - 1].children : self.tags).push(t);
 				};
 
@@ -48,12 +48,14 @@ function jtmpl(el, tpl, model) {
 					}
 
 					// exit recursion
-					return out + catchUp();
+					emit();
+					return out;
 				}
 
 				// {{var}} ?
 				if (!t[2]) {
-					out += catchUp() + (self._get(t[3], context) || '');
+					emit();
+					emit(self._get(t[3], context) || '');
 					pos = self.re.lastIndex;
 					pushTag({
 						type: 'var',
@@ -73,29 +75,34 @@ function jtmpl(el, tpl, model) {
 
 					// falsy value?
 					if (!v) {
-						out += catchUp();
+						emit();
 						s = self._build(tpl, v, self.re.lastIndex, t);					
 						pos = self.re.lastIndex;
-						out += t[2] === '#' ?  '' : s;
+						emit(t[2] === '#' ?  '' : s);
 					}
 
 					// {{#context_block}} or {{#enumerate_array}} ?
 					else if (v && t[2] === '#') {
-						out += catchUp();
+						emit();
 
 						// skip loop body?
 						if (v.length === 0) {
 							self._build(tpl, v[i], pos, t);
 						}
 
-						// emit loop body n times, n=1 when type(model.block) is object,
-						// n=array.length when type(model.block) is array
+						// emit loop body n times, n = 1 when type(model.block) is object,
+						// n = array.length when type(model.block) is array
 						collection = (Object.prototype.toString.call(v) !== '[object Array]') ? [v] : v; 
 						pos = self.re.lastIndex;
 						for (i = 0; i < collection.length; i++) {
 							// model.context_block is an object? pass as context
-							out += catchUp() + self._build(tpl, typeof v === 'object' ? 
-																collection[i] : context, pos, t);
+							emit();
+							emit(
+								self._build(tpl, 
+									typeof v === 'object' ? collection[i] : context, 
+									pos, t
+								)
+							);
 							if (i < collection.length - 1) {
 								self.re.lastIndex = pos;
 							}
@@ -105,15 +112,15 @@ function jtmpl(el, tpl, model) {
 
 					// {{^enumerable_array}}
 					else if (v && typeof v.length !== undefined && t[2] == '^') {
-						out += catchUp();
+						emit();
 						pos = self.re.lastIndex;
 						s = self._build(tpl, context, pos, t);
 						pos = self.re.lastIndex;
-						out += v.length ? '' : s;
+						emit(v.length ? '' : s);
 					}
 
 					else {
-						alert('oops');
+						throw 'Internal error, tag ' + t[0];
 					}
 				}
 
