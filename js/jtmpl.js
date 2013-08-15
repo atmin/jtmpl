@@ -8,7 +8,7 @@ function jtmpl(el, tpl, model) {
 
 	self = {
 
-		re: new RegExp('{{({)?(\\#|\\^|\\/)?([\\w\\.]+)(})?}}', 'g'),
+		re: /{{({)?(\#|\^|\/)?([\w\.]+)(})?}}/g,
 		tpl: tpl,
 		model: model,
 		tags: [],
@@ -25,9 +25,11 @@ function jtmpl(el, tpl, model) {
 				catchUp = function() {
 					return tpl.slice(pos, self.re.lastIndex - t[0].length);
 				},
-				// detect HTML element index and property to bind model to, rememer tag
+				// detect HTML element index and property to bind model to, remember tag
 				pushTag = function(t) {
-
+					// will match backwards to count opening HTML tags
+					var reHtmlTag = /(<)?[^>]*([\w-]+)>/g,
+						reTpl = tpl.slice(0, pos).split('').reverse().join('');
 					(tag ? self.tags[self.tags.length - 1].children : self.tags).push(t);
 				};
 
@@ -123,6 +125,10 @@ function jtmpl(el, tpl, model) {
 			}
 
 			return out + tpl.slice(pos);
+		},
+
+		_attachEventHandlers: function() {
+
 		},
 
 		_modelObserver: function(changes) {

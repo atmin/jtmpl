@@ -35,19 +35,19 @@
 &lt;html&gt;
 &lt;head&gt;
     &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;css/baseline.css&quot;&gt;
+    &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;css/qunit.css&quot;&gt;
+    &lt;script src=&quot;js/jtmpl.js&quot;&gt;&lt;/script&gt;
+    &lt;script src=&quot;js/qunit.js&quot;&gt;&lt;/script&gt;
 &lt;/head&gt;
 
 &lt;body&gt;
     &lt;h1&gt;Kitchen Sink&lt;/h1&gt;
     &lt;p&gt;Demo of each jtmpl feature&lt;/p&gt;
 
+    &lt;script src=&quot;js/jtmpl.js&quot;&gt;&lt;/script&gt;
+
     &lt;!-- view target --&gt;
     &lt;div id=&quot;view-target&quot;&gt;&lt;/div&gt;
-
-    &lt;!-- For production use
-    &lt;script src=&quot;js/jtmpl.min.js&quot;&gt;&lt;/script&gt;
-    --&gt;
-    &lt;script src=&quot;js/jtmpl.js&quot;&gt;&lt;/script&gt;
 
     &lt;!-- view --&gt;
     &lt;script id=&quot;view-template&quot; type=&quot;text/html&quot;&gt;
@@ -136,6 +136,10 @@
 
         jtmpl(&#39;#view-target&#39;, &#39;#view-template&#39;, model);
     &lt;/script&gt;
+
+    &lt;div id=&quot;qunit&quot;&gt;&lt;/div&gt;
+    &lt;div id=&quot;qunit-fixture&quot;&gt;&lt;/div&gt;
+    &lt;script src=&quot;js/jtmpl-tests.js&quot;&gt;&lt;/script&gt;
 &lt;/body&gt;
 &lt;/html&gt;</code></pre>
 

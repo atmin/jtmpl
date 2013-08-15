@@ -30,19 +30,19 @@ Kitchen Sink
 	<html>
 	<head>
 		<link rel="stylesheet" type="text/css" href="css/baseline.css">
+		<link rel="stylesheet" type="text/css" href="css/qunit.css">
+		<script src="js/jtmpl.js"></script>
+		<script src="js/qunit.js"></script>
 	</head>
 	
 	<body>
 		<h1>Kitchen Sink</h1>
 		<p>Demo of each jtmpl feature</p>
 
+		<script src="js/jtmpl.js"></script>
+
 		<!-- view target -->
 		<div id="view-target"></div>
-
-		<!-- For production use
-		<script src="js/jtmpl.min.js"></script>
-		-->
-		<script src="js/jtmpl.js"></script>
 
 		<!-- view -->
 		<script id="view-template" type="text/html">
@@ -131,5 +131,9 @@ Kitchen Sink
 
 			jtmpl('#view-target', '#view-template', model);
 		</script>
+
+		<div id="qunit"></div>
+		<div id="qunit-fixture"></div>
+		<script src="js/jtmpl-tests.js"></script>
 	</body>
 	</html>

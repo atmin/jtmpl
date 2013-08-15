@@ -8,7 +8,7 @@ module.exports = function(grunt) {
         separator: ';\n'
       },
       dist: {
-        src: ['src/**/*.js', 'components/Object.observe/Object.observe.poly.js'],
+        src: ['src/**/jtmpl.js', 'components/Object.observe/Object.observe.poly.js'],
         dest: 'js/jtmpl.js'
       }
     },
@@ -25,7 +25,7 @@ module.exports = function(grunt) {
     },
 
     qunit: {
-      files: ['test/**/*.html']
+      files: ['kitchensink.html']
     },
 
     jshint: {
@@ -51,7 +51,7 @@ module.exports = function(grunt) {
     watch: {
       jshint: {
         files: ['<%= jshint.files %>'],
-        tasks: ['jshint', 'concat', 'uglify']
+        tasks: ['jshint', 'concat', 'uglify', 'copy:tests']
       },
       less: {
         files: ['src/less/*.less'],
@@ -84,10 +84,18 @@ module.exports = function(grunt) {
       main: { 
         files: [
           {src: 'README.md', dest: 'kitchensink.html.lit.md'},
+          {src: 'src/js/jtmpl-tests.js', dest: 'js/jtmpl-tests.js'},
+          {src: 'components/qunit/qunit/qunit.js', dest: 'js/qunit.js'},
+          {src: 'components/qunit/qunit/qunit.css', dest: 'css/qunit.css'},
           {src: 'components/Object.observe/Object.observe.poly.js', dest: 'js/Object.observe.poly.js'},
           {src: 'components/highlightjs/highlight.pack.js', dest: 'js/highlight.min.js'},
           {src: 'components/highlightjs/styles/solarized_dark.css', dest: 'css/highlight.css'},
           {src: 'components/baseline/examples/baseline.css', dest: 'css/baseline.css'}
+        ]
+      },
+      tests: {
+        files: [
+          {src: 'src/js/jtmpl-tests.js', dest: 'js/jtmpl-tests.js'}
         ]
       }
     },
