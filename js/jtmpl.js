@@ -7,11 +7,20 @@ function jtmpl(el, tpl, model) {
 	var target, self;
 
 	self = {
-
-		re: /{{({)?(\#|\^|\/)?([\w\.]+)(})?}}/g,
 		tpl: tpl,
 		model: model,
+
+		// Match jtmpl tag. http://gskinner.com/RegExr/ is a nice tool
+		re: /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g,
+
+		// Match opening HTML tag
+		hre: /<(\w+)(?:\s+([\w-]*)(?:(=)"(?:\w+)")?)*(>)?/g,
+
+		// jtmpl tags
 		tags: [],
+		
+		// opening HTML tags
+		htags: [],		
 
 		_get: function(v, context) {
 			/*jslint evil:true */// ]:)
@@ -23,13 +32,18 @@ function jtmpl(el, tpl, model) {
 			var out = '', s, t, v, i, idx, collection,
 				// emit `s` or markup between `pos` and current tag, if `s` empty
 				emit = function(s) {
-					out += s !== undefined ? s : tpl.slice(pos, self.re.lastIndex - t[0].length);
+					var m;
+					s = s !== undefined ? s + '' : tpl.slice(pos, self.re.lastIndex - t[0].length);
+					out += s;
+					if (!tag) {
+						m = s.match(self.hre);
+						if (m) {
+							self.htags = self.htags.concat(m);
+						}
+					}
 				},
 				// detect HTML element index and property to bind model to, remember tag
 				pushTag = function(t) {
-					// will match backwards to count opening HTML tags
-					// var reHtmlTag = /(<)?[^>]*([\w-]+)>/g,
-					// reTpl = tpl.slice(0, pos).split('').reverse().join('');
 					(tag ? self.tags[self.tags.length - 1].children : self.tags).push(t);
 				};
 
@@ -95,13 +109,13 @@ function jtmpl(el, tpl, model) {
 						collection = (Object.prototype.toString.call(v) !== '[object Array]') ? [v] : v; 
 						pos = self.re.lastIndex;
 						for (i = 0; i < collection.length; i++) {
-							// model.context_block is an object? pass as context
 							emit();
-							pos = self.re.lastIndex;
 							emit(
 								self._build(tpl, 
+									// model.context_block is an object? pass as context
+									// do not update htags
 									typeof v === 'object' ? collection[i] : context, 
-									pos, t
+									pos, t, true 
 								)
 							);
 							if (i < collection.length - 1) {
