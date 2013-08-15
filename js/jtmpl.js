@@ -8,19 +8,24 @@ function jtmpl(el, tpl, model) {
 
 	self = {
 		tpl: tpl,
+
 		model: model,
 
 		// Match jtmpl tag. http://gskinner.com/RegExr/ is a nice tool
 		re: /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g,
 
 		// Match opening HTML tag
-		hre: /<(\w+)(?:\s+([\w-]*)(?:(=)"(?:\w+)")?)*(>)?/g,
+		hre: /<(\w+)(?:\s+([\w-]*)(?:(?:=)((?:"[^"]+")|[\w-]+|(?:'[^']+')))?)*(>)?/g,
 
 		// jtmpl tags
 		tags: [],
 		
-		// opening HTML tags
-		htags: [],		
+		// last opening HTML tag
+		htag: null,
+		htags: [],
+
+		// opening HTML tags counter
+		htagIndex: -1,
 
 		_get: function(v, context) {
 			/*jslint evil:true */// ]:)
@@ -30,21 +35,32 @@ function jtmpl(el, tpl, model) {
 
 		_build: function (tpl, context, pos, tag) {
 			var out = '', s, t, v, i, idx, collection,
+
 				// emit `s` or markup between `pos` and current tag, if `s` empty
 				emit = function(s) {
-					var ht;
-					s = s !== undefined ? s + '' : tpl.slice(pos, self.re.lastIndex - t[0].length);
+					var ht, skipHTagParseOnReturn = s === false;
+					s = s !== undefined ? s + '' : tpl.slice(pos, self.re.lastIndex - (t ? t[0].length : 0));
 					out += s;
-					if (!tag) {
+					if (!skipHTagParseOnReturn) {
 						ht = self.hre.exec(s);
 						while (ht) {
+							self.htag = ht;
+							self.htagIndex++;
 							self.htags.push(ht);
 							ht = self.hre.exec(s);
 						}
 					}
 				},
+
 				// detect HTML element index and property to bind model to, remember tag
 				pushTag = function(t) {
+					if (!self.htag) {
+						throw 'Invalid template';
+					}
+					t = t || {};
+					t.htag = self.htag[1];
+					t.htagIndex = self.htagIndex;
+					t.htagProp = self.htag[4] ? 'innerHTML' : self.htag[3];
 					(tag ? self.tags[self.tags.length - 1].children : self.tags).push(t);
 				};
 
@@ -82,15 +98,15 @@ function jtmpl(el, tpl, model) {
 				if (t[2] === '#' || t[2] === '^') {
 
 					v = self._get(t[3], context);
-					pushTag({
-						type: 'block',
-						neg: t[2] === '^',
-						children: []
-					});
 
 					// falsy value?
 					if (!v) {
 						emit();
+						pushTag({
+							type: 'block',
+							neg: t[2] === '^',
+							children: []
+						});
 						s = self._build(tpl, v, self.re.lastIndex, t);					
 						pos = self.re.lastIndex;
 						emit(t[2] === '#' ?  '' : s);
@@ -99,6 +115,11 @@ function jtmpl(el, tpl, model) {
 					// {{#context_block}} or {{#enumerate_array}} ?
 					else if (v && t[2] === '#') {
 						emit();
+						pushTag({
+							type: 'block',
+							neg: false,
+							children: []
+						});
 
 						// skip loop body?
 						if (v.length === 0) {
@@ -129,6 +150,11 @@ function jtmpl(el, tpl, model) {
 					// {{^enumerable_array}}
 					else if (v && typeof v.length !== undefined && t[2] == '^') {
 						emit();
+						pushTag({
+							type: 'block',
+							neg: true,
+							children: []
+						});
 						pos = self.re.lastIndex;
 						s = self._build(tpl, context, pos, t);
 						pos = self.re.lastIndex;
@@ -147,6 +173,8 @@ function jtmpl(el, tpl, model) {
 				throw 'Unclosed tag ' + tag[0];
 			}
 
+			//return out + tpl.slice(pos);
+			emit();
 			return out + tpl.slice(pos);
 		},
 
