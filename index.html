@@ -43,7 +43,7 @@
 
 &lt;body&gt;
     &lt;h1&gt;Kitchen Sink&lt;/h1&gt;
-    &lt;p&gt;Demo of each jtmpl feature&lt;/p&gt;
+    &lt;p&gt;Demo of each jtmpl feature. Feel free to modify &lt;code&gt;model&lt;/code&gt; from JS console and observe changes&lt;/p&gt;
 
     &lt;script src=&quot;js/jtmpl.js&quot;&gt;&lt;/script&gt;
 
@@ -78,22 +78,22 @@
         &lt;p&gt;{{dynamicText}}&lt;/p&gt;
 
         &lt;label for=&quot;field&quot;&gt;Enter something&lt;/label&gt; &lt;input id=&quot;field&quot; value=&quot;{{field}}&quot;&gt;
-        {{#field}}&lt;p&gt;
+        &lt;p&gt;{{#field}}
             You entered &quot;&lt;span&gt;{{field}}&lt;/span&gt;&quot;. Delete it and this message will disappear
-        &lt;/p&gt;{{/field}}
+        {{/field}}&lt;/p&gt;
 
         &lt;h5&gt;model.checkboxes&lt;/h5&gt;
         &lt;div&gt;
             {{#checkboxes}}
-            &lt;label&gt;&lt;input type=&quot;checkbox&quot; {{fooCheck}}&gt; fooCheck&lt;/label&gt;
-            &lt;label&gt;&lt;input type=&quot;checkbox&quot; {{barCheck}}&gt; barCheck&lt;/label&gt;
+            &lt;label&gt;&lt;input type=&quot;checkbox&quot; {{fooCheck}}&gt; model.checkboxes.fooCheck&lt;/label&gt;
+            &lt;label&gt;&lt;input type=&quot;checkbox&quot; {{barCheck}}&gt; model.checkboxes.barCheck&lt;/label&gt;
             {{/checkboxes}}
         &lt;/div&gt;
 
         &lt;h5&gt;model.radioGroupIndex == &lt;span&gt;{{radioGroupIndex}}&lt;/span&gt;&lt;/h5&gt;
         &lt;div&gt;
-            &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; {{radioGroupIndex}}&gt; option 1&lt;/label&gt;
-            &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; {{radioGroupIndex}}&gt; option 2&lt;/label&gt;
+            &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; {{radioGroupIndex}}&gt; model.radioGroupIndex=0&lt;/label&gt;
+            &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; {{radioGroupIndex}}&gt; model.radioGroupIndex=1&lt;/label&gt;
         &lt;/div&gt;
     &lt;/script&gt;
 

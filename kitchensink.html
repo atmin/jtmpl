@@ -9,7 +9,7 @@
 
 <body>
 	<h1>Kitchen Sink</h1>
-	<p>Demo of each jtmpl feature</p>
+	<p>Demo of each jtmpl feature. Feel free to modify <code>model</code> from JS console and observe changes</p>
 
 	<script src="js/jtmpl.js"></script>
 
@@ -44,22 +44,22 @@
 		<p>{{dynamicText}}</p>
 
 		<label for="field">Enter something</label> <input id="field" value="{{field}}">
-		{{#field}}<p>
+		<p>{{#field}}
 			You entered "<span>{{field}}</span>". Delete it and this message will disappear
-		</p>{{/field}}
+		{{/field}}</p>
 
 		<h5>model.checkboxes</h5>
 		<div>
 			{{#checkboxes}}
-			<label><input type="checkbox" {{fooCheck}}> fooCheck</label>
-			<label><input type="checkbox" {{barCheck}}> barCheck</label>
+			<label><input type="checkbox" {{fooCheck}}> model.checkboxes.fooCheck</label>
+			<label><input type="checkbox" {{barCheck}}> model.checkboxes.barCheck</label>
 			{{/checkboxes}}
 		</div>
 
 		<h5>model.radioGroupIndex == <span>{{radioGroupIndex}}</span></h5>
 		<div>
-			<label><input type="radio" name="radio-group" {{radioGroupIndex}}> option 1</label>
-			<label><input type="radio" name="radio-group" {{radioGroupIndex}}> option 2</label>
+			<label><input type="radio" name="radio-group" {{radioGroupIndex}}> model.radioGroupIndex=0</label>
+			<label><input type="radio" name="radio-group" {{radioGroupIndex}}> model.radioGroupIndex=1</label>
 		</div>
 	</script>
 
