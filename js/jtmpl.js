@@ -32,13 +32,14 @@ function jtmpl(el, tpl, model) {
 			var out = '', s, t, v, i, idx, collection,
 				// emit `s` or markup between `pos` and current tag, if `s` empty
 				emit = function(s) {
-					var m;
+					var ht;
 					s = s !== undefined ? s + '' : tpl.slice(pos, self.re.lastIndex - t[0].length);
 					out += s;
 					if (!tag) {
-						m = s.match(self.hre);
-						if (m) {
-							self.htags = self.htags.concat(m);
+						ht = self.hre.exec(s);
+						while (ht) {
+							self.htags.push(ht);
+							ht = self.hre.exec(s);
 						}
 					}
 				},

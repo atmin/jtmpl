@@ -62,7 +62,7 @@
             {{/array}}
         &lt;/ul&gt;
         &lt;a href=&quot;#&quot; id=&quot;addToArray&quot;&gt;Add random element to model.array&lt;/a&gt;
-        &lt;a href=&quot;#&quot; id=&quot;removeLastFromArray&quot; disabled=&quot;disabled&quot;&gt;Remove last model.array element&lt;/a&gt;
+        &lt;a href=&quot;#&quot; id=&quot;removeLastFromArray&quot;&gt;Remove last model.array element&lt;/a&gt;
 
         &lt;h5&gt;model.objArray&lt;/h5&gt;
         &lt;ul&gt;
@@ -85,15 +85,23 @@
         &lt;h5&gt;model.checkboxes&lt;/h5&gt;
         &lt;div&gt;
             {{#checkboxes}}
-            &lt;label&gt;&lt;input type=&quot;checkbox&quot; {{fooCheck}}&gt; model.checkboxes.fooCheck&lt;/label&gt;
-            &lt;label&gt;&lt;input type=&quot;checkbox&quot; {{barCheck}}&gt; model.checkboxes.barCheck&lt;/label&gt;
+            &lt;label&gt;&lt;input type=&quot;checkbox&quot; checked=&quot;{{fooCheck}}&quot;&gt; model.checkboxes.fooCheck&lt;/label&gt;
+            &lt;label&gt;&lt;input type=&quot;checkbox&quot; checked=&quot;{{barCheck}}&quot;&gt; model.checkboxes.barCheck&lt;/label&gt;
             {{/checkboxes}}
         &lt;/div&gt;
 
+        &lt;h5&gt;model.selectedIndex&lt;/h5&gt;
+        &lt;select selectedIndex={{selectedIndex}}&gt;
+            &lt;option&gt;model.selectedIndex = 0&lt;/option&gt;
+            &lt;option&gt;model.selectedIndex = 1&lt;/option&gt;
+            &lt;option&gt;model.selectedIndex = 2&lt;/option&gt;
+            &lt;option&gt;model.selectedIndex = 3&lt;/option&gt;
+        &lt;/select&gt;
+
         &lt;h5&gt;model.radioGroupIndex == &lt;span&gt;{{radioGroupIndex}}&lt;/span&gt;&lt;/h5&gt;
         &lt;div&gt;
-            &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; {{radioGroupIndex}}&gt; model.radioGroupIndex=0&lt;/label&gt;
-            &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; {{radioGroupIndex}}&gt; model.radioGroupIndex=1&lt;/label&gt;
+            &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; checked=&quot;{{radioGroupIndex}}&quot;&gt; model.radioGroupIndex=0&lt;/label&gt;
+            &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; checked=&quot;{{radioGroupIndex}}&quot;&gt; model.radioGroupIndex=1&lt;/label&gt;
         &lt;/div&gt;
     &lt;/script&gt;
 
@@ -104,23 +112,25 @@
             array: [&#39;one&#39;, &#39;two&#39;, &#39;three&#39;],
             objArray: [
                 {
-                    f1: &#39;A_f1&#39;,
-                    f2: &#39;A_f2&#39;
+                    f1: &#39;model.objArray[0].f1&#39;,
+                    f2: &#39;model.objArray[0].f2&#39;
                 },
                 {
-                    f1: &#39;B_f1&#39;,
-                    f2: &#39;B_f2&#39;
+                    f1: &#39;model.objArray[1].f1&#39;,
+                    f2: &#39;model.objArray[1].f2&#39;
                 }
             ],
             field: null,
+
+            selectedIndex: 0,
 
             checkboxes: {
                 fooCheck: true,
                 barCheck: false
             },
 
-            // &quot;option 2&quot; will be initially selected
             radioGroupIndex: 1,
+
 
             // event handlers
             &#39;#toggleDynamicTextCase:click&#39;: function() {

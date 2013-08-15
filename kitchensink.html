@@ -28,7 +28,7 @@
 			{{/array}}
 		</ul>
 		<a href="#" id="addToArray">Add random element to model.array</a>
-		<a href="#" id="removeLastFromArray" disabled="disabled">Remove last model.array element</a>
+		<a href="#" id="removeLastFromArray">Remove last model.array element</a>
 
 		<h5>model.objArray</h5>
 		<ul>
@@ -51,15 +51,23 @@
 		<h5>model.checkboxes</h5>
 		<div>
 			{{#checkboxes}}
-			<label><input type="checkbox" {{fooCheck}}> model.checkboxes.fooCheck</label>
-			<label><input type="checkbox" {{barCheck}}> model.checkboxes.barCheck</label>
+			<label><input type="checkbox" checked="{{fooCheck}}"> model.checkboxes.fooCheck</label>
+			<label><input type="checkbox" checked="{{barCheck}}"> model.checkboxes.barCheck</label>
 			{{/checkboxes}}
 		</div>
 
+		<h5>model.selectedIndex</h5>
+		<select selectedIndex={{selectedIndex}}>
+			<option>model.selectedIndex = 0</option>
+			<option>model.selectedIndex = 1</option>
+			<option>model.selectedIndex = 2</option>
+			<option>model.selectedIndex = 3</option>
+		</select>
+
 		<h5>model.radioGroupIndex == <span>{{radioGroupIndex}}</span></h5>
 		<div>
-			<label><input type="radio" name="radio-group" {{radioGroupIndex}}> model.radioGroupIndex=0</label>
-			<label><input type="radio" name="radio-group" {{radioGroupIndex}}> model.radioGroupIndex=1</label>
+			<label><input type="radio" name="radio-group" checked="{{radioGroupIndex}}"> model.radioGroupIndex=0</label>
+			<label><input type="radio" name="radio-group" checked="{{radioGroupIndex}}"> model.radioGroupIndex=1</label>
 		</div>
 	</script>
 
@@ -70,23 +78,25 @@
 			array: ['one', 'two', 'three'],
 			objArray: [
 				{
-					f1: 'A_f1',
-					f2: 'A_f2'
+					f1: 'model.objArray[0].f1',
+					f2: 'model.objArray[0].f2'
 				},
 				{
-					f1: 'B_f1',
-					f2: 'B_f2'
+					f1: 'model.objArray[1].f1',
+					f2: 'model.objArray[1].f2'
 				}
 			],
 			field: null,
+
+			selectedIndex: 0,
 
 			checkboxes: {
 				fooCheck: true,
 				barCheck: false
 			},
 
-			// "option 2" will be initially selected
 			radioGroupIndex: 1,
+
 
 			// event handlers
 			'#toggleDynamicTextCase:click': function() {
