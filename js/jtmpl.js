@@ -1,6 +1,6 @@
 (function() {
   window.jtmpl = function(el, tpl, model) {
-    var appendHTML, build, hre, re;
+    var appendHTML, build, re;
     if (typeof el === 'string' && el.match(/^\#\w+/)) {
       el = document.getElementById(el.substring(1));
     }
@@ -17,7 +17,7 @@
       tpl = document.getElementById(tpl.substring(1)).innerHTML;
     }
     re = /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g;
-    hre = /<(\w+)(?:\s+([\w-]*)(?:(?:=)((?:"[^"]+")|[\w-]+|(?:'[^']+')))?)*(>)?\s*$/g;
+    window.hre = /<(\w+)(?:\s+([\w-]*)(?:=((?:"[^"]+")|(?:'[^']+')|[\w-]+))?)*(>)?\s*$/g;
     appendHTML = function(frag, html) {
       var child, tmp;
       tmp = document.createElement('body');
@@ -45,7 +45,7 @@
           if (openTag && tag[3] !== openTag[3]) {
             throw 'Expected {{/' + openTag[3] + '}}, got ' + tag[0];
           }
-          console.log('');
+          console.log('>>> end block');
           emit();
         }
         if (!tag[2]) {

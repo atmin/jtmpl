@@ -22,10 +22,28 @@ window.jtmpl = (el, tpl, model) ->
 	tpl = document.getElementById(tpl.substring(1)).innerHTML if tpl.match and tpl.match(/^\#\w+/)
 
 	# Match jtmpl tag. http://gskinner.com/RegExr/ is a nice tool
-	re = /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g
+	re = ///
+		\{\{(\{)?      # opening tag, maybe triple mustache (captured)
+		(\#|\^|/)?     # var, open block or close block tag?
+		([\w\.]+)      # tag name
+		(\})?\}\}      # closing tag
+	///g
 
 	# Match last opening HTML tag
-	hre = /<(\w+)(?:\s+([\w-]*)(?:(?:=)((?:"[^"]+")|[\w-]+|(?:'[^']+')))?)*(>)?\s*$/g
+	window.hre = ///
+		<(\w+)         # HTML tag name
+		(?:	\s+		   # non-capturing group HTML attribute
+			([\w-]*)   # attribute name
+			(?: =
+				(
+					(?:"[^"]+") |    # attribute value double quoted
+					(?:'[^']+') |    # single quoted
+					[\w-]+           # or unquoted 
+				)
+			)?
+		)*
+		(>)?\s*$
+	///g
 
 	# Append arbitrary HTML to a DocumentFragment
 	appendHTML = (frag, html) ->
@@ -57,7 +75,7 @@ window.jtmpl = (el, tpl, model) ->
 				if openTag and tag[3] != openTag[3]
 					throw 'Expected {{/' + openTag[3] + '}}, got ' + tag[0]
 
-				console.log ''
+				console.log '>>> end block'
 				emit()
 
 			# `{{var}}`?
