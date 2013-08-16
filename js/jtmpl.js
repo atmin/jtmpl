@@ -1,6 +1,6 @@
 (function() {
   window.jtmpl = function(el, tpl, model) {
-    var build, hre, re;
+    var appendHTML, build, hre, re;
     if (typeof el === 'string' && el.match(/^\#\w+/)) {
       el = document.getElementById(el.substring(1));
     }
@@ -17,8 +17,8 @@
       tpl = document.getElementById(tpl.substring(1)).innerHTML;
     }
     re = /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g;
-    hre = /<(\w+)(?:\s+([\w-]*)(?:(?:=)((?:"[^"]+")|[\w-]+|(?:'[^']+')))?)*(>)?$/g;
-    window.appendHTML = function(frag, html) {
+    hre = /<(\w+)(?:\s+([\w-]*)(?:(?:=)((?:"[^"]+")|[\w-]+|(?:'[^']+')))?)*(>)?\s*$/g;
+    appendHTML = function(frag, html) {
       var child, tmp;
       tmp = document.createElement('body');
       tmp.innerHTML = html;
@@ -27,29 +27,41 @@
       }
       return frag;
     };
-    build = function(el, tpl, model, pos) {
-      var emit, frag, tag, _ref, _results;
+    build = function(el, tpl, model, pos, openTag) {
+      var emit, frag, htag, tag, _ref, _results;
       frag = document.createDocumentFragment();
+      htag = null;
       emit = function() {
-        return appendHTML(frag, tpl.slice(pos, re.lastIndex - (t && t[0] || 0)));
+        var s;
+        s = tpl.slice(pos, re.lastIndex - (tag && tag[0] || '').length);
+        hre.lastIndex = 0;
+        htag = hre.exec(s);
+        pos = re.lastIndex;
+        return console.log('\n>\n' + s + '\n:' + htag);
       };
       _results = [];
       while (tag = re.exec(tpl)) {
         if (tag[2] === '/') {
-
+          if (openTag && tag[3] !== openTag[3]) {
+            throw 'Expected {{/' + openTag[3] + '}}, got ' + tag[0];
+          }
+          console.log('');
+          emit();
         }
         if (!tag[2]) {
-
+          console.log('var >>> ' + tag[0]);
+          emit();
         }
         if ((_ref = tag[2]) === '#' || _ref === '^') {
-
+          console.log('block >>> ' + tag[0]);
+          _results.push(emit());
         } else {
           _results.push(void 0);
         }
       }
       return _results;
     };
-    return el._jtmpl = build(el, tpl, model);
+    return el._jtmpl = build(el, tpl, model, 0);
   };
 
 }).call(this);

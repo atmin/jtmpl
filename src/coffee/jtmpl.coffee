@@ -25,10 +25,10 @@ window.jtmpl = (el, tpl, model) ->
 	re = /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g
 
 	# Match last opening HTML tag
-	hre = /<(\w+)(?:\s+([\w-]*)(?:(?:=)((?:"[^"]+")|[\w-]+|(?:'[^']+')))?)*(>)?$/g
+	hre = /<(\w+)(?:\s+([\w-]*)(?:(?:=)((?:"[^"]+")|[\w-]+|(?:'[^']+')))?)*(>)?\s*$/g
 
 	# Append arbitrary HTML to a DocumentFragment
-	window.appendHTML = (frag, html) ->
+	appendHTML = (frag, html) ->
 		tmp = document.createElement('body')
 		tmp.innerHTML = html
 		while child = tmp.firstChild
@@ -36,25 +36,40 @@ window.jtmpl = (el, tpl, model) ->
 		frag
 
 	# Main recursive function
-	build = (el, tpl, model, pos) ->
+	build = (el, tpl, model, pos, openTag) ->
+
 		frag = document.createDocumentFragment()
+		htag = null
+
 		emit = ->
-			appendHTML(frag, tpl.slice(pos, re.lastIndex - (t and t[0] or 0)))
+			s = tpl.slice(pos, re.lastIndex - (tag and tag[0] or '').length)
+			hre.lastIndex = 0
+			htag = hre.exec(s)
+			pos = re.lastIndex
+			# appendHTML(frag, s)
+			console.log '\n>\n' + s + '\n:' + htag
 
 		# Match jtmpl tags
 		while tag = re.exec(tpl)
 
 			# `{{/block_tag_end}}`?
 			if tag[2] == '/'
-				;
+				if openTag and tag[3] != openTag[3]
+					throw 'Expected {{/' + openTag[3] + '}}, got ' + tag[0]
+
+				console.log ''
+				emit()
 
 			# `{{var}}`?
 			if not tag[2]
-				;
+				console.log 'var >>> ' + tag[0]
+				emit()
 
 			# `{{#block_tag_begin}}` or `{{^not_block_tag_begin}}`?
 			if tag[2] in ['#', '^']
-				;
+				console.log 'block >>> ' + tag[0]
+				emit()
+
 
 	# Build DOM
-	el._jtmpl = build(el, tpl, model)
+	el._jtmpl = build(el, tpl, model, 0)
