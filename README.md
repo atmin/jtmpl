@@ -33,90 +33,95 @@ Kitchen Sink
 	<head>
 		<link rel="stylesheet" type="text/css" href="css/baseline.css">
 		<link rel="stylesheet" type="text/css" href="css/qunit.css">
-		<script src="js/jtmpl.js"></script>
 		<script src="js/qunit.js"></script>
 	</head>
 	
 	<body>
-		<h1>Kitchen Sink</h1>
-		<p>Demo of each jtmpl feature. Feel free to modify <code>model</code> from JS console and observe changes</p>
-
-		<script src="js/jtmpl.js"></script>
-
-		<!-- view target -->
-		<div id="view-target"></div>
-
-		<!-- view -->
-		<script id="view-template" type="text/html">
-			<h5>model.array</h5>
+		<div id="jtmpl" data-model="model">
+			<h1>Kitchen Sink</h1>
+			<p>Feel free to modify <code>model</code> from JS console and observe changes</p>
+			<h3>Collection <code>model.collection</code></h3>
 			<ul>
-				{{#array}}
-				<li>{{.}}</li>
-				{{/array}}
-				{{^array}}
+				{{#collection}}
+				<li>type <code>{{type}}</code>, value <code>{{value}}</code></li>
+				{{/collection}}
+				{{^collection}}
 				<li>&lt; empty &gt;</li>
-				{{/array}}
+				{{/collection}}
 			</ul>
-			<a href="#" id="addToArray">Add random element to model.array</a>
-			<a href="#" id="removeLastFromArray">Remove last model.array element</a>
+			<button onclick={{add}}>Add random</button>
+			<button onclick="{{remove}}">Remove last</button>
 
-			<h5>model.objArray</h5>
-			<ul>
-				{{#objArray}}
-				<li>{ f1: "<span>{{f1}}</span>", f2: "<span>{{f2}}</span>" }</li>
-				{{/objArray}}
-				{{^objArray}}
-				<li>&lt; empty &gt;</li>
-				{{/objArray}}
-			</ul>
-		
-			<a href="#" id="toggleDynamicTextCase">Toggle</a>
-			<p>{{dynamicText}}</p>
+			<h3>Toggle text <code>model.text</code></h3>
+			<a href="#" onclick='{{toggle}}'>Toggle</a>
+			<p>{{text}}</p>
 
-			<label for="field">Enter something</label> <input id="field" value="{{field}}">
+			<h3>Bidirectional data binding <code>model.field</code></h3>
+			<label for="field">Enter something</label> <input id="field" value={{field}}>
 			<p>{{#field}}
 				You entered "<span>{{field}}</span>". Delete it and this message will disappear
 			{{/field}}</p>
 
-			<h5>model.checkboxes</h5>
+			<h3>Checkboxes</h3>
 			<div>
 				{{#checkboxes}}
-				<label><input type="checkbox" checked="{{fooCheck}}"> model.checkboxes.fooCheck</label>
-				<label><input type="checkbox" checked="{{barCheck}}"> model.checkboxes.barCheck</label>
+				<label><input type="checkbox" checked={{fooCheck}}> check foo</label>
+				<label><input type="checkbox" checked={{barCheck}}> check bar</label>
 				{{/checkboxes}}
 			</div>
 
-			<h5>model.selectedIndex</h5>
+			<h3>Select <code>model.selectedIndex</code></h3>
 			<select selectedIndex={{selectedIndex}}>
-				<option>model.selectedIndex = 0</option>
-				<option>model.selectedIndex = 1</option>
-				<option>model.selectedIndex = 2</option>
-				<option>model.selectedIndex = 3</option>
+				{{#options}}
+				<option>{{text}}</option>
+				{{/options}}
 			</select>
 
-			<h5>model.radioGroupIndex == <span>{{radioGroupIndex}}</span></h5>
+			<h5>Radio group <code>model.options</code></h5>
 			<div>
-				<label><input type="radio" name="radio-group" checked="{{radioGroupIndex}}"> model.radioGroupIndex=0</label>
-				<label><input type="radio" name="radio-group" checked="{{radioGroupIndex}}"> model.radioGroupIndex=1</label>
+				{{#options}}
+				<label><input type="radio" name="radio-group" checked={{checked}}>{{text}}</label>
+				{{/options}}
 			</div>
-		</script>
+		</div>
 
-		<!-- model -->
 		<script>
-			var model = {
-				dynamicText: 'lowercase',
-				array: ['one', 'two', 'three'],
-				objArray: [
+			model = {
+				text: 'lowercase',
+				collection: [
 					{
-						f1: 'model.objArray[0].f1',
-						f2: 'model.objArray[0].f2'
+						type: 'string',
+						value: 'foobar'
 					},
 					{
-						f1: 'model.objArray[1].f1',
-						f2: 'model.objArray[1].f2'
+						type: 'int',
+						value: 1
+					},
+					{
+						type: 'float',
+						value: 0.42
+					},
+					{
+						type: 'boolean',
+						value: true
 					}
 				],
 				field: null,
+
+				options: [
+					{
+						checked: true,
+						text: 'one' 
+					},
+					{
+						checked: false,
+						text: 'two'
+					},
+					{
+						checked: false,
+						text: 'three'
+					}
+				],
 
 				selectedIndex: 0,
 
@@ -125,24 +130,22 @@ Kitchen Sink
 					barCheck: false
 				},
 
-				radioGroupIndex: 1,
-
-
 				// event handlers
-				'#toggleDynamicTextCase:click': function() {
-					this.dynamicText = this.dynamicText == 'lowercase' ?
+				toggle: function() {
+					this.text = this.text == 'lowercase' ?
 						'UPPERCASE': 'lowercase';
 				},
-				'#addToArray:click': function() {
+				add: function() {
 					this.array.push(Math.random());
 				},
-				'#removeLastFromArray:click': function() {
+				remove: function() {
 					this.array.pop();
 				}
 			};
-
-			jtmpl('#view-target', '#view-template', model);
 		</script>
+		<!-- if jtmpl finds #jtmpl[data-model], it automatically does
+			jtmpl('#jtmpl', '#jtmpl', <the value of #jtmpl[data-model]>) -->
+		<script src="js/jtmpl.js"></script>
 
 		<div id="qunit"></div>
 		<div id="qunit-fixture"></div>

@@ -1,6 +1,6 @@
 (function() {
   window.jtmpl = function(el, tpl, model) {
-    var appendHTML, build, re;
+    var hreOpenedTag, hreProto, hreTag, html, parse, re;
     if (typeof el === 'string' && el.match(/^\#\w+/)) {
       el = document.getElementById(el.substring(1));
     }
@@ -17,22 +17,13 @@
       tpl = document.getElementById(tpl.substring(1)).innerHTML;
     }
     re = /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g;
-    window.hre = /<(\w+)(?:\s+([\w-]*)(?:=((?:"[^"]+")|(?:'[^']+')|[\w-]+))?)*(>)?\s*$/g;
-    appendHTML = function(frag, html) {
-      var child, tmp;
-      tmp = document.createElement('body');
-      tmp.innerHTML = html;
-      while (child = tmp.firstChild) {
-        frag.appendChild(child);
-      }
-      return frag;
-    };
-    build = function(el, tpl, model, pos, openTag) {
-      var emit, frag, htag, tag, _ref, _results;
-      frag = document.createDocumentFragment();
-      htag = null;
+    hreProto = /<\s*([\w-]+)(?:\s+([\w-]*)(?:=((?:"[^"]+")|(?:'[^']+')|[\w-]+))?)*/.source;
+    hreOpenedTag = new RegExp(hreProto + '(>)?\\s*$');
+    hreTag = new RegExp(hreProto + '\\s*>');
+    parse = function(el, tpl, model, pos, openTag) {
+      var emit, tag, _ref, _results;
       emit = function() {
-        var s;
+        var htag, s;
         s = tpl.slice(pos, re.lastIndex - (tag && tag[0] || '').length);
         hre.lastIndex = 0;
         htag = hre.exec(s);
@@ -61,7 +52,7 @@
       }
       return _results;
     };
-    return el._jtmpl = build(el, tpl, model, 0);
+    return html = parse(el, tpl, model, 0);
   };
 
 }).call(this);

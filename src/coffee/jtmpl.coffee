@@ -21,7 +21,7 @@ window.jtmpl = (el, tpl, model) ->
 	# `jtmpl(element, '#template-id', ...)`
 	tpl = document.getElementById(tpl.substring(1)).innerHTML if tpl.match and tpl.match(/^\#\w+/)
 
-	# Match jtmpl tag. http://gskinner.com/RegExr/ is a nice tool
+	# Match jtmpl tag
 	re = ///
 		\{\{(\{)?      # opening tag, maybe triple mustache (captured)
 		(\#|\^|/)?     # var, open block or close block tag?
@@ -29,9 +29,9 @@ window.jtmpl = (el, tpl, model) ->
 		(\})?\}\}      # closing tag
 	///g
 
-	# Match last opening HTML tag
-	window.hre = ///
-		<(\w+)         # HTML tag name
+	# Prototype regexp, match opening HTML tag
+	hreProto = ///
+		<\s*([\w-]+)   # capture HTML tag name
 		(?:	\s+		   # non-capturing group HTML attribute
 			([\w-]*)   # attribute name
 			(?: =
@@ -42,29 +42,22 @@ window.jtmpl = (el, tpl, model) ->
 				)
 			)?
 		)*
-		(>)?\s*$
-	///g
+	///.source
 
-	# Append arbitrary HTML to a DocumentFragment
-	appendHTML = (frag, html) ->
-		tmp = document.createElement('body')
-		tmp.innerHTML = html
-		while child = tmp.firstChild
-			frag.appendChild(child)
-		frag
+	# Last opened HTML tag
+	hreOpenedTag = new RegExp hreProto + '(>)?\\s*$'
 
-	# Main recursive function
-	build = (el, tpl, model, pos, openTag) ->
+	# Full opening HTML tag
+	hreTag = new RegExp hreProto + '\\s*>'
 
-		frag = document.createDocumentFragment()
-		htag = null
+	# Parse template, remove jtmpl tags, inject data-jtmpl attributes
+	parse = (el, tpl, model, pos, openTag) ->
 
 		emit = ->
 			s = tpl.slice(pos, re.lastIndex - (tag and tag[0] or '').length)
 			hre.lastIndex = 0
 			htag = hre.exec(s)
 			pos = re.lastIndex
-			# appendHTML(frag, s)
 			console.log '\n>\n' + s + '\n:' + htag
 
 		# Match jtmpl tags
@@ -89,5 +82,5 @@ window.jtmpl = (el, tpl, model) ->
 				emit()
 
 
-	# Build DOM
-	el._jtmpl = build(el, tpl, model, 0)
+	# Parse template
+	html = parse(el, tpl, model, 0)
