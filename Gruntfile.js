@@ -8,7 +8,8 @@ module.exports = function(grunt) {
         separator: ';\n'
       },
       dist: {
-        src: ['src/**/jtmpl.js', 'components/Object.observe/Object.observe.poly.js'],
+        // src: ['src/**/jtmpl.js', 'components/Object.observe/Object.observe.poly.js'],
+        src: ['js/jtmpl.js', 'components/Object.observe/Object.observe.poly.js'],
         dest: 'js/jtmpl.js'
       }
     },
@@ -41,6 +42,14 @@ module.exports = function(grunt) {
       }
     },
 
+    coffee: {
+      compile: {
+        files: {
+          'js/jtmpl.js': ['src/coffee/*.coffee']
+        }
+      }
+    },    
+
     less: {
       css: {
         src: ['src/less/*.less'],
@@ -49,9 +58,13 @@ module.exports = function(grunt) {
     },
 
     watch: {
-      jshint: {
-        files: ['<%= jshint.files %>'],
-        tasks: ['jshint', 'concat', 'uglify', 'copy:tests']
+      // jshint: {
+      //   files: ['<%= jshint.files %>'],
+      //   tasks: ['jshint', 'concat', 'uglify', 'copy:tests']
+      // },
+      coffee: {
+        files: ['src/coffee/*.coffee'],
+        tasks: ['coffee', 'concat', 'uglify', 'copy:tests']
       },
       less: {
         files: ['src/less/*.less'],
@@ -133,6 +146,7 @@ module.exports = function(grunt) {
 
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-jshint');
+  grunt.loadNpmTasks('grunt-contrib-coffee');
   grunt.loadNpmTasks('grunt-contrib-qunit');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-concat');
@@ -144,7 +158,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-less');
   grunt.loadNpmTasks('grunt-css');
 
-  grunt.registerTask('test', ['jshint', 'qunit']);
-  grunt.registerTask('default', ['jshint', 'concat', 'uglify', 'copy', 'dotlit', 'md2html', 'clean', 'connect', 'watch']);
+  grunt.registerTask('default', ['coffee', 'concat', 'uglify', 'copy', 'dotlit', 'md2html', 'clean', 'connect', 'watch']);
 
 };

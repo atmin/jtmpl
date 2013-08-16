@@ -4,6 +4,35 @@
  * MIT license
  */
 function jtmpl(el, tpl, model) {
+
+	// `jtmpl('#element-id', ...)`?
+	if (typeof el === 'string' && el.match(/^\#\w+/)) {
+		el = document.getElementById(el.substring(1));
+	}
+
+	if (!el || typeof el !== 'object' || !el.nodeName) {
+		throw '[Element object] or "#element-id" expected';
+	}
+
+	// `jtmpl(element)`? return jtmpl object
+	if (!tpl) {
+		return el._jtmpl;
+	}
+
+	if (typeof tpl !== 'string') {
+		throw 'tpl should be string';
+	}
+
+	if (el.match(/^\#\w+/)) {}
+
+	if (!model || typeof model !== 'object') {
+		throw 'model should be object';
+	}
+
+/*
+
+
+
 	var target, self;
 
 	self = {
@@ -29,7 +58,7 @@ function jtmpl(el, tpl, model) {
 
 		_get: function(v, context) {
 			/*jslint evil:true */// ]:)
-			context = context || self.model;
+/*			context = context || self.model;
 			return eval('context' + (v==='.' ? '' : '.' + v));
 		},
 
@@ -203,5 +232,5 @@ function jtmpl(el, tpl, model) {
 	target._jtmpl = self;
 	target.innerHTML = self.html;
 
-	return self;
+	return self;*/
 }
