@@ -40,8 +40,6 @@ Facts
 
 * IE 8+, Firefox, Chrome, Opera
 
-* [Kitchen Sink](kitchensink.html) (extracted from this file): showcase of all features, executes automated tests
-
 * Downloads: [jtmpl.coffee](src/coffee/jtmpl.coffee), [jtmpl.js](js/jtmpl.js), [jtmpl.min.js](js/jtmpl.min.js)
 
 
@@ -72,156 +70,160 @@ Hello, browser
 
 Kitchen Sink
 ------------
-```
-$ kitchensink.html
 
-<!doctype html>
-<html>
-<head>
-	<link rel="stylesheet" type="text/css" href="css/baseline.css">
-	<link rel="stylesheet" type="text/css" href="css/qunit.css">
-	<style>
-		h2, h3 {margin-top: 64px}
-		body {padding: 1% 7%; color:#586e75; background-color:#fdf6e3}
-	</style>
-	<script src="js/qunit.js"></script>
-</head>
+Showcase of all features, tests
 
-<body>
-	<div id="jtmpl" data-model="model">
+[Link to example](kitchensink.html)
 
-		<h1>Kitchen Sink</h1>
-		<p>
-			Feature explorer. Feel free to modify <code>model</code> from JS console and observe changes.
-		</p>
+	$ kitchensink.html
 
-		<h3>Collection&mdash;<code>model.collection</code></h3>
-		<ul>
-			{{#collection}}
-			<li>type <code>{{type}}</code>, value <code>{{value}}</code></li>
-			{{/collection}}
-			{{^collection}}
-			<li>&lt; empty &gt;</li>
-			{{/collection}}
-		</ul>
-		<button onclick={{add}}>Add random</button>
-		<button onclick="{{remove}}">Remove last</button>
+	<!doctype html>
+	<html>
+	<head>
+		<link rel="stylesheet" type="text/css" href="css/baseline.css">
+		<link rel="stylesheet" type="text/css" href="css/qunit.css">
+		<style>
+			h2, h3 {margin-top: 64px}
+			body {padding: 1% 7%; color:#586e75}
+		</style>
+		<script src="js/qunit.js"></script>
+	</head>
 
-		<h3>Toggle text&mdash;<code>model.text</code></h3>
-		<a href="#" onclick='{{toggle}}'>Toggle</a>
-		<p>
-			{{text}}
-		</p>
+	<body>
+		<div id="jtmpl" data-model="model">
 
-		<h3>innerHTML&mdash;<code>model.innerHTML</code></h3>
-		<div>
-			<!-- {{{innerHTML}}} -->     
-			<!-- previous comment will be stripped, but this won't -->
+			<h1>Kitchen Sink</h1>
+			<h2>Feature explorer</h2>
+			<p>
+				Feel free to modify <code>model</code> from JS console and observe changes.
+			</p>
+
+			<h3>Collection&mdash;<code>model.collection</code></h3>
+			<ul>
+				{{#collection}}
+				<li>type <code>{{type}}</code>, value <code>{{value}}</code></li>
+				{{/collection}}
+				{{^collection}}
+				<li>&lt; empty &gt;</li>
+				{{/collection}}
+			</ul>
+			<button onclick={{add}}>Add random</button>
+			<button onclick="{{remove}}">Remove last</button>
+
+			<h3>Toggle text&mdash;<code>model.text</code></h3>
+			<a href="#" onclick='{{toggle}}'>Toggle</a>
+			<p>
+				{{text}}
+			</p>
+
+			<h3>innerHTML&mdash;<code>model.innerHTML</code></h3>
+			<div>
+				<!-- {{{innerHTML}}} -->     
+				<!-- previous comment will be stripped, but this won't -->
+			</div>
+
+			<h3>Data binding&mdash;<code>model.field</code></h3>
+			<label for="field">Enter something</label> <input id="field" value={{field}}>
+			<p>
+				{{#field}}
+				You entered "<span>{{field}}</span>". Delete it and this message will disappear
+				{{/field}}
+			</p>
+
+			<h3>Checkboxes&mdash;<code>model.checkboxes</code></h3>
+			<div>
+				{{#checkboxes}}
+				<label><input type="checkbox" checked={{fooCheck}}> check foo</label>
+				<label><input type="checkbox" checked={{barCheck}}> check bar</label>
+				{{/checkboxes}}
+			</div>
+
+			<h3>Select&mdash;<code>model.selectedIndex</code></h3>
+			<select selectedIndex={{selectedIndex}}>
+				{{#options}}
+				<option>{{text}}</option>
+				{{/options}}
+			</select>
+
+			<h3>Radio group&mdash;<code>model.options</code></h3>
+			<p>
+				<em>&lt;select&gt; is bound to</em> <code>model.options</code>
+			</p>
+			<div>
+				{{#options}}
+				<label><input type="radio" name="radio-group" checked={{checked}}>{{text}}</label>
+				{{/options}}
+			</div>
 		</div>
 
-		<h3>Data binding&mdash;<code>model.field</code></h3>
-		<label for="field">Enter something</label> <input id="field" value={{field}}>
-		<p>
-			{{#field}}
-			You entered "<span>{{field}}</span>". Delete it and this message will disappear
-			{{/field}}
-		</p>
+		<script>
+			model = {
+				text: 'lowercase',
 
-		<h3>Checkboxes&mdash;<code>model.checkboxes</code></h3>
-		<div>
-			{{#checkboxes}}
-			<label><input type="checkbox" checked={{fooCheck}}> check foo</label>
-			<label><input type="checkbox" checked={{barCheck}}> check bar</label>
-			{{/checkboxes}}
-		</div>
+				collection: [
+					{
+						type: 'string',
+						value: 'foobar'
+					},
+					{
+						type: 'int',
+						value: 1
+					},
+					{
+						type: 'float',
+						value: 0.42
+					},
+					{
+						type: 'boolean',
+						value: true
+					}
+				],
 
-		<h3>Select&mdash;<code>model.selectedIndex</code></h3>
-		<select selectedIndex={{selectedIndex}}>
-			{{#options}}
-			<option>{{text}}</option>
-			{{/options}}
-		</select>
+				field: null,
 
-		<h3>Radio group&mdash;<code>model.options</code></h3>
-		<p>
-			<em>&lt;select&gt; is bound to</em> <code>model.options</code>
-		</p>
-		<div>
-			{{#options}}
-			<label><input type="radio" name="radio-group" checked={{checked}}>{{text}}</label>
-			{{/options}}
-		</div>
-	</div>
+				innerHTML: '<p>Hi, how are you?</p>',
 
-	<script>
-		model = {
-			text: 'lowercase',
+				options: [
+					{
+						checked: true,
+						text: 'one' 
+					},
+					{
+						checked: false,
+						text: 'two'
+					},
+					{
+						checked: false,
+						text: 'three'
+					}
+				],
 
-			collection: [
-				{
-					type: 'string',
-					value: 'foobar'
+				selectedIndex: 0,
+
+				checkboxes: {
+					fooCheck: true,
+					barCheck: false
 				},
-				{
-					type: 'int',
-					value: 1
+
+
+				// event handlers
+				toggle: function() {
+					this.text = this.text == 'lowercase' ?
+						'UPPERCASE': 'lowercase';
 				},
-				{
-					type: 'float',
-					value: 0.42
+				add: function() {
+					this.collection.push(Math.random());
 				},
-				{
-					type: 'boolean',
-					value: true
+				remove: function() {
+					this.collection.pop();
 				}
-			],
+			};
+		</script>
+		<script src="js/jtmpl.js"></script>
 
-			field: null,
-
-			innerHTML: '<p>Hi, how are you?</p>',
-
-			options: [
-				{
-					checked: true,
-					text: 'one' 
-				},
-				{
-					checked: false,
-					text: 'two'
-				},
-				{
-					checked: false,
-					text: 'three'
-				}
-			],
-
-			selectedIndex: 0,
-
-			checkboxes: {
-				fooCheck: true,
-				barCheck: false
-			},
-
-
-			// event handlers
-			toggle: function() {
-				this.text = this.text == 'lowercase' ?
-					'UPPERCASE': 'lowercase';
-			},
-			add: function() {
-				this.collection.push(Math.random());
-			},
-			remove: function() {
-				this.collection.pop();
-			}
-		};
-	</script>
-	<script src="js/jtmpl.js"></script>
-
-	<h2>QUnit Tests</h2>
-	<div id="qunit"></div>
-	<div id="qunit-fixture"></div>
-	<script src="js/jtmpl-tests.js"></script>
-</body>
-</html>
-```
+		<h2>QUnit Tests</h2>
+		<div id="qunit"></div>
+		<div id="qunit-fixture"></div>
+		<script src="js/jtmpl-tests.js"></script>
+	</body>
+	</html>

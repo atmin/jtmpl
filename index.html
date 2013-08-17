@@ -4,8 +4,9 @@
         <link rel="stylesheet" type="text/css" href="css/baseline.css">
         <link rel="stylesheet" type="text/css" href="css/highlight.css">
     	<style>
-    		body {padding: 1% 7% 0 7%; color:#586e75; background-color:#fdf6e3}
+    		body {padding: 1% 7% 0 7%; color:#586e75}
     		h1 em {color:#DDD; font-style:normal}
+            h2 {margin-top:64px}
             footer {margin:40px 0 10px}
     	</style>
         <title>jtmpl&mdash;MVVM Templating Engine for the Browser</title>
@@ -41,8 +42,6 @@
 </li>
 <li><p>IE 8+, Firefox, Chrome, Opera</p>
 </li>
-<li><p><a href="kitchensink.html">Kitchen Sink</a> (extracted from this file): showcase of all features, executes automated tests</p>
-</li>
 <li><p>Downloads: <a href="src/coffee/jtmpl.coffee">jtmpl.coffee</a>, <a href="js/jtmpl.js">jtmpl.js</a>, <a href="js/jtmpl.min.js">jtmpl.min.js</a></p>
 </li>
 </ul>
@@ -69,6 +68,8 @@
 </li>
 </ol>
 <h2>Kitchen Sink</h2>
+<p>Showcase of all features, tests</p>
+<p><a href="kitchensink.html">Link to example</a></p>
 <pre><code>$ kitchensink.html
 
 &lt;!doctype html&gt;
@@ -78,7 +79,7 @@
     &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;css/qunit.css&quot;&gt;
     &lt;style&gt;
         h2, h3 {margin-top: 64px}
-        body {padding: 1% 7%; color:#586e75; background-color:#fdf6e3}
+        body {padding: 1% 7%; color:#586e75}
     &lt;/style&gt;
     &lt;script src=&quot;js/qunit.js&quot;&gt;&lt;/script&gt;
 &lt;/head&gt;
@@ -87,8 +88,9 @@
     &lt;div id=&quot;jtmpl&quot; data-model=&quot;model&quot;&gt;
 
         &lt;h1&gt;Kitchen Sink&lt;/h1&gt;
+        &lt;h2&gt;Feature explorer&lt;/h2&gt;
         &lt;p&gt;
-            Feature explorer. Feel free to modify &lt;code&gt;model&lt;/code&gt; from JS console and observe changes.
+            Feel free to modify &lt;code&gt;model&lt;/code&gt; from JS console and observe changes.
         &lt;/p&gt;
 
         &lt;h3&gt;Collection&amp;mdash;&lt;code&gt;model.collection&lt;/code&gt;&lt;/h3&gt;
