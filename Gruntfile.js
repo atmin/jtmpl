@@ -96,7 +96,7 @@ module.exports = function(grunt) {
     copy: {
       main: { 
         files: [
-          {src: 'README.md', dest: 'kitchensink.html.lit.md'},
+          {src: 'README.md', dest: 'kitchensink.lit.md'},
           {src: 'src/js/jtmpl-tests.js', dest: 'js/jtmpl-tests.js'},
           {src: 'components/qunit/qunit/qunit.js', dest: 'js/qunit.js'},
           {src: 'components/qunit/qunit/qunit.css', dest: 'css/qunit.css'},
@@ -116,9 +116,9 @@ module.exports = function(grunt) {
     dotlit: {
       options: {
         verbose: true,
-        extractAll: true
+        extractFiles: ['kitchensink.html']
       },
-      files: ['*.lit.md']
+      files: ['kitchensink.lit.md']
     },
 
     md2html: {
@@ -140,7 +140,7 @@ module.exports = function(grunt) {
       src: ['*.html', 'js/**/*', 'css/**/*']
     },
 
-    clean: ['kitchensink.html.lit.md']    
+    clean: ['kitchensink', 'kitchensink.lit.md']    
 
   });
 

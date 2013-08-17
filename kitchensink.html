@@ -1,16 +1,25 @@
+
 <!doctype html>
 <html>
 <head>
 	<link rel="stylesheet" type="text/css" href="css/baseline.css">
 	<link rel="stylesheet" type="text/css" href="css/qunit.css">
+	<style>
+		h2, h3 {margin-top: 64px}
+    	body {padding: 1% 7%; color:#586e75; background-color:#fdf6e3}
+	</style>
 	<script src="js/qunit.js"></script>
 </head>
 
 <body>
 	<div id="jtmpl" data-model="model">
+
 		<h1>Kitchen Sink</h1>
-		<p>Feel free to modify <code>model</code> from JS console and observe changes</p>
-		<h3>Collection <code>model.collection</code></h3>
+		<p>
+			Feature explorer. Feel free to modify <code>model</code> from JS console and observe changes.
+		</p>
+
+		<h3>Collection&mdash;<code>model.collection</code></h3>
 		<ul>
 			{{#collection}}
 			<li>type <code>{{type}}</code>, value <code>{{value}}</code></li>
@@ -22,17 +31,27 @@
 		<button onclick={{add}}>Add random</button>
 		<button onclick="{{remove}}">Remove last</button>
 
-		<h3>Toggle text <code>model.text</code></h3>
+		<h3>Toggle text&mdash;<code>model.text</code></h3>
 		<a href="#" onclick='{{toggle}}'>Toggle</a>
-		<p>{{text}}</p>
+		<p>
+			{{text}}
+		</p>
 
-		<h3>Bidirectional data binding <code>model.field</code></h3>
+		<h3>innerHTML&mdash;<code>model.innerHTML</code></h3>
+		<div>
+			<!-- {{{innerHTML}}} -->     
+			<!-- previous comment will be stripped, but this won't -->
+		</div>
+
+		<h3>Data binding&mdash;<code>model.field</code></h3>
 		<label for="field">Enter something</label> <input id="field" value={{field}}>
-		<p>{{#field}}
+		<p>
+			{{#field}}
 			You entered "<span>{{field}}</span>". Delete it and this message will disappear
-		{{/field}}</p>
+			{{/field}}
+		</p>
 
-		<h3>Checkboxes</h3>
+		<h3>Checkboxes&mdash;<code>model.checkboxes</code></h3>
 		<div>
 			{{#checkboxes}}
 			<label><input type="checkbox" checked={{fooCheck}}> check foo</label>
@@ -40,14 +59,17 @@
 			{{/checkboxes}}
 		</div>
 
-		<h3>Select <code>model.selectedIndex</code></h3>
+		<h3>Select&mdash;<code>model.selectedIndex</code></h3>
 		<select selectedIndex={{selectedIndex}}>
 			{{#options}}
 			<option>{{text}}</option>
 			{{/options}}
 		</select>
 
-		<h5>Radio group <code>model.options</code></h5>
+		<h3>Radio group&mdash;<code>model.options</code></h3>
+		<p>
+			<em>&lt;select&gt; is bound to</em> <code>model.options</code>
+		</p>
 		<div>
 			{{#options}}
 			<label><input type="radio" name="radio-group" checked={{checked}}>{{text}}</label>
@@ -58,6 +80,7 @@
 	<script>
 		model = {
 			text: 'lowercase',
+
 			collection: [
 				{
 					type: 'string',
@@ -76,7 +99,10 @@
 					value: true
 				}
 			],
+
 			field: null,
+
+			innerHTML: '<p>Hi, how are you?</p>',
 
 			options: [
 				{
@@ -100,23 +126,23 @@
 				barCheck: false
 			},
 
+
 			// event handlers
 			toggle: function() {
 				this.text = this.text == 'lowercase' ?
 					'UPPERCASE': 'lowercase';
 			},
 			add: function() {
-				this.array.push(Math.random());
+				this.collection.push(Math.random());
 			},
 			remove: function() {
-				this.array.pop();
+				this.collection.pop();
 			}
 		};
 	</script>
-	<!-- if jtmpl finds #jtmpl[data-model], it automatically does
-		jtmpl('#jtmpl', '#jtmpl', <the value of #jtmpl[data-model]>) -->
 	<script src="js/jtmpl.js"></script>
 
+	<h2>QUnit Tests</h2>
 	<div id="qunit"></div>
 	<div id="qunit-fixture"></div>
 	<script src="js/jtmpl-tests.js"></script>

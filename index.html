@@ -4,47 +4,94 @@
         <link rel="stylesheet" type="text/css" href="css/baseline.css">
         <link rel="stylesheet" type="text/css" href="css/highlight.css">
     	<style>
-    		body {padding: 1% 7% 7% 7%; color:#586e75; background-color:#fdf6e3}
+    		body {padding: 1% 7% 0 7%; color:#586e75; background-color:#fdf6e3}
     		h1 em {color:#DDD; font-style:normal}
+            footer {margin:40px 0 10px}
     	</style>
         <title>jtmpl&mdash;MVVM Templating Engine for the Browser</title>
     </head>
     <body>
     	<a href="https://github.com/atmin/jtmpl"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png" alt="Fork me on GitHub"></a>
-        <h1><em>{{</em> jtmpl <em>}}</em><br>MVVM Templating Engine for the Browser</h1>
+        <h1><em><code>{{</code></em> <code>jtmpl</code> <em><code>}}</code></em><br>JavaScript MVC micro-framework</h1>
 <p><em>Code is work in progress, feel free to explore concept</em></p>
-<p><code>jtmpl</code> renders <a href="https://github.com/janl/mustache.js">Mustache</a>-compatible template using a <code>model</code> object and automatically binds fields and events to DOM elements. When model changes, DOM is updated and vice versa.</p>
-<h2>What</h2>
+<h2>Why</h2>
 <ul>
-<li><p>it&#39;s a templating engine</p>
+<li><p>embrace <a href="http://en.wikipedia.org/wiki/Keep_it_simple">KISS</a> and <a href="http://en.wikipedia.org/wiki/Don&#39;t_repeat_yourself">DRY</a></p>
 </li>
-<li><p>it&#39;s a <a href="http://en.wikipedia.org/wiki/Model_View_ViewModel">MVVM</a> micro-framework</p>
+<li><p>write least amount of code possible</p>
+</li>
+<li><p>ideas by humans, automation by computers</p>
+</li>
+</ul>
+<h2>How</h2>
+<p><code>jtmpl</code> renders Mustache-compatible template using a <code>model</code> object and automatically binds fields (<code>model</code> properties) and events (<code>model</code> functions) to the generated DOM elements.</p>
+<p>When model changes, DOM is updated and vice versa. </p>
+<p><code>jtmpl</code> accepts tags in HTML comments, so your template can be valid, empty HTML.</p>
+<h2>Facts</h2>
+<ul>
+<li><p>it&#39;s a templating engine with very simple, but powerful <a href="http://mustache.github.io">syntax</a></p>
+<p>  <strong><code>jtmpl(&#39;Hello, {{who}}&#39;, { who: &#39;server&#39; })</code></strong> returns &quot;Hello, server&quot;</p>
+</li>
+<li><p>it&#39;s a <a href="http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller">MVC</a> micro-framework for the browser</p>
+<p>  <strong><code>jtmpl(&#39;#target-id&#39;, &#39;#template-id&#39;, model)</code></strong> does all the magic</p>
 </li>
 <li><p>based on <a href="http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe">Object.observe</a></p>
 </li>
-<li><p>no external dependencies</p>
+<li><p>no dependencies, <a href="https://github.com/jdarling/Object.observe">polyfill</a> built-in</p>
 </li>
-<li><p>IE 8+, Firefox, Chrome, Opera (<a href="https://github.com/jdarling/Object.observe">polyfill</a> built-in)</p>
+<li><p>IE 8+, Firefox, Chrome, Opera</p>
 </li>
-<li><p><a href="kitchensink.html">Kitchen Sink</a> (extracted from this file) enumerates features and executes automated tests</p>
+<li><p><a href="kitchensink.html">Kitchen Sink</a> (extracted from this file): showcase of all features, executes automated tests</p>
 </li>
-<li><p>Downloads: <a href="js/jtmpl.js">jtmpl.js</a>, <a href="js/jtmpl.min.js">jtmpl.min.js</a></p>
+<li><p>Downloads: <a href="src/coffee/jtmpl.coffee">jtmpl.coffee</a>, <a href="js/jtmpl.js">jtmpl.js</a>, <a href="js/jtmpl.min.js">jtmpl.min.js</a></p>
 </li>
 </ul>
+<h2>Hello, browser</h2>
+<ol>
+<li><p>View</p>
+<pre><code> &lt;div id=jtmpl data-model=model&gt;
+     &lt;span&gt;{{field}}&lt;/span&gt;
+     &lt;a href=# onclick={{eventHandler}}&gt;set &quot;bar&quot;&lt;/a&gt;
+ &lt;div&gt;</code></pre>
+</li>
+<li><p>Model and Controller</p>
+<pre><code> &lt;script&gt;
+     model = {
+         field: &#39;foo&#39;,
+         eventHandler: function() {
+             this.field = &#39;bar&#39;;
+         }
+     }
+ &lt;/script&gt;</code></pre>
+</li>
+<li><p>do the dirty work (<code>jtmpl</code> will detect <code>div[id=jtmpl][data-model=model]</code>)</p>
+<pre><code> &lt;script src=&quot;js/jtmpl.min.js&quot;&gt;&lt;/script&gt;</code></pre>
+</li>
+</ol>
 <h2>Kitchen Sink</h2>
-<pre><code>&lt;!doctype html&gt;
+<pre><code>$ kitchensink.html
+
+&lt;!doctype html&gt;
 &lt;html&gt;
 &lt;head&gt;
     &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;css/baseline.css&quot;&gt;
     &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;css/qunit.css&quot;&gt;
+    &lt;style&gt;
+        h2, h3 {margin-top: 64px}
+        body {padding: 1% 7%; color:#586e75; background-color:#fdf6e3}
+    &lt;/style&gt;
     &lt;script src=&quot;js/qunit.js&quot;&gt;&lt;/script&gt;
 &lt;/head&gt;
 
 &lt;body&gt;
     &lt;div id=&quot;jtmpl&quot; data-model=&quot;model&quot;&gt;
+
         &lt;h1&gt;Kitchen Sink&lt;/h1&gt;
-        &lt;p&gt;Feel free to modify &lt;code&gt;model&lt;/code&gt; from JS console and observe changes&lt;/p&gt;
-        &lt;h3&gt;Collection &lt;code&gt;model.collection&lt;/code&gt;&lt;/h3&gt;
+        &lt;p&gt;
+            Feature explorer. Feel free to modify &lt;code&gt;model&lt;/code&gt; from JS console and observe changes.
+        &lt;/p&gt;
+
+        &lt;h3&gt;Collection&amp;mdash;&lt;code&gt;model.collection&lt;/code&gt;&lt;/h3&gt;
         &lt;ul&gt;
             {{#collection}}
             &lt;li&gt;type &lt;code&gt;{{type}}&lt;/code&gt;, value &lt;code&gt;{{value}}&lt;/code&gt;&lt;/li&gt;
@@ -56,17 +103,27 @@
         &lt;button onclick={{add}}&gt;Add random&lt;/button&gt;
         &lt;button onclick=&quot;{{remove}}&quot;&gt;Remove last&lt;/button&gt;
 
-        &lt;h3&gt;Toggle text &lt;code&gt;model.text&lt;/code&gt;&lt;/h3&gt;
+        &lt;h3&gt;Toggle text&amp;mdash;&lt;code&gt;model.text&lt;/code&gt;&lt;/h3&gt;
         &lt;a href=&quot;#&quot; onclick=&#39;{{toggle}}&#39;&gt;Toggle&lt;/a&gt;
-        &lt;p&gt;{{text}}&lt;/p&gt;
+        &lt;p&gt;
+            {{text}}
+        &lt;/p&gt;
 
-        &lt;h3&gt;Bidirectional data binding &lt;code&gt;model.field&lt;/code&gt;&lt;/h3&gt;
+        &lt;h3&gt;innerHTML&amp;mdash;&lt;code&gt;model.innerHTML&lt;/code&gt;&lt;/h3&gt;
+        &lt;div&gt;
+            &lt;!-- {{{innerHTML}}} --&gt;     
+            &lt;!-- previous comment will be stripped, but this won&#39;t --&gt;
+        &lt;/div&gt;
+
+        &lt;h3&gt;Data binding&amp;mdash;&lt;code&gt;model.field&lt;/code&gt;&lt;/h3&gt;
         &lt;label for=&quot;field&quot;&gt;Enter something&lt;/label&gt; &lt;input id=&quot;field&quot; value={{field}}&gt;
-        &lt;p&gt;{{#field}}
+        &lt;p&gt;
+            {{#field}}
             You entered &quot;&lt;span&gt;{{field}}&lt;/span&gt;&quot;. Delete it and this message will disappear
-        {{/field}}&lt;/p&gt;
+            {{/field}}
+        &lt;/p&gt;
 
-        &lt;h3&gt;Checkboxes&lt;/h3&gt;
+        &lt;h3&gt;Checkboxes&amp;mdash;&lt;code&gt;model.checkboxes&lt;/code&gt;&lt;/h3&gt;
         &lt;div&gt;
             {{#checkboxes}}
             &lt;label&gt;&lt;input type=&quot;checkbox&quot; checked={{fooCheck}}&gt; check foo&lt;/label&gt;
@@ -74,14 +131,17 @@
             {{/checkboxes}}
         &lt;/div&gt;
 
-        &lt;h3&gt;Select &lt;code&gt;model.selectedIndex&lt;/code&gt;&lt;/h3&gt;
+        &lt;h3&gt;Select&amp;mdash;&lt;code&gt;model.selectedIndex&lt;/code&gt;&lt;/h3&gt;
         &lt;select selectedIndex={{selectedIndex}}&gt;
             {{#options}}
             &lt;option&gt;{{text}}&lt;/option&gt;
             {{/options}}
         &lt;/select&gt;
 
-        &lt;h5&gt;Radio group &lt;code&gt;model.options&lt;/code&gt;&lt;/h5&gt;
+        &lt;h3&gt;Radio group&amp;mdash;&lt;code&gt;model.options&lt;/code&gt;&lt;/h3&gt;
+        &lt;p&gt;
+            &lt;em&gt;&amp;lt;select&amp;gt; is bound to&lt;/em&gt; &lt;code&gt;model.options&lt;/code&gt;
+        &lt;/p&gt;
         &lt;div&gt;
             {{#options}}
             &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; checked={{checked}}&gt;{{text}}&lt;/label&gt;
@@ -92,6 +152,7 @@
     &lt;script&gt;
         model = {
             text: &#39;lowercase&#39;,
+
             collection: [
                 {
                     type: &#39;string&#39;,
@@ -110,7 +171,10 @@
                     value: true
                 }
             ],
+
             field: null,
+
+            innerHTML: &#39;&lt;p&gt;Hi, how are you?&lt;/p&gt;&#39;,
 
             options: [
                 {
@@ -134,29 +198,32 @@
                 barCheck: false
             },
 
+
             // event handlers
             toggle: function() {
                 this.text = this.text == &#39;lowercase&#39; ?
                     &#39;UPPERCASE&#39;: &#39;lowercase&#39;;
             },
             add: function() {
-                this.array.push(Math.random());
+                this.collection.push(Math.random());
             },
             remove: function() {
-                this.array.pop();
+                this.collection.pop();
             }
         };
     &lt;/script&gt;
-    &lt;!-- if jtmpl finds #jtmpl[data-model], it automatically does
-        jtmpl(&#39;#jtmpl&#39;, &#39;#jtmpl&#39;, &lt;the value of #jtmpl[data-model]&gt;) --&gt;
     &lt;script src=&quot;js/jtmpl.js&quot;&gt;&lt;/script&gt;
 
+    &lt;h2&gt;QUnit Tests&lt;/h2&gt;
     &lt;div id=&quot;qunit&quot;&gt;&lt;/div&gt;
     &lt;div id=&quot;qunit-fixture&quot;&gt;&lt;/div&gt;
     &lt;script src=&quot;js/jtmpl-tests.js&quot;&gt;&lt;/script&gt;
 &lt;/body&gt;
 &lt;/html&gt;</code></pre>
 
+        <footer>
+            Copyright &copy; 2013 Atanas Minev, <a href="LICENSE">MIT license</a>
+        </footer>
         <script src="js/highlight.min.js"></script>
         <script>hljs.initHighlightingOnLoad();</script>
     </body>
