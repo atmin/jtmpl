@@ -1,37 +1,40 @@
 (function() {
-  window.jtmpl = function(el, tpl, model) {
-    var hreOpenedTag, hreProto, hreTag, html, parse, re;
-    if (typeof el === 'string' && el.match(/^\#\w+/)) {
-      el = document.getElementById(el.substring(1));
+  window.jtmpl = function(target, tpl, model) {
+    var bind, html, parse, reHTopened, reHTopening, reHTproto, reId, reJT;
+    reId = /^\#[\w-]+$/;
+    reJT = /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g;
+    reHTproto = /<\s*([\w-]+)(?:\s+([\w-]*)(?:=((?:"[^"]+")|(?:'[^']+')|[\w-]+))?)*/.source;
+    reHTopened = new RegExp(reHTproto + '(>)?\\s*$');
+    reHTopening = new RegExp(reHTproto + '\\s*>');
+    if (typeof target === 'string' && typeof tpl === 'object' && model === void 0) {
+      tpl = target;
+      model = tpl;
+      target = null;
     }
-    if (!el || !el.nodeName) {
-      throw '[Element object] or "#element-id" expected';
+    if (typeof target === 'string' && target.match(reId)) {
+      target = document.getElementById(target.substring(1));
     }
-    if (!tpl) {
-      return el._jtmpl;
+    if (target.nodeName && !tpl) {
+      return target._jtmpl;
     }
     if (!model || typeof model !== 'object') {
       throw 'model should be object';
     }
-    if (tpl.match && tpl.match(/^\#\w+/)) {
+    if (tpl.match && tpl.match(matchElementId)) {
       tpl = document.getElementById(tpl.substring(1)).innerHTML;
     }
-    re = /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g;
-    hreProto = /<\s*([\w-]+)(?:\s+([\w-]*)(?:=((?:"[^"]+")|(?:'[^']+')|[\w-]+))?)*/.source;
-    hreOpenedTag = new RegExp(hreProto + '(>)?\\s*$');
-    hreTag = new RegExp(hreProto + '\\s*>');
-    parse = function(el, tpl, model, pos, openTag) {
+    parse = function(tpl, model, pos, openTag) {
       var emit, tag, _ref, _results;
       emit = function() {
         var htag, s;
-        s = tpl.slice(pos, re.lastIndex - (tag && tag[0] || '').length);
-        hre.lastIndex = 0;
-        htag = hre.exec(s);
-        pos = re.lastIndex;
+        s = tpl.slice(pos, reHT.lastIndex - (tag && tag[0] || '').length);
+        reHTopened.lastIndex = 0;
+        htag = reHTopened.exec(s);
+        pos = reHT.lastIndex;
         return console.log('\n>\n' + s + '\n:' + htag);
       };
       _results = [];
-      while (tag = re.exec(tpl)) {
+      while (tag = reHT.exec(tpl)) {
         if (tag[2] === '/') {
           if (openTag && tag[3] !== openTag[3]) {
             throw 'Expected {{/' + openTag[3] + '}}, got ' + tag[0];
@@ -52,7 +55,11 @@
       }
       return _results;
     };
-    return html = parse(el, tpl, model, 0);
+    html = parse(tpl, model, 0);
+    if (!target) {
+      return html;
+    }
+    return bind = function(root) {};
   };
 
 }).call(this);

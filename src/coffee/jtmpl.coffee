@@ -2,27 +2,14 @@
 # @author Atanas Minev
 # MIT license
 
-window.jtmpl = (el, tpl, model) ->
+window.jtmpl = (target, tpl, model) ->
 
-	# `jtmpl('#element-id', ...)`?
-	if typeof el == 'string' and el.match(/^\#\w+/)
-		el = document.getElementById(el.substring(1))
+	## Regular expressions
+
+	reId = /^\#[\w-]+$/
 	
-	if not el or not el.nodeName
-		throw '[Element object] or "#element-id" expected'
-
-	# `jtmpl(element)`?
-	if not tpl
-		return el._jtmpl
-
-	if not model or typeof model != 'object'
-		throw 'model should be object'
-
-	# `jtmpl(element, '#template-id', ...)`
-	tpl = document.getElementById(tpl.substring(1)).innerHTML if tpl.match and tpl.match(/^\#\w+/)
-
 	# Match jtmpl tag
-	re = ///
+	reJT = ///
 		\{\{(\{)?      # opening tag, maybe triple mustache (captured)
 		(\#|\^|/)?     # var, open block or close block tag?
 		([\w\.]+)      # tag name
@@ -30,7 +17,7 @@ window.jtmpl = (el, tpl, model) ->
 	///g
 
 	# Prototype regexp, match opening HTML tag
-	hreProto = ///
+	reHTproto = ///
 		<\s*([\w-]+)   # capture HTML tag name
 		(?:	\s+		   # non-capturing group HTML attribute
 			([\w-]*)   # attribute name
@@ -45,23 +32,47 @@ window.jtmpl = (el, tpl, model) ->
 	///.source
 
 	# Last opened HTML tag
-	hreOpenedTag = new RegExp hreProto + '(>)?\\s*$'
+	reHTopened = new RegExp reHTproto + '(>)?\\s*$'
 
 	# Full opening HTML tag
-	hreTag = new RegExp hreProto + '\\s*>'
+	reHTopening = new RegExp reHTproto + '\\s*>'
+
+
+
+
+	# `jtmpl(tpl, model)`?
+	if typeof target == 'string' and typeof tpl == 'object' and model == undefined
+		tpl = target
+		model = tpl
+		target = null		
+
+	# `jtmpl('#element-id', ...)`?
+	if typeof target == 'string' and target.match(reId)
+		target = document.getElementById(target.substring(1))
+	
+	# `jtmpl(element)`?
+	if target.nodeName and not tpl
+		return target._jtmpl
+
+	if not model or typeof model != 'object'
+		throw 'model should be object'
+
+	# `jtmpl('#template-id', ...)` or `jtmpl(element, '#template-id', ...)`
+	tpl = document.getElementById(tpl.substring(1)).innerHTML if tpl.match and tpl.match(matchElementId)
+
 
 	# Parse template, remove jtmpl tags, inject data-jtmpl attributes
-	parse = (el, tpl, model, pos, openTag) ->
+	parse = (tpl, model, pos, openTag) ->
 
 		emit = ->
-			s = tpl.slice(pos, re.lastIndex - (tag and tag[0] or '').length)
-			hre.lastIndex = 0
-			htag = hre.exec(s)
-			pos = re.lastIndex
+			s = tpl.slice(pos, reHT.lastIndex - (tag and tag[0] or '').length)
+			reHTopened.lastIndex = 0
+			htag = reHTopened.exec(s)
+			pos = reHT.lastIndex
 			console.log '\n>\n' + s + '\n:' + htag
 
 		# Match jtmpl tags
-		while tag = re.exec(tpl)
+		while tag = reHT.exec(tpl)
 
 			# `{{/block_tag_end}}`?
 			if tag[2] == '/'
@@ -83,4 +94,13 @@ window.jtmpl = (el, tpl, model) ->
 
 
 	# Parse template
-	html = parse(el, tpl, model, 0)
+	html = parse(tpl, model, 0)
+
+	# Done?
+	if not target
+		return html
+
+	# Bind event handlers
+	bind = (root) ->
+		;
+

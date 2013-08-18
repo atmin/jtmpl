@@ -20,7 +20,7 @@ How
 
 When model changes, DOM is updated and vice versa. 
 
-`jtmpl` accepts tags in HTML comments, so your template can be valid, empty HTML.
+`jtmpl` accepts tags in HTML comments, so your template can be valid HTML.
 
 
 Details
