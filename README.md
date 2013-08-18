@@ -214,7 +214,10 @@ Showcase of all features, tests
 						'UPPERCASE': 'lowercase';
 				},
 				add: function() {
-					this.collection.push(Math.random());
+					this.collection.push({
+						type: 'float',
+						value: Math.random()
+					});
 				},
 				remove: function() {
 					this.collection.pop();

@@ -67,6 +67,10 @@ window.jtmpl = (target, tpl, model) ->
 
 	## Implementation
 
+	# Check if object is array
+	typeIsArray = 
+		Array.isArray or (value) -> {}.toString.call( value ) is '[object Array]'
+
 	# Get value
 	get = (v, context) ->
 		context = context or self.model
@@ -87,32 +91,75 @@ window.jtmpl = (target, tpl, model) ->
 
 		# Match jtmpl tags
 		while tag = reJT.exec(tpl)
+			console.log(tag[0])
+
 			# `{{/block_tag_end}}`?
 			if tag[2] == '/'
-				if openTag and tag[3] != openTag[3]
+				if openTag and tag[3] isnt openTag[3]
 					throw 'Expected {{/' + openTag[3] + '}}, got ' + tag[0]
-
-				console.log '>>> end block'
 				emit()
+
 				# Exit recursion
 				return out
 
 			# `{{var}}`?
 			if not tag[2]
-				console.log 'var >>> ' + tag[0]
 				emit()
 				emit(get(tag[3], context))
 
 			# `{{#block_tag_begin}}` or `{{^not_block_tag_begin}}`?
 			if tag[2] in ['#', '^']
-				console.log 'block >>> ' + tag[0]
+
 				emit()
+				val = get(tag[3], context)
+				pos = reJT.lastIndex
+
+				# falsy value?
+				if not val
+					s = parse(tpl, val, pos, tag)
+					pos = reJT.lastIndex
+					emit(if tag[2] is '#' then '' else s)
+
+				# `{{#context_block}}` or `{{#enumerate_array}}`?
+				else if val and tag[2] is '#'
+
+					# skip loop body?
+					if val.length is 0
+						parse(tpl, val, pos, tag)
+
+					# emit loop body n times, n = 1 when type(model.block) is object,
+					# n = array.length when type(model.block) is array
+					collection = if typeIsArray val then val else [val]
+					for item, i in collection
+						emit()
+						emit(parse(tpl, item, pos, tag))
+						if i < collection.length - 1
+							reJT.lastIndex = pos
+
+					pos = reJT.lastIndex
+
+				# `{{^output_falsy_block_or_array}}`?
+				else if val and tag[2] is '^'
+					s = parse(tpl, val, pos, tag)
+					pos = reJT.lastIndex
+					emit(if val or val.length then '' else s)
+
+				# oops
+				else
+					throw 'Internal error, tag ' + tag[0]
+
+
+
 
 		return out + tpl.slice(pos)
 
 
 	# Parse template
 	html = parse(tpl, model, 0)
+
+	# temp
+	if target
+		target.innerHTML = html
 
 	# Done?
 	if not target

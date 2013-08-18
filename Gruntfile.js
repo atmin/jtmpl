@@ -45,7 +45,7 @@ module.exports = function(grunt) {
       compile: {
         files: {
           'js/jtmpl.js': ['src/coffee/*.coffee'],
-          'js/tests.js': ['src/test/*.coffee']
+          'js/tests.js': ['src/tests/*.coffee']
         }
       }
     },    
@@ -63,7 +63,7 @@ module.exports = function(grunt) {
         tasks: ['jshint', 'concat', 'uglify', 'copy:tests']
       },
       coffee: {
-        files: ['src/coffee/*.coffee', 'src/test/*.coffee'],
+        files: ['src/coffee/*.coffee', 'src/tests/*.coffee'],
         tasks: ['coffee', 'concat', 'uglify']
       },
       less: {
@@ -126,7 +126,7 @@ module.exports = function(grunt) {
         }]
       }
     },
-    
+
     clean: ['kitchensink', 'kitchensink.lit.md']    
 
   });

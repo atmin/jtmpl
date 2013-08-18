@@ -1,6 +1,6 @@
 (function() {
   window.jtmpl = function(target, tpl, model) {
-    var bind, get, html, parse, reHTopened, reHTopening, reHTproto, reId, reJT;
+    var bind, get, html, parse, reHTopened, reHTopening, reHTproto, reId, reJT, typeIsArray;
     reId = /^\#[\w-]+$/;
     reJT = /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g;
     reHTproto = /<\s*([\w-]+)(?:\s+([\w-]*)(?:=((?:"[^"]+")|(?:'[^']+')|[\w-]+))?)*/.source;
@@ -27,12 +27,15 @@
     if (tpl.match && tpl.match(reId)) {
       tpl = document.getElementById(tpl.substring(1)).innerHTML;
     }
+    typeIsArray = Array.isArray || function(value) {
+      return {}.toString.call(value) === '[object Array]';
+    };
     get = function(v, context) {
       context = context || self.model;
       return eval('context' + (v === '.' ? '' : '.' + v));
     };
     parse = function(tpl, context, pos, openTag) {
-      var emit, out, tag, _ref;
+      var collection, emit, i, item, out, s, tag, val, _i, _len, _ref;
       out = '';
       emit = function(s) {
         var htag;
@@ -46,27 +49,55 @@
         return out += s;
       };
       while (tag = reJT.exec(tpl)) {
+        console.log(tag[0]);
         if (tag[2] === '/') {
           if (openTag && tag[3] !== openTag[3]) {
             throw 'Expected {{/' + openTag[3] + '}}, got ' + tag[0];
           }
-          console.log('>>> end block');
           emit();
           return out;
         }
         if (!tag[2]) {
-          console.log('var >>> ' + tag[0]);
           emit();
           emit(get(tag[3], context));
         }
         if ((_ref = tag[2]) === '#' || _ref === '^') {
-          console.log('block >>> ' + tag[0]);
           emit();
+          val = get(tag[3], context);
+          pos = reJT.lastIndex;
+          if (!val) {
+            s = parse(tpl, val, pos, tag);
+            pos = reJT.lastIndex;
+            emit(tag[2] === '#' ? '' : s);
+          } else if (val && tag[2] === '#') {
+            if (val.length === 0) {
+              parse(tpl, val, pos, tag);
+            }
+            collection = typeIsArray(val) ? val : [val];
+            for (i = _i = 0, _len = collection.length; _i < _len; i = ++_i) {
+              item = collection[i];
+              emit();
+              emit(parse(tpl, item, pos, tag));
+              if (i < collection.length - 1) {
+                reJT.lastIndex = pos;
+              }
+            }
+            pos = reJT.lastIndex;
+          } else if (val && tag[2] === '^') {
+            s = parse(tpl, val, pos, tag);
+            pos = reJT.lastIndex;
+            emit(val || val.length ? '' : s);
+          } else {
+            throw 'Internal error, tag ' + tag[0];
+          }
         }
       }
       return out + tpl.slice(pos);
     };
     html = parse(tpl, model, 0);
+    if (target) {
+      target.innerHTML = html;
+    }
     if (!target) {
       return html;
     }
