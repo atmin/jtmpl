@@ -222,10 +222,11 @@ Showcase of all features, tests
 			};
 		</script>
 		<script src="js/jtmpl.js"></script>
+		<script>jtmpl('#jtmpl', '#jtmpl', model)</script>
 
 		<h2>QUnit Tests</h2>
 		<div id="qunit"></div>
 		<div id="qunit-fixture"></div>
-		<script src="js/jtmpl-tests.js"></script>
+		<script src="js/tests.js"></script>
 	</body>
 	</html>

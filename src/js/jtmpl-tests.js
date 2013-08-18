@@ -3,6 +3,8 @@ function $(s) {
 }
 
 test('tests', function() {
+
+	equal(jtmpl('tpl{{a}}', { a: 'A'}), 'tplA', 'var substitution OK')
  
 	// equal($('ul')[0].querySelectorAll('li').length, model.array.length, 'ul[0] model.array.length items found');
 	// equal($('ul')[1].querySelectorAll('li').length, model.objArray.length, 'ul[1] model.objArray.length items found');

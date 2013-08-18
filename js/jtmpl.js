@@ -1,59 +1,70 @@
 (function() {
   window.jtmpl = function(target, tpl, model) {
-    var bind, html, parse, reHTopened, reHTopening, reHTproto, reId, reJT;
+    var bind, get, html, parse, reHTopened, reHTopening, reHTproto, reId, reJT;
     reId = /^\#[\w-]+$/;
     reJT = /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g;
     reHTproto = /<\s*([\w-]+)(?:\s+([\w-]*)(?:=((?:"[^"]+")|(?:'[^']+')|[\w-]+))?)*/.source;
     reHTopened = new RegExp(reHTproto + '(>)?\\s*$');
     reHTopening = new RegExp(reHTproto + '\\s*>');
+    if (target === void 0) {
+      return {
+        a: function(a) {
+          return a;
+        }
+      };
+    }
     if (typeof target === 'string' && typeof tpl === 'object' && model === void 0) {
-      tpl = target;
       model = tpl;
+      tpl = target;
       target = null;
     }
     if (typeof target === 'string' && target.match(reId)) {
       target = document.getElementById(target.substring(1));
     }
-    if (target.nodeName && !tpl) {
-      return target._jtmpl;
-    }
     if (!model || typeof model !== 'object') {
       throw 'model should be object';
     }
-    if (tpl.match && tpl.match(matchElementId)) {
+    if (tpl.match && tpl.match(reId)) {
       tpl = document.getElementById(tpl.substring(1)).innerHTML;
     }
-    parse = function(tpl, model, pos, openTag) {
-      var emit, tag, _ref, _results;
-      emit = function() {
-        var htag, s;
-        s = tpl.slice(pos, reHT.lastIndex - (tag && tag[0] || '').length);
+    get = function(v, context) {
+      context = context || self.model;
+      return eval('context' + (v === '.' ? '' : '.' + v));
+    };
+    parse = function(tpl, context, pos, openTag) {
+      var emit, out, tag, _ref;
+      out = '';
+      emit = function(s) {
+        var htag;
+        if (s) {
+          return out += s;
+        }
+        s = tpl.slice(pos, reJT.lastIndex - (tag && tag[0] || '').length);
         reHTopened.lastIndex = 0;
         htag = reHTopened.exec(s);
-        pos = reHT.lastIndex;
-        return console.log('\n>\n' + s + '\n:' + htag);
+        pos = reJT.lastIndex;
+        return out += s;
       };
-      _results = [];
-      while (tag = reHT.exec(tpl)) {
+      while (tag = reJT.exec(tpl)) {
         if (tag[2] === '/') {
           if (openTag && tag[3] !== openTag[3]) {
             throw 'Expected {{/' + openTag[3] + '}}, got ' + tag[0];
           }
           console.log('>>> end block');
           emit();
+          return out;
         }
         if (!tag[2]) {
           console.log('var >>> ' + tag[0]);
           emit();
+          emit(get(tag[3], context));
         }
         if ((_ref = tag[2]) === '#' || _ref === '^') {
           console.log('block >>> ' + tag[0]);
-          _results.push(emit());
-        } else {
-          _results.push(void 0);
+          emit();
         }
       }
-      return _results;
+      return out + tpl.slice(pos);
     };
     html = parse(tpl, model, 0);
     if (!target) {
@@ -63,7 +74,14 @@
   };
 
 }).call(this);
-;
+
+
+
+
+
+
+
+
 /*
   Tested against Chromium build with Object.observe and acts EXACTLY the same,
   though Chromium build is MUCH faster

@@ -5,12 +5,11 @@ module.exports = function(grunt) {
 
     concat: {
       options: {
-        separator: ';\n'
+        separator: '\n\n\n\n\n\n\n\n'
       },
       dist: {
-        // src: ['src/**/jtmpl.js', 'components/Object.observe/Object.observe.poly.js'],
-        src: ['js/jtmpl.js', 'components/Object.observe/Object.observe.poly.js'],
-        dest: 'js/jtmpl.js'
+        src: ['js/<%= pkg.name %>.js', 'components/Object.observe/Object.observe.poly.js'],
+        dest: 'js/<%= pkg.name %>.js'
       }
     },
 
@@ -30,7 +29,7 @@ module.exports = function(grunt) {
     },
 
     jshint: {
-      files: ['gruntfile.js', 'src/**/*.js', 'test/**/*.js'],
+      files: ['gruntfile.js'],
       options: {
         // options here to override JSHint defaults
         globals: {
@@ -45,7 +44,8 @@ module.exports = function(grunt) {
     coffee: {
       compile: {
         files: {
-          'js/jtmpl.js': ['src/coffee/*.coffee']
+          'js/jtmpl.js': ['src/coffee/*.coffee'],
+          'js/tests.js': ['src/test/*.coffee']
         }
       }
     },    
@@ -58,13 +58,13 @@ module.exports = function(grunt) {
     },
 
     watch: {
-      // jshint: {
-      //   files: ['<%= jshint.files %>'],
-      //   tasks: ['jshint', 'concat', 'uglify', 'copy:tests']
-      // },
+      jshint: {
+        files: ['<%= jshint.files %>'],
+        tasks: ['jshint', 'concat', 'uglify', 'copy:tests']
+      },
       coffee: {
-        files: ['src/coffee/*.coffee'],
-        tasks: ['coffee', 'concat', 'uglify', 'copy:tests']
+        files: ['src/coffee/*.coffee', 'src/test/*.coffee'],
+        tasks: ['coffee', 'concat', 'uglify']
       },
       less: {
         files: ['src/less/*.less'],
@@ -97,18 +97,12 @@ module.exports = function(grunt) {
       main: { 
         files: [
           {src: 'README.md', dest: 'kitchensink.lit.md'},
-          {src: 'src/js/jtmpl-tests.js', dest: 'js/jtmpl-tests.js'},
           {src: 'components/qunit/qunit/qunit.js', dest: 'js/qunit.js'},
           {src: 'components/qunit/qunit/qunit.css', dest: 'css/qunit.css'},
           {src: 'components/Object.observe/Object.observe.poly.js', dest: 'js/Object.observe.poly.js'},
           {src: 'components/highlightjs/highlight.pack.js', dest: 'js/highlight.min.js'},
           {src: 'components/highlightjs/styles/solarized_dark.css', dest: 'css/highlight.css'},
           {src: 'components/baseline/examples/baseline.css', dest: 'css/baseline.css'}
-        ]
-      },
-      tests: {
-        files: [
-          {src: 'src/js/jtmpl-tests.js', dest: 'js/jtmpl-tests.js'}
         ]
       }
     },
@@ -132,14 +126,7 @@ module.exports = function(grunt) {
         }]
       }
     },
-
-    'gh-pages': {
-      options: {
-        base: 'dist'
-      },
-      src: ['*.html', 'js/**/*', 'css/**/*']
-    },
-
+    
     clean: ['kitchensink', 'kitchensink.lit.md']    
 
   });
