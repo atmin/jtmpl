@@ -23,37 +23,28 @@ When model changes, DOM is updated and vice versa.
 `jtmpl` accepts tags in HTML comments, so your template can be valid, empty HTML.
 
 
-Facts
------
+Details
+-------
 
-* it's a templating engine with very simple, but powerful [syntax](http://mustache.github.io)
+* it's a templating engine with simple, but powerful [syntax](http://mustache.github.io)
 	
-	__`jtmpl('Hello, {{who}}', { who: 'server' })`__ returns "Hello, server"
+		> jtmpl('Hello, <span>{{who}}</span>', { who: 'server' })
+
+		Hello, <span data-jtmpl='...'>server</span>
+
+	* _fundamental limitation is the contents of each [section](http://mustache.github.io/mustache.5.html) must be valid structural HTML, you cannot freely mix Mustache and HTML tags_
+
+	* _temporary limitation is partials are not currently supported, plans are to support id-based and URL-based partials_
 
 * it's a [MVC](http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) micro-framework for the browser
 
-	__`jtmpl('#target-id', '#template-id', model)`__ does all the magic
-
-* based on [Object.observe](http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe)
-
-* no dependencies, [polyfill](https://github.com/jdarling/Object.observe) built-in
-
-* IE 8+, Firefox, Chrome, Opera
-
-* Downloads: [jtmpl.coffee](src/coffee/jtmpl.coffee), [jtmpl.js](js/jtmpl.js), [jtmpl.min.js](js/jtmpl.min.js)
-
-
-
-Hello, browser
---------------
-
-1. View
+		<!-- View -->
 		<div id=jtmpl data-model=model>
 			<span>{{field}}</span>
 			<a href=# onclick={{eventHandler}}>set "bar"</a>
 		<div>
 
-2. Model and Controller
+		<!-- Model and Controller -->
 		<script>
 			model = {
 				field: 'foo',
@@ -63,8 +54,19 @@ Hello, browser
 			}
 		</script>
 
-3. do the dirty work (`jtmpl` will detect `div[id=jtmpl][data-model=model]`)
+		<!-- do the dirty work (`jtmpl` will detect `div[id=jtmpl][data-model=model]`) -->
 		<script src="js/jtmpl.min.js"></script>
+
+		<!-- or to invoke manually: `jtmpl('#target-id', '#template-id', model)` -->
+
+* based on [Object.observe](http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe)
+
+* no dependencies, [polyfill](https://github.com/jdarling/Object.observe) built-in
+
+* IE 8+, Firefox, Chrome, Opera
+
+* Downloads: [jtmpl.coffee](src/coffee/jtmpl.coffee), [jtmpl.js](js/jtmpl.js), [jtmpl.min.js](js/jtmpl.min.js)
+
 
 
 

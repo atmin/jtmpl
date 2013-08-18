@@ -7,6 +7,7 @@
     		body {padding: 1% 7% 0 7%; color:#586e75}
     		h1 em {color:#DDD; font-style:normal}
             h2 {margin-top:64px}
+            ul {margin-bottom:32px}
             footer {margin:40px 0 10px}
     	</style>
         <title>jtmpl&mdash;MVVM Templating Engine for the Browser</title>
@@ -28,13 +29,40 @@
 <p><code>jtmpl</code> renders Mustache-compatible template using a <code>model</code> object and automatically binds fields (<code>model</code> properties) and events (<code>model</code> functions) to the generated DOM elements.</p>
 <p>When model changes, DOM is updated and vice versa. </p>
 <p><code>jtmpl</code> accepts tags in HTML comments, so your template can be valid, empty HTML.</p>
-<h2>Facts</h2>
+<h2>Details</h2>
 <ul>
-<li><p>it&#39;s a templating engine with very simple, but powerful <a href="http://mustache.github.io">syntax</a></p>
-<p>  <strong><code>jtmpl(&#39;Hello, {{who}}&#39;, { who: &#39;server&#39; })</code></strong> returns &quot;Hello, server&quot;</p>
+<li><p>it&#39;s a templating engine with simple, but powerful <a href="http://mustache.github.io">syntax</a></p>
+<pre><code>  &gt; jtmpl(&#39;Hello, &lt;span&gt;{{who}}&lt;/span&gt;&#39;, { who: &#39;server&#39; })
+
+  Hello, &lt;span data-jtmpl=&#39;...&#39;&gt;server&lt;/span&gt;</code></pre>
+<ul>
+<li><p><em>fundamental limitation is the contents of each <a href="http://mustache.github.io/mustache.5.html">section</a> must be valid structural HTML, you cannot freely mix Mustache and HTML tags</em></p>
+</li>
+<li><p><em>temporary limitation is partials are not currently supported, plans are to support id-based and URL-based partials</em></p>
+</li>
+</ul>
 </li>
 <li><p>it&#39;s a <a href="http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller">MVC</a> micro-framework for the browser</p>
-<p>  <strong><code>jtmpl(&#39;#target-id&#39;, &#39;#template-id&#39;, model)</code></strong> does all the magic</p>
+<pre><code>  &lt;!-- View --&gt;
+  &lt;div id=jtmpl data-model=model&gt;
+      &lt;span&gt;{{field}}&lt;/span&gt;
+      &lt;a href=# onclick={{eventHandler}}&gt;set &quot;bar&quot;&lt;/a&gt;
+  &lt;div&gt;
+
+  &lt;!-- Model and Controller --&gt;
+  &lt;script&gt;
+      model = {
+          field: &#39;foo&#39;,
+          eventHandler: function() {
+              this.field = &#39;bar&#39;;
+          }
+      }
+  &lt;/script&gt;
+
+  &lt;!-- do the dirty work (`jtmpl` will detect `div[id=jtmpl][data-model=model]`) --&gt;
+  &lt;script src=&quot;js/jtmpl.min.js&quot;&gt;&lt;/script&gt;
+
+  &lt;!-- or to invoke manually: `jtmpl(&#39;#target-id&#39;, &#39;#template-id&#39;, model)` --&gt;</code></pre>
 </li>
 <li><p>based on <a href="http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe">Object.observe</a></p>
 </li>
@@ -45,28 +73,6 @@
 <li><p>Downloads: <a href="src/coffee/jtmpl.coffee">jtmpl.coffee</a>, <a href="js/jtmpl.js">jtmpl.js</a>, <a href="js/jtmpl.min.js">jtmpl.min.js</a></p>
 </li>
 </ul>
-<h2>Hello, browser</h2>
-<ol>
-<li><p>View</p>
-<pre><code> &lt;div id=jtmpl data-model=model&gt;
-     &lt;span&gt;{{field}}&lt;/span&gt;
-     &lt;a href=# onclick={{eventHandler}}&gt;set &quot;bar&quot;&lt;/a&gt;
- &lt;div&gt;</code></pre>
-</li>
-<li><p>Model and Controller</p>
-<pre><code> &lt;script&gt;
-     model = {
-         field: &#39;foo&#39;,
-         eventHandler: function() {
-             this.field = &#39;bar&#39;;
-         }
-     }
- &lt;/script&gt;</code></pre>
-</li>
-<li><p>do the dirty work (<code>jtmpl</code> will detect <code>div[id=jtmpl][data-model=model]</code>)</p>
-<pre><code> &lt;script src=&quot;js/jtmpl.min.js&quot;&gt;&lt;/script&gt;</code></pre>
-</li>
-</ol>
 <h2>Kitchen Sink</h2>
 <p>Showcase of all features, tests</p>
 <p><a href="kitchensink.html">Link to example</a></p>
