@@ -14,7 +14,7 @@
     </head>
     <body>
     	<a href="https://github.com/atmin/jtmpl"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png" alt="Fork me on GitHub"></a>
-        <h1><em><code>{{</code></em> <code>jtmpl</code> <em><code>}}</code></em><br>JavaScript MVC micro-framework</h1>
+        <h1><em><code>{{</code></em> <code>jtmpl</code> <em><code>}}</code></em><br>JavaScript MV micro-framework</h1>
 <p><em>Code is work in progress, feel free to explore concept</em></p>
 <h2>Why</h2>
 <ul>
@@ -26,15 +26,20 @@
 </li>
 </ul>
 <h2>How</h2>
-<p><code>jtmpl</code> renders Mustache-compatible template using a <code>model</code> object and automatically binds fields (<code>model</code> properties) and events (<code>model</code> functions) to the generated DOM elements.</p>
-<p>When model changes, DOM is updated and vice versa. </p>
-<p><code>jtmpl</code> accepts tags in HTML comments, so your template can be valid HTML.</p>
+<p><code>jtmpl</code>:</p>
+<ol>
+<li><p>renders Mustache-compatible template using a <code>model</code> object into a valid HTML with added <code>data-jtmpl</code> attributes (<code>Stage1</code> can be processed at server-side)</p>
+</li>
+<li><p>using information from <code>Stage1</code> binds DOM elements properties to <code>model</code> properties, so your model is the <a href="http://en.wikipedia.org/wiki/Single_Source_of_Truth">single source of truth</a></p>
+</li>
+</ol>
+<p><code>jtmpl</code> takes care of the conversion of templates to DOM elements and all the event handling needed to keep them in sync with <code>model</code></p>
 <h2>Details</h2>
 <ul>
 <li><p>it&#39;s a templating engine with simple, but powerful <a href="http://mustache.github.io">syntax</a></p>
-<pre><code>  &gt; jtmpl(&#39;Hello, &lt;span&gt;{{who}}&lt;/span&gt;&#39;, { who: &#39;server&#39; })
+<pre><code>  &gt; jtmpl(&#39;Hello, {{who}}&#39;, { who: &#39;server&#39; })
 
-  Hello, &lt;span data-jtmpl=&#39;...&#39;&gt;server&lt;/span&gt;</code></pre>
+  Hello, &lt;span data-jtmpl=&quot;innerHTML=who&quot;&gt;server&lt;/span&gt;</code></pre>
 <ul>
 <li><p><em>fundamental limitation is the contents of each <a href="http://mustache.github.io/mustache.5.html">section</a> must be valid structural HTML, you cannot freely mix Mustache and HTML tags</em></p>
 </li>
@@ -42,19 +47,19 @@
 </li>
 </ul>
 </li>
-<li><p>it&#39;s a <a href="http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller">MVC</a> micro-framework for the browser</p>
+<li><p>it&#39;s a <a href="http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller">MV(C)</a> micro-framework for the browser</p>
 <pre><code>  &lt;!-- View --&gt;
   &lt;div id=jtmpl data-model=model&gt;
-      &lt;span&gt;{{field}}&lt;/span&gt;
-      &lt;a href=# onclick={{eventHandler}}&gt;set &quot;bar&quot;&lt;/a&gt;
+      Hello, {{field}}
+      &lt;button onclick={{eventHandler}}&gt;Shout&lt;/button&gt;
   &lt;div&gt;
 
-  &lt;!-- Model and Controller --&gt;
+  &lt;!-- Model (View is controlled implicitly) --&gt;
   &lt;script&gt;
       model = {
-          field: &#39;foo&#39;,
+          field: &#39;browser&#39;,
           eventHandler: function() {
-              this.field = &#39;bar&#39;;
+              this.field = &#39;BROWSER&#39;;
           }
       }
   &lt;/script&gt;
@@ -62,7 +67,9 @@
   &lt;!-- do the dirty work (`jtmpl` will detect `div[id=jtmpl][data-model=model]`) --&gt;
   &lt;script src=&quot;js/jtmpl.min.js&quot;&gt;&lt;/script&gt;
 
-  &lt;!-- or to invoke manually: `jtmpl(&#39;#target-id&#39;, &#39;#template-id&#39;, model)` --&gt;</code></pre>
+  &lt;!-- or to invoke manually: `jtmpl(&#39;#target-id&#39;, &#39;template contents or &quot;#template-id&quot;&#39;, model)` 
+       As `Stage1` is non-destructive, template contents can be already rendered by server,
+       this will save the client some processing --&gt;</code></pre>
 </li>
 <li><p>based on <a href="http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe">Object.observe</a></p>
 </li>
@@ -120,14 +127,14 @@
         &lt;h3&gt;innerHTML&amp;mdash;&lt;code&gt;model.innerHTML&lt;/code&gt;&lt;/h3&gt;
         &lt;div&gt;
             &lt;!-- {{{innerHTML}}} --&gt;     
-            &lt;!-- previous comment will be stripped, but this won&#39;t --&gt;
+            &lt;!-- `jtmpl` accepts tags in HTML comments and automatically strips them --&gt;
         &lt;/div&gt;
 
         &lt;h3&gt;Data binding&amp;mdash;&lt;code&gt;model.field&lt;/code&gt;&lt;/h3&gt;
         &lt;label for=&quot;field&quot;&gt;Enter something&lt;/label&gt; &lt;input id=&quot;field&quot; value={{field}}&gt;
         &lt;p&gt;
             {{#field}}
-            You entered &quot;&lt;span&gt;{{field}}&lt;/span&gt;&quot;. Delete it and this message will disappear
+            You entered &quot;{{field}}&quot;. Delete it and this message will disappear
             {{/field}}
         &lt;/p&gt;
 
@@ -224,6 +231,7 @@
         };
     &lt;/script&gt;
     &lt;script src=&quot;js/jtmpl.js&quot;&gt;&lt;/script&gt;
+    &lt;!-- hey, this next line is temporarily here, it&#39;s work in progress, remember? :) --&gt;
     &lt;script&gt;jtmpl(&#39;#jtmpl&#39;, &#39;#jtmpl&#39;, model)&lt;/script&gt;
 
     &lt;h2&gt;QUnit Tests&lt;/h2&gt;

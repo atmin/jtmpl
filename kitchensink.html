@@ -41,14 +41,14 @@
 		<h3>innerHTML&mdash;<code>model.innerHTML</code></h3>
 		<div>
 			<!-- {{{innerHTML}}} -->     
-			<!-- previous comment will be stripped, but this won't -->
+			<!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
 		</div>
 
 		<h3>Data binding&mdash;<code>model.field</code></h3>
 		<label for="field">Enter something</label> <input id="field" value={{field}}>
 		<p>
 			{{#field}}
-			You entered "<span>{{field}}</span>". Delete it and this message will disappear
+			You entered "{{field}}". Delete it and this message will disappear
 			{{/field}}
 		</p>
 
@@ -145,6 +145,7 @@
 		};
 	</script>
 	<script src="js/jtmpl.js"></script>
+	<!-- hey, this next line is temporarily here, it's work in progress, remember? :) -->
 	<script>jtmpl('#jtmpl', '#jtmpl', model)</script>
 
 	<h2>QUnit Tests</h2>

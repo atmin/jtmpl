@@ -48,7 +48,7 @@ window.jtmpl = (target, tpl, model) ->
 		}
 
 	# `jtmpl(tpl, model)`?
-	if typeof target == 'string' and typeof tpl == 'object' and model == undefined
+	if typeof target is 'string' and typeof tpl is 'object' and model == undefined
 		model = tpl
 		tpl = target
 		target = null		
@@ -57,7 +57,7 @@ window.jtmpl = (target, tpl, model) ->
 	if typeof target == 'string' and target.match(reId)
 		target = document.getElementById(target.substring(1))
 	
-	if not model or typeof model != 'object'
+	if not model or typeof model isnt 'object'
 		throw 'model should be object'
 
 	# `jtmpl('#template-id', ...)` or `jtmpl(element, '#template-id', ...)`
@@ -69,12 +69,12 @@ window.jtmpl = (target, tpl, model) ->
 
 	# Check if object is array
 	typeIsArray = 
-		Array.isArray or (value) -> {}.toString.call( value ) is '[object Array]'
+		Array.isArray or (value) -> {}.toString.call(value) is '[object Array]'
 
 	# Get value
 	get = (v, context) ->
 		context = context or self.model
-		eval 'context' + (if v == '.' then '' else '.' + v)
+		eval 'context' + (if v is '.' then '' else '.' + v)
 
 
 	# Parse template, remove jtmpl tags, inject data-jtmpl attributes
@@ -94,7 +94,7 @@ window.jtmpl = (target, tpl, model) ->
 			console.log(tag[0])
 
 			# `{{/block_tag_end}}`?
-			if tag[2] == '/'
+			if tag[2] is '/'
 				if openTag and tag[3] isnt openTag[3]
 					throw 'Expected {{/' + openTag[3] + '}}, got ' + tag[0]
 				emit()
@@ -147,8 +147,6 @@ window.jtmpl = (target, tpl, model) ->
 				# oops
 				else
 					throw 'Internal error, tag ' + tag[0]
-
-
 
 
 		return out + tpl.slice(pos)

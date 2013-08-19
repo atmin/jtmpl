@@ -1,4 +1,4 @@
-_`{{`_ `jtmpl` _`}}`_<br>JavaScript MVC micro-framework
+_`{{`_ `jtmpl` _`}}`_<br>JavaScript MV micro-framework
 =================================================
 
 _Code is work in progress, feel free to explore concept_
@@ -16,11 +16,14 @@ Why
 How
 ---
 
-`jtmpl` renders Mustache-compatible template using a `model` object and automatically binds fields (`model` properties) and events (`model` functions) to the generated DOM elements.
+`jtmpl`:
 
-When model changes, DOM is updated and vice versa. 
+1. renders Mustache-compatible template using a `model` object into a valid HTML with added `data-jtmpl` attributes (`Stage1` can be processed at server-side)
 
-`jtmpl` accepts tags in HTML comments, so your template can be valid HTML.
+2. using information from `Stage1` binds DOM elements properties to `model` properties, so your model is the [single source of truth](http://en.wikipedia.org/wiki/Single_Source_of_Truth)
+
+
+`jtmpl` takes care of the conversion of templates to DOM elements and all the event handling needed to keep them in sync with `model`
 
 
 Details
@@ -28,28 +31,28 @@ Details
 
 * it's a templating engine with simple, but powerful [syntax](http://mustache.github.io)
 	
-		> jtmpl('Hello, <span>{{who}}</span>', { who: 'server' })
+		> jtmpl('Hello, {{who}}', { who: 'server' })
 
-		Hello, <span data-jtmpl='...'>server</span>
+		Hello, <span data-jtmpl="innerHTML=who">server</span>
 
 	* _fundamental limitation is the contents of each [section](http://mustache.github.io/mustache.5.html) must be valid structural HTML, you cannot freely mix Mustache and HTML tags_
 
 	* _temporary limitation is partials are not currently supported, plans are to support id-based and URL-based partials_
 
-* it's a [MVC](http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) micro-framework for the browser
+* it's a [MV(C)](http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) micro-framework for the browser
 
 		<!-- View -->
 		<div id=jtmpl data-model=model>
-			<span>{{field}}</span>
-			<a href=# onclick={{eventHandler}}>set "bar"</a>
+			Hello, {{field}}
+			<button onclick={{eventHandler}}>Shout</button>
 		<div>
 
-		<!-- Model and Controller -->
+		<!-- Model (View is controlled implicitly) -->
 		<script>
 			model = {
-				field: 'foo',
+				field: 'browser',
 				eventHandler: function() {
-					this.field = 'bar';
+					this.field = 'BROWSER';
 				}
 			}
 		</script>
@@ -57,7 +60,9 @@ Details
 		<!-- do the dirty work (`jtmpl` will detect `div[id=jtmpl][data-model=model]`) -->
 		<script src="js/jtmpl.min.js"></script>
 
-		<!-- or to invoke manually: `jtmpl('#target-id', '#template-id', model)` -->
+		<!-- or to invoke manually: `jtmpl('#target-id', 'template contents or "#template-id"', model)` 
+			 As `Stage1` is non-destructive, template contents can be already rendered by server,
+			 this will save the client some processing -->
 
 * based on [Object.observe](http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe)
 
@@ -121,14 +126,14 @@ Showcase of all features, tests
 			<h3>innerHTML&mdash;<code>model.innerHTML</code></h3>
 			<div>
 				<!-- {{{innerHTML}}} -->     
-				<!-- previous comment will be stripped, but this won't -->
+				<!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
 			</div>
 
 			<h3>Data binding&mdash;<code>model.field</code></h3>
 			<label for="field">Enter something</label> <input id="field" value={{field}}>
 			<p>
 				{{#field}}
-				You entered "<span>{{field}}</span>". Delete it and this message will disappear
+				You entered "{{field}}". Delete it and this message will disappear
 				{{/field}}
 			</p>
 
@@ -225,6 +230,7 @@ Showcase of all features, tests
 			};
 		</script>
 		<script src="js/jtmpl.js"></script>
+		<!-- hey, this next line is temporarily here, it's work in progress, remember? :) -->
 		<script>jtmpl('#jtmpl', '#jtmpl', model)</script>
 
 		<h2>QUnit Tests</h2>
