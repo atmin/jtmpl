@@ -3,7 +3,7 @@ _`{{`_ `jtmpl` _`}}`_
 
 #### Humanistic JavaScript MV framework
 
-\  
+.  
  _Code is work in progress, feel free to explore concept_
 
 Why
@@ -19,14 +19,15 @@ Why
 How
 ---
 
-`jtmpl`:
+1. Render Mustache-compatible template using a `model` object into a valid HTML with added metadata (generated `span` tags where necessary, `data-jtmpl` attributes)
 
-1. renders Mustache-compatible template using a `model` object into a valid HTML with added `data-jtmpl` attributes (`Stage1` can be processed at server-side)
+	`Stage1` can be processed server-side or browser-side
 
-2. using information from `Stage1` binds DOM elements properties to `model` properties, so your model is the [single source of truth](http://en.wikipedia.org/wiki/Single_Source_of_Truth)
+2. Using metadata from `Stage1` bind DOM elements properties to `model` properties, so your model is the [single source of truth](http://en.wikipedia.org/wiki/Single_Source_of_Truth)
 
+.
 
-`jtmpl` takes care of the conversion of templates to DOM elements and all the event handling needed to keep them in sync with `model`
+ `jtmpl` _takes care of the conversion of templates to DOM elements and all the event handling needed to keep them in sync with_ `model`
 
 
 Details
@@ -38,9 +39,10 @@ Details
 
 		Hello, <span data-jtmpl="innerHTML=who">server</span>
 
-	* _fundamental limitation is the contents of each [section](http://mustache.github.io/mustache.5.html) must be valid structural HTML, you cannot freely mix Mustache and HTML tags_
+	_Fundamental limitation is the contents of each [section](http://mustache.github.io/mustache.5.html) must be valid structural HTML, you cannot freely mix Mustache and HTML tags_
 
-	* _temporary limitation is partials are not currently supported, plans are to support id-based and URL-based partials_
+	_Temporary limitation is partials are not currently supported, plans are to support id-based and URL-based partials_
+
 
 * it's a [MV(C)](http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) micro-framework for the browser
 
@@ -63,7 +65,7 @@ Details
 		<!-- do the dirty work (`jtmpl` will detect `div[id=jtmpl][data-model=model]`) -->
 		<script src="js/jtmpl.min.js"></script>
 
-    _or, to invoke manually:_ `jtmpl('#target-id', 'template contents or "#template-id"', model)` 
+    _Or, to invoke manually:_ `jtmpl('#target-id', 'template contents or "#template-id"', model)` 
 
     _As `Stage1` is non-destructive, template contents can be already prerendered by server, this will save the client some processing_
 
