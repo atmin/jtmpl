@@ -14,8 +14,9 @@
     </head>
     <body>
     	<a href="https://github.com/atmin/jtmpl"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png" alt="Fork me on GitHub"></a>
-        <h1><em><code>{{</code></em> <code>jtmpl</code> <em><code>}}</code></em><br>JavaScript MV micro-framework</h1>
-<p><em>Code is work in progress, feel free to explore concept</em></p>
+        <h1><em><code>{{</code></em> <code>jtmpl</code> <em><code>}}</code></em></h1>
+<h4>Humanistic JavaScript MV framework</h4>
+<p>\<br> <em>Code is work in progress, feel free to explore concept</em></p>
 <h2>Why</h2>
 <ul>
 <li><p>embrace <a href="http://en.wikipedia.org/wiki/Keep_it_simple">KISS</a> and <a href="http://en.wikipedia.org/wiki/Don&#39;t_repeat_yourself">DRY</a></p>
@@ -65,12 +66,12 @@
   &lt;/script&gt;
 
   &lt;!-- do the dirty work (`jtmpl` will detect `div[id=jtmpl][data-model=model]`) --&gt;
-  &lt;script src=&quot;js/jtmpl.min.js&quot;&gt;&lt;/script&gt;
-
-  &lt;!-- or to invoke manually: `jtmpl(&#39;#target-id&#39;, &#39;template contents or &quot;#template-id&quot;&#39;, model)` 
-       As `Stage1` is non-destructive, template contents can be already rendered by server,
-       this will save the client some processing --&gt;</code></pre>
+  &lt;script src=&quot;js/jtmpl.min.js&quot;&gt;&lt;/script&gt;</code></pre>
+<p>  <em>or, to invoke manually:</em> <code>jtmpl(&#39;#target-id&#39;, &#39;template contents or &quot;#template-id&quot;&#39;, model)</code> </p>
+<p>  <em>As <code>Stage1</code> is non-destructive, template contents can be already prerendered by server, this will save the client some processing</em></p>
 </li>
+</ul>
+<ul>
 <li><p>based on <a href="http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe">Object.observe</a></p>
 </li>
 <li><p>no dependencies, <a href="https://github.com/jdarling/Object.observe">polyfill</a> built-in</p>

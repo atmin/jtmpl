@@ -1,7 +1,10 @@
-_`{{`_ `jtmpl` _`}}`_<br>JavaScript MV micro-framework
-=================================================
+_`{{`_ `jtmpl` _`}}`_
+=====================
 
-_Code is work in progress, feel free to explore concept_
+#### Humanistic JavaScript MV framework
+
+\  
+ _Code is work in progress, feel free to explore concept_
 
 Why
 ---
@@ -60,9 +63,10 @@ Details
 		<!-- do the dirty work (`jtmpl` will detect `div[id=jtmpl][data-model=model]`) -->
 		<script src="js/jtmpl.min.js"></script>
 
-		<!-- or to invoke manually: `jtmpl('#target-id', 'template contents or "#template-id"', model)` 
-			 As `Stage1` is non-destructive, template contents can be already rendered by server,
-			 this will save the client some processing -->
+    _or, to invoke manually:_ `jtmpl('#target-id', 'template contents or "#template-id"', model)` 
+
+    _As `Stage1` is non-destructive, template contents can be already prerendered by server, this will save the client some processing_
+
 
 * based on [Object.observe](http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe)
 
