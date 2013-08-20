@@ -67,7 +67,7 @@
   &lt;!-- do the dirty work (`jtmpl` will detect `div[id=jtmpl][data-model=model]`) --&gt;
   &lt;script src=&quot;js/jtmpl.min.js&quot;&gt;&lt;/script&gt;</code></pre>
 <p>  <em>Or, to invoke manually:</em> <code>jtmpl(&#39;#target-id&#39;, &#39;template contents or &quot;#template-id&quot;&#39;, model)</code> </p>
-<p>  <em>As <code>Stage1</code> is non-destructive, template contents can be already prerendered by server, this will save the client some processing</em></p>
+<p>  <em>Template contents can be already prerendered by server, this will save the client some processing</em></p>
 </li>
 </ul>
 <ul>
@@ -102,6 +102,7 @@
 
         &lt;h1&gt;Kitchen Sink&lt;/h1&gt;
         &lt;h2&gt;Feature explorer&lt;/h2&gt;
+        &lt;a href=#qunit&gt;Tests&lt;/a&gt;
         &lt;p&gt;
             Feel free to modify &lt;code&gt;model&lt;/code&gt; from JS console and observe changes.
         &lt;/p&gt;
@@ -232,9 +233,9 @@
     &lt;/script&gt;
     &lt;script src=&quot;js/jtmpl.js&quot;&gt;&lt;/script&gt;
     &lt;!-- hey, this next line is temporarily here, it&#39;s work in progress, remember? :) --&gt;
-    &lt;script&gt;jtmpl(&#39;#jtmpl&#39;, &#39;#jtmpl&#39;, model)&lt;/script&gt;
+    &lt;script&gt;/*jtmpl(&#39;#jtmpl&#39;, &#39;#jtmpl&#39;, model)*/&lt;/script&gt;
 
-    &lt;h2&gt;QUnit Tests&lt;/h2&gt;
+    &lt;h2&gt;QUnit Blackbox Tests&lt;/h2&gt;
     &lt;div id=&quot;qunit&quot;&gt;&lt;/div&gt;
     &lt;div id=&quot;qunit-fixture&quot;&gt;&lt;/div&gt;
     &lt;script src=&quot;js/tests.js&quot;&gt;&lt;/script&gt;

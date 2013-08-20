@@ -1,18 +1,11 @@
 (function() {
   window.jtmpl = function(target, tpl, model) {
-    var bind, get, html, parse, reHTopened, reHTopening, reHTproto, reId, reJT, typeIsArray;
+    var bind, escapeHTML, html, isArray, isObject, parse, parseTag, reHTopened, reHTopening, reHTproto, reId, reJT;
     reId = /^\#[\w-]+$/;
     reJT = /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g;
     reHTproto = /<\s*([\w-]+)(?:\s+([\w-]*)(?:=((?:"[^"]+")|(?:'[^']+')|[\w-]+))?)*/.source;
     reHTopened = new RegExp(reHTproto + '(>)?\\s*$');
     reHTopening = new RegExp(reHTproto + '\\s*>');
-    if (target === void 0) {
-      return {
-        a: function(a) {
-          return a;
-        }
-      };
-    }
     if (typeof target === 'string' && typeof tpl === 'object' && model === void 0) {
       model = tpl;
       tpl = target;
@@ -27,16 +20,54 @@
     if (tpl.match && tpl.match(reId)) {
       tpl = document.getElementById(tpl.substring(1)).innerHTML;
     }
-    typeIsArray = Array.isArray || function(value) {
-      return {}.toString.call(value) === '[object Array]';
+    isArray = Array.isArray || function(val) {
+      return {}.toString.call(val) === '[object Array]';
     };
-    get = function(v, context) {
-      context = context || self.model;
-      return eval('context' + (v === '.' ? '' : '.' + v));
+    isObject = function(val) {
+      return val && typeof val === 'object';
     };
-    parse = function(tpl, context, pos, openTag) {
-      var collection, emit, i, item, out, s, tag, val, _i, _len, _ref;
-      out = '';
+    escapeHTML = function(val) {
+      return ((val != null) && val || '').toString().replace(/[&"<>\\]/g, function(s) {
+        switch (s) {
+          case '&':
+            return '&amp;';
+          case '\\':
+            return '\\\\';
+          case '"':
+            return '\"';
+          case '<':
+            return '&lt;';
+          case '>':
+            return '&gt;';
+          default:
+            return s;
+        }
+      });
+    };
+    parseTag = function(tag) {
+      return [
+        (function() {
+          switch (tag[2]) {
+            case '/':
+              return 'end';
+            case '#':
+              return 'section';
+            case '^':
+              return 'inverted_section';
+            case void 0:
+              if (tag[1] === '{') {
+                return 'unescaped_var';
+              } else {
+                return 'var';
+              }
+            default:
+              throw 'Internal error, tag ' + tag[0];
+          }
+        })(), tag[3]
+      ];
+    };
+    parse = function(tpl, context, pos, openTagName) {
+      var collection, emit, i, item, out, tag, tagName, tagType, val, _i, _len, _ref;
       emit = function(s) {
         var htag;
         if (s) {
@@ -48,48 +79,51 @@
         pos = reJT.lastIndex;
         return out += s;
       };
+      out = '';
       while (tag = reJT.exec(tpl)) {
-        console.log(tag[0]);
-        if (tag[2] === '/') {
-          if (openTag && tag[3] !== openTag[3]) {
-            throw 'Expected {{/' + openTag[3] + '}}, got ' + tag[0];
-          }
-          emit();
-          return out;
-        }
-        if (!tag[2]) {
-          emit();
-          emit(get(tag[3], context));
-        }
-        if ((_ref = tag[2]) === '#' || _ref === '^') {
-          emit();
-          val = get(tag[3], context);
-          pos = reJT.lastIndex;
-          if (!val) {
-            s = parse(tpl, val, pos, tag);
-            pos = reJT.lastIndex;
-            emit(tag[2] === '#' ? '' : s);
-          } else if (val && tag[2] === '#') {
-            if (val.length === 0) {
-              parse(tpl, val, pos, tag);
+        _ref = parseTag(tag), tagType = _ref[0], tagName = _ref[1];
+        emit();
+        switch (tagType) {
+          case 'end':
+            if (tagName !== openTagName) {
+              throw (!openTagName ? 'Unexpected ' : 'Expected {{/' + openTagName + '}}, got ') + tag[0];
             }
-            collection = typeIsArray(val) ? val : [val];
-            for (i = _i = 0, _len = collection.length; _i < _len; i = ++_i) {
-              item = collection[i];
-              emit();
-              emit(parse(tpl, item, pos, tag));
-              if (i < collection.length - 1) {
-                reJT.lastIndex = pos;
+            return out;
+          case 'var':
+            emit(escapeHTML(tagName === '.' ? context : context[tagName]));
+            break;
+          case 'unescaped_var':
+            emit(tagName === '.' ? context : context[tagName]);
+            break;
+          case 'section':
+            val = context[tagName];
+            pos = reJT.lastIndex;
+            if (!val || isArray(val) && !val.length) {
+              parse(tpl, val, pos, tagName);
+              pos = reJT.lastIndex;
+            } else {
+              collection = isArray(val) && val || [val];
+              for (i = _i = 0, _len = collection.length; _i < _len; i = ++_i) {
+                item = collection[i];
+                emit();
+                emit(parse(tpl, item, pos, tagName));
+                if (i < collection.length - 1) {
+                  reJT.lastIndex = pos;
+                }
               }
+              pos = reJT.lastIndex;
             }
+            break;
+          case 'inverted_section':
+            val = context[tagName];
             pos = reJT.lastIndex;
-          } else if (val && tag[2] === '^') {
-            s = parse(tpl, val, pos, tag);
-            pos = reJT.lastIndex;
-            emit(val || val.length ? '' : s);
-          } else {
-            throw 'Internal error, tag ' + tag[0];
-          }
+            if (!val || isArray(val) && !val.length) {
+              emit(parse(tpl, val, pos, tagName));
+              pos = reJT.lastIndex;
+            } else {
+              parse(tpl, val, pos, tagName);
+              pos = reJT.lastIndex;
+            }
         }
       }
       return out + tpl.slice(pos);

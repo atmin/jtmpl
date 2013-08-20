@@ -67,7 +67,7 @@ Details
 
     _Or, to invoke manually:_ `jtmpl('#target-id', 'template contents or "#template-id"', model)` 
 
-    _As `Stage1` is non-destructive, template contents can be already prerendered by server, this will save the client some processing_
+    _Template contents can be already prerendered by server, this will save the client some processing_
 
 
 * based on [Object.observe](http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe)
@@ -107,6 +107,7 @@ Showcase of all features, tests
 
 			<h1>Kitchen Sink</h1>
 			<h2>Feature explorer</h2>
+			<a href=#qunit>Tests</a>
 			<p>
 				Feel free to modify <code>model</code> from JS console and observe changes.
 			</p>
@@ -237,9 +238,9 @@ Showcase of all features, tests
 		</script>
 		<script src="js/jtmpl.js"></script>
 		<!-- hey, this next line is temporarily here, it's work in progress, remember? :) -->
-		<script>jtmpl('#jtmpl', '#jtmpl', model)</script>
+		<script>/*jtmpl('#jtmpl', '#jtmpl', model)*/</script>
 
-		<h2>QUnit Tests</h2>
+		<h2>QUnit Blackbox Tests</h2>
 		<div id="qunit"></div>
 		<div id="qunit-fixture"></div>
 		<script src="js/tests.js"></script>

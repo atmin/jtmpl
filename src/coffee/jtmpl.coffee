@@ -41,12 +41,6 @@ window.jtmpl = (target, tpl, model) ->
 
 	## Interface
 
-	# `jtmpl()`? return utility functions
-	if target == undefined
-		return {
-			a: (a) -> a
-		}
-
 	# `jtmpl(tpl, model)`?
 	if typeof target is 'string' and typeof tpl is 'object' and model == undefined
 		model = tpl
@@ -67,19 +61,43 @@ window.jtmpl = (target, tpl, model) ->
 
 	## Implementation
 
-	# Check if object is array
-	typeIsArray = 
-		Array.isArray or (value) -> {}.toString.call(value) is '[object Array]'
+	# Array?
+	isArray = 
+		Array.isArray or (val) -> {}.toString.call(val) is '[object Array]'
 
-	# Get value
-	get = (v, context) ->
-		context = context or self.model
-		eval 'context' + (if v is '.' then '' else '.' + v)
+
+	# Existing object?
+	isObject = (val) -> 
+		val and typeof val is 'object'
+
+
+	escapeHTML = (val) ->
+		(val? and val or '')
+			.toString()
+			.replace /[&"<>\\]/g, (s) ->
+				switch s
+					when '&' then '&amp;'
+					when '\\'then '\\\\'
+					when '"' then '\"'
+					when '<' then '&lt;'
+					when '>' then '&gt;'
+					else s
+
+
+	# Return [tagType, tagName] from regexp match
+	parseTag = (tag) ->
+		[switch tag[2]
+			when '/' then 'end'
+			when '#' then 'section'
+			when '^' then 'inverted_section'
+			when undefined then (if tag[1] is '{' then 'unescaped_var' else 'var')
+			else throw 'Internal error, tag ' + tag[0]
+		, tag[3]]
 
 
 	# Parse template, remove jtmpl tags, inject data-jtmpl attributes
-	parse = (tpl, context, pos, openTag) ->
-		out = ''
+	parse = (tpl, context, pos, openTagName) ->
+
 		emit = (s) ->
 			if s
 				return out += s
@@ -89,64 +107,62 @@ window.jtmpl = (target, tpl, model) ->
 			pos = reJT.lastIndex
 			out += s
 
+		# Accumulate output
+		out = ''
+
 		# Match jtmpl tags
 		while tag = reJT.exec(tpl)
-			console.log(tag[0])
 
-			# `{{/block_tag_end}}`?
-			if tag[2] is '/'
-				if openTag and tag[3] isnt openTag[3]
-					throw 'Expected {{/' + openTag[3] + '}}, got ' + tag[0]
-				emit()
+			[tagType, tagName] = parseTag(tag)
 
-				# Exit recursion
-				return out
+			emit()
 
-			# `{{var}}`?
-			if not tag[2]
-				emit()
-				emit(get(tag[3], context))
+			switch tagType
+				when 'end'
+					if tagName isnt openTagName
+						throw (if not openTagName then 'Unexpected ' else 'Expected {{/' + openTagName + '}}, got ') + tag[0]
+					# Exit recursion
+					return out
 
-			# `{{#block_tag_begin}}` or `{{^not_block_tag_begin}}`?
-			if tag[2] in ['#', '^']
+				when 'var'
+					emit(escapeHTML(if tagName is '.' then context else context[tagName]))
 
-				emit()
-				val = get(tag[3], context)
-				pos = reJT.lastIndex
+				when 'unescaped_var'
+					emit(if tagName is '.' then context else context[tagName])
 
-				# falsy value?
-				if not val
-					s = parse(tpl, val, pos, tag)
-					pos = reJT.lastIndex
-					emit(if tag[2] is '#' then '' else s)
-
-				# `{{#context_block}}` or `{{#enumerate_array}}`?
-				else if val and tag[2] is '#'
-
-					# skip loop body?
-					if val.length is 0
-						parse(tpl, val, pos, tag)
-
-					# emit loop body n times, n = 1 when type(model.block) is object,
-					# n = array.length when type(model.block) is array
-					collection = if typeIsArray val then val else [val]
-					for item, i in collection
-						emit()
-						emit(parse(tpl, item, pos, tag))
-						if i < collection.length - 1
-							reJT.lastIndex = pos
-
+				when 'section'
+					val = context[tagName]
 					pos = reJT.lastIndex
 
-				# `{{^output_falsy_block_or_array}}`?
-				else if val and tag[2] is '^'
-					s = parse(tpl, val, pos, tag)
-					pos = reJT.lastIndex
-					emit(if val or val.length then '' else s)
+					# falsy value or empty collection?
+					if not val or isArray(val) and not val.length
+						# discard section
+						parse(tpl, val, pos, tagName)
+						pos = reJT.lastIndex
+					else
+						# output section
+						collection = isArray(val) and val or [val]
+						for item, i in collection
+							emit()
+							emit(parse(tpl, item, pos, tagName))
+							if i < collection.length - 1
+								reJT.lastIndex = pos
+						pos = reJT.lastIndex
 
-				# oops
-				else
-					throw 'Internal error, tag ' + tag[0]
+				when 'inverted_section'
+					val = context[tagName]
+					pos = reJT.lastIndex
+
+					# falsy value or empty collection?
+					if not val or isArray(val) and not val.length
+						# output section
+						emit(parse(tpl, val, pos, tagName))
+						pos = reJT.lastIndex
+					else
+						# discard section
+						parse(tpl, val, pos, tagName)
+						pos = reJT.lastIndex
+
 
 
 		return out + tpl.slice(pos)
