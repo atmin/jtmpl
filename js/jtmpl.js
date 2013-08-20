@@ -99,7 +99,7 @@
             val = context[tagName];
             pos = reJT.lastIndex;
             if (!val || isArray(val) && !val.length) {
-              parse(tpl, val, pos, tagName);
+              parse(tpl, context, pos, tagName);
               pos = reJT.lastIndex;
             } else {
               collection = isArray(val) && val || [val];

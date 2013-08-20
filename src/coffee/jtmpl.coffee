@@ -137,7 +137,7 @@ window.jtmpl = (target, tpl, model) ->
 					# falsy value or empty collection?
 					if not val or isArray(val) and not val.length
 						# discard section
-						parse(tpl, val, pos, tagName)
+						parse(tpl, context, pos, tagName)
 						pos = reJT.lastIndex
 					else
 						# output section

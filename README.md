@@ -238,7 +238,7 @@ Showcase of all features, tests
 		</script>
 		<script src="js/jtmpl.js"></script>
 		<!-- hey, this next line is temporarily here, it's work in progress, remember? :) -->
-		<script>/*jtmpl('#jtmpl', '#jtmpl', model)*/</script>
+		<script>jtmpl('#jtmpl', '#jtmpl', model)</script>
 
 		<h2>QUnit Blackbox Tests</h2>
 		<div id="qunit"></div>
