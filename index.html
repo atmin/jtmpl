@@ -16,7 +16,8 @@
     	<a href="https://github.com/atmin/jtmpl"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png" alt="Fork me on GitHub"></a>
         <h1><em><code>{{</code></em> <code>jtmpl</code> <em><code>}}</code></em></h1>
 <h4>Humanistic JavaScript MV framework</h4>
-<p>.<br> <em>Code is work in progress, feel free to explore concept</em></p>
+<p><br>
+ <em>Code is work in progress, feel free to explore concept</em></p>
 <h2>Why</h2>
 <ul>
 <li><p>embrace <a href="http://en.wikipedia.org/wiki/Keep_it_simple">KISS</a> and <a href="http://en.wikipedia.org/wiki/Don&#39;t_repeat_yourself">DRY</a></p>
@@ -27,23 +28,45 @@
 </li>
 </ul>
 <h2>How</h2>
+<p>In a nutshell:</p>
 <ol>
-<li><p>Render Mustache-compatible template using a <code>model</code> object into a valid HTML with added metadata (generated <code>span</code> tags where necessary, <code>data-jtmpl</code> attributes)</p>
+<li><p>Compile Mustache-compatible template using a <code>model</code> object into a valid HTML string (with added metadata)</p>
 <p> <code>Stage1</code> can be processed server-side or browser-side</p>
 </li>
-<li><p>Using metadata from <code>Stage1</code> bind DOM elements properties to <code>model</code> properties, so your model is the <a href="http://en.wikipedia.org/wiki/Single_Source_of_Truth">single source of truth</a></p>
+<li><p>Using <code>Stage1</code> output generate DOM and bind elements properties to <code>model</code> properties, so your model is the <a href="http://en.wikipedia.org/wiki/Single_Source_of_Truth">single source of truth</a></p>
 </li>
 </ol>
-<p>.</p>
-<p> <code>jtmpl</code> <em>takes care of the conversion of templates to DOM elements and all the event handling needed to keep them in sync with</em> <code>model</code></p>
+<p><br>
+<code>jtmpl</code> <em>takes care of the conversion of templates to DOM elements and all the event handling needed to keep them in sync with</em> <code>model</code>.</p>
+<p><br>
+Other JS MV* frameworks require you either:</p>
+<ul>
+<li><p>explicitly specify via DOM element attributes how to do the binding</p>
+</li>
+<li><p>build DOM via code :(</p>
+</li>
+</ul>
+<p><code>jtmpl</code> enables you to assume: <em>I just have live templates</em></p>
 <h2>Details</h2>
 <ul>
-<li><p>it&#39;s a templating engine with simple, but powerful <a href="http://mustache.github.io">syntax</a></p>
+<li><p>it&#39;s a template compiler with simple, but powerful <a href="http://mustache.github.io">syntax</a></p>
 <pre><code>  &gt; jtmpl(&#39;Hello, {{who}}&#39;, { who: &#39;server&#39; })
 
   Hello, &lt;span data-jtmpl=&quot;innerHTML=who&quot;&gt;server&lt;/span&gt;</code></pre>
-<p>  <em>Fundamental limitation is the contents of each <a href="http://mustache.github.io/mustache.5.html">section</a> must be valid structural HTML, you cannot freely mix Mustache and HTML tags</em></p>
-<p>  <em>Temporary limitation is partials are not currently supported, plans are to support id-based and URL-based partials</em></p>
+<ul>
+<li><p><em>limitation by design is the contents of each <a href="http://mustache.github.io/mustache.5.html">section</a> must be valid structural HTML, you cannot freely mix Mustache and HTML tags</em></p>
+</li>
+<li><p><em>variables are automatically enclosed in a</em> <code>&lt;span&gt;</code> <em>if they aren&#39;t HTML contents already</em></p>
+</li>
+<li><p><em>similarly, sections are automatically enclosed in a</em> <code>&lt;div&gt;</code> <em>if needed</em></p>
+</li>
+<li><p><code>data-jtmpl</code> <em>attributes containing metadata for</em> <code>Stage2</code> <em>are injected in HTML elements</em></p>
+</li>
+<li><p><em>partials are not currently supported, plans are to support id-based and URL-based partials</em></p>
+</li>
+<li><p><em>setting a new delimiter is not currently supported</em></p>
+</li>
+</ul>
 </li>
 </ul>
 <ul>
@@ -66,8 +89,12 @@
 
   &lt;!-- do the dirty work (`jtmpl` will detect `div[id=jtmpl][data-model=model]`) --&gt;
   &lt;script src=&quot;js/jtmpl.min.js&quot;&gt;&lt;/script&gt;</code></pre>
-<p>  <em>Or, to invoke manually:</em> <code>jtmpl(&#39;#target-id&#39;, &#39;template contents or &quot;#template-id&quot;&#39;, model)</code> </p>
-<p>  <em>Template contents can be already prerendered by server, this will save the client some processing</em></p>
+<ul>
+<li><p><em>or, to invoke manually:</em> <code>jtmpl(&#39;#target-id&#39;, &#39;template contents or &quot;#template-id&quot;&#39;, model)</code> </p>
+</li>
+<li><p><em>template contents can be already prerendered by server to save the client some processing and make page SEO-friendly</em></p>
+</li>
+</ul>
 </li>
 </ul>
 <ul>
@@ -110,7 +137,7 @@
         &lt;h3&gt;Collection&amp;mdash;&lt;code&gt;model.collection&lt;/code&gt;&lt;/h3&gt;
         &lt;ul&gt;
             {{#collection}}
-            &lt;li&gt;type &lt;code&gt;{{type}}&lt;/code&gt;, value &lt;code&gt;{{value}}&lt;/code&gt;&lt;/li&gt;
+            &lt;li&gt;type &lt;code&gt;aa{{type}}&lt;/code&gt;, value &lt;code&gt;{{value}}&lt;/code&gt;&lt;/li&gt;
             {{/collection}}
             {{^collection}}
             &lt;li&gt;&amp;lt; empty &amp;gt;&lt;/li&gt;

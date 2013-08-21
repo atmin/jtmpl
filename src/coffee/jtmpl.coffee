@@ -52,7 +52,7 @@ window.jtmpl = (target, tpl, model) ->
 		target = document.getElementById(target.substring(1))
 	
 	if not model or typeof model isnt 'object'
-		throw 'model should be object'
+		throw ':( model should be object'
 
 	# `jtmpl('#template-id', ...)` or `jtmpl(element, '#template-id', ...)`
 	tpl = document.getElementById(tpl.substring(1)).innerHTML if tpl.match and tpl.match(reId)
@@ -91,36 +91,36 @@ window.jtmpl = (target, tpl, model) ->
 			when '#' then 'section'
 			when '^' then 'inverted_section'
 			when undefined then (if tag[1] is '{' then 'unescaped_var' else 'var')
-			else throw 'Internal error, tag ' + tag[0]
-		, tag[3]]
+			else throw ':( internal error, tag ' + tag[0]
+		, tag[3], tag[0]]
 
 
 	# Parse template, remove jtmpl tags, inject data-jtmpl attributes
 	parse = (tpl, context, pos, openTagName) ->
+		out = ''
+		htag = null
 
 		emit = (s) ->
 			if s
 				return out += s
-			s = tpl.slice(pos, reJT.lastIndex - (tag and tag[0] or '').length)
+			s = tpl.slice(pos, reJT.lastIndex - (fullTag or '').length)
 			reHTopened.lastIndex = 0
 			htag = reHTopened.exec(s)
 			pos = reJT.lastIndex
 			out += s
 
-		# Accumulate output
-		out = ''
-
 		# Match jtmpl tags
 		while tag = reJT.exec(tpl)
 
-			[tagType, tagName] = parseTag(tag)
+			[tagType, tagName, fullTag] = parseTag(tag)
 
 			emit()
 
 			switch tagType
 				when 'end'
 					if tagName isnt openTagName
-						throw (if not openTagName then 'Unexpected ' else 'Expected {{/' + openTagName + '}}, got ') + tag[0]
+						throw (if not openTagName then ':( unexpected {{/#{tagName}}}' else ':( expected {{/#{openTagName}}}, got #{fullTag}')
+						
 					# Exit recursion
 					return out
 
@@ -184,3 +184,4 @@ window.jtmpl = (target, tpl, model) ->
 	bind = (root) ->
 		;
 
+# :)

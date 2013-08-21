@@ -3,7 +3,7 @@ _`{{`_ `jtmpl` _`}}`_
 
 #### Humanistic JavaScript MV framework
 
-.  
+<br>
  _Code is work in progress, feel free to explore concept_
 
 Why
@@ -19,29 +19,47 @@ Why
 How
 ---
 
-1. Render Mustache-compatible template using a `model` object into a valid HTML with added metadata (generated `span` tags where necessary, `data-jtmpl` attributes)
+In a nutshell:
+
+1. Compile Mustache-compatible template using a `model` object into a valid HTML string (with added metadata)
 
 	`Stage1` can be processed server-side or browser-side
 
-2. Using metadata from `Stage1` bind DOM elements properties to `model` properties, so your model is the [single source of truth](http://en.wikipedia.org/wiki/Single_Source_of_Truth)
+2. Using `Stage1` output generate DOM and bind elements properties to `model` properties, so your model is the [single source of truth](http://en.wikipedia.org/wiki/Single_Source_of_Truth)
 
-.
+<br>
+`jtmpl` _takes care of the conversion of templates to DOM elements and all the event handling needed to keep them in sync with_ `model`.
 
- `jtmpl` _takes care of the conversion of templates to DOM elements and all the event handling needed to keep them in sync with_ `model`
+<br>
+Other JS MV* frameworks require you either:
+
+* explicitly specify via DOM element attributes how to do the binding
+
+* build DOM via code :(
+
+`jtmpl` enables you to assume: _I just have live templates_
 
 
 Details
 -------
 
-* it's a templating engine with simple, but powerful [syntax](http://mustache.github.io)
+* it's a template compiler with simple, but powerful [syntax](http://mustache.github.io)
 	
 		> jtmpl('Hello, {{who}}', { who: 'server' })
 
 		Hello, <span data-jtmpl="innerHTML=who">server</span>
 
-	_Fundamental limitation is the contents of each [section](http://mustache.github.io/mustache.5.html) must be valid structural HTML, you cannot freely mix Mustache and HTML tags_
+	* _limitation by design is the contents of each [section](http://mustache.github.io/mustache.5.html) must be valid structural HTML, you cannot freely mix Mustache and HTML tags_
 
-	_Temporary limitation is partials are not currently supported, plans are to support id-based and URL-based partials_
+	* _variables are automatically enclosed in a_ `<span>` _if they aren't HTML contents already_
+
+	* _similarly, sections are automatically enclosed in a_ `<div>` _if needed_
+
+	* `data-jtmpl` _attributes containing metadata for_ `Stage2` _are injected in HTML elements_
+
+	* _partials are not currently supported, plans are to support id-based and URL-based partials_
+
+	* _setting a new delimiter is not currently supported_
 
 
 * it's a [MV(C)](http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) micro-framework for the browser
@@ -65,9 +83,9 @@ Details
 		<!-- do the dirty work (`jtmpl` will detect `div[id=jtmpl][data-model=model]`) -->
 		<script src="js/jtmpl.min.js"></script>
 
-    _Or, to invoke manually:_ `jtmpl('#target-id', 'template contents or "#template-id"', model)` 
+    * _or, to invoke manually:_ `jtmpl('#target-id', 'template contents or "#template-id"', model)` 
 
-    _Template contents can be already prerendered by server, this will save the client some processing_
+    * _template contents can be already prerendered by server to save the client some processing and make page SEO-friendly_
 
 
 * based on [Object.observe](http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe)
@@ -115,7 +133,7 @@ Showcase of all features, tests
 			<h3>Collection&mdash;<code>model.collection</code></h3>
 			<ul>
 				{{#collection}}
-				<li>type <code>{{type}}</code>, value <code>{{value}}</code></li>
+				<li>type <code>aa{{type}}</code>, value <code>{{value}}</code></li>
 				{{/collection}}
 				{{^collection}}
 				<li>&lt; empty &gt;</li>

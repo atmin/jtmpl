@@ -15,7 +15,7 @@
       target = document.getElementById(target.substring(1));
     }
     if (!model || typeof model !== 'object') {
-      throw 'model should be object';
+      throw ':( model should be object';
     }
     if (tpl.match && tpl.match(reId)) {
       tpl = document.getElementById(tpl.substring(1)).innerHTML;
@@ -61,32 +61,32 @@
                 return 'var';
               }
             default:
-              throw 'Internal error, tag ' + tag[0];
+              throw ':( internal error, tag ' + tag[0];
           }
-        })(), tag[3]
+        })(), tag[3], tag[0]
       ];
     };
     parse = function(tpl, context, pos, openTagName) {
-      var collection, emit, i, item, out, tag, tagName, tagType, val, _i, _len, _ref;
+      var collection, emit, fullTag, htag, i, item, out, tag, tagName, tagType, val, _i, _len, _ref;
+      out = '';
+      htag = null;
       emit = function(s) {
-        var htag;
         if (s) {
           return out += s;
         }
-        s = tpl.slice(pos, reJT.lastIndex - (tag && tag[0] || '').length);
+        s = tpl.slice(pos, reJT.lastIndex - (fullTag || '').length);
         reHTopened.lastIndex = 0;
         htag = reHTopened.exec(s);
         pos = reJT.lastIndex;
         return out += s;
       };
-      out = '';
       while (tag = reJT.exec(tpl)) {
-        _ref = parseTag(tag), tagType = _ref[0], tagName = _ref[1];
+        _ref = parseTag(tag), tagType = _ref[0], tagName = _ref[1], fullTag = _ref[2];
         emit();
         switch (tagType) {
           case 'end':
             if (tagName !== openTagName) {
-              throw (!openTagName ? 'Unexpected ' : 'Expected {{/' + openTagName + '}}, got ') + tag[0];
+              throw (!openTagName ? ':( unexpected {{/#{tagName}}}' : ':( expected {{/#{openTagName}}}, got #{fullTag}');
             }
             return out;
           case 'var':
