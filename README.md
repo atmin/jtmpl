@@ -28,16 +28,16 @@ In a nutshell:
 2. Using `Stage1` output generate DOM and bind elements properties to `model` properties, so your model is the [single source of truth](http://en.wikipedia.org/wiki/Single_Source_of_Truth)
 
 <br>
-`jtmpl` _takes care of the conversion of templates to DOM elements and all the event handling needed to keep them in sync with_ `model`.
+`jtmpl` _takes care of the conversion of_ `template`_s to_ `DOM element`_s and all the event handling needed to keep them in sync with_ `model`.
 
 <br>
-Other JS MV* frameworks require you either:
+Other JavaScript MV* frameworks require you either:
 
 * explicitly specify (via code or DOM element attributes) how to do the binding
 
 * build DOM via code :(
 
-`jtmpl` enables you to assume: _I just have live templates_. 
+`jtmpl` enables you to assume you just have live templates.
 
 It's still explicit&mdash;tags have types and names. And the boilerplate is gone.
 
@@ -45,11 +45,11 @@ It's still explicit&mdash;tags have types and names. And the boilerplate is gone
 Details
 -------
 
-* it's a template compiler with simple, but powerful [syntax](http://mustache.github.io)
+* it's a template compiler of a simple, but powerful [syntax](http://mustache.github.io)
 	
 		> jtmpl('Hello, {{who}}', { who: 'server' })
 
-		Hello, <span data-jtmpl="innerHTML=who">server</span>
+		Hello, <span data-jt="who">server</span>
 
 	* _limitation by design is the contents of each [section](http://mustache.github.io/mustache.5.html) must be valid structural HTML, you cannot freely mix Mustache and HTML tags_
 
@@ -68,16 +68,26 @@ Details
 
 		<!-- View -->
 		<div id=jtmpl data-model=model>
-			Hello, {{field}}
-			<button onclick={{eventHandler}}>Shout</button>
+			Hello, {{who}}
+			<button onclick={{click}}>{{buttonText}}</button>
 		<div>
 
 		<!-- Model (View is controlled implicitly) -->
 		<script>
 			model = {
-				field: 'browser',
-				eventHandler: function() {
-					this.field = 'BROWSER';
+				who: 'browser',
+				buttonText: 'Shout',
+				click: function() {
+					with (this) {
+						if (field == 'browser') {
+							field = 'BROWSER'; 
+							buttonText = 'Keep quiet';
+						}
+						else {
+							field = 'browser'; 
+							buttonText = 'Shout again';
+						} 
+					}
 				}
 			}
 		</script>

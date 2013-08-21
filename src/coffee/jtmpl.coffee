@@ -2,6 +2,8 @@
 # @author Atanas Minev
 # MIT license
 
+
+
 window.jtmpl = (target, tpl, model) ->
 	reId = /^\#[\w-]+$/
 
@@ -49,14 +51,13 @@ window.jtmpl = (target, tpl, model) ->
 			)?
 		)*
 		\s*(>)?        # capture if tag closed
-		\s*(<!--\s*)?  # capture HTML comment begin
 		$              # end of slice
 	///
 
 
 	# Array?
-	isArray = 
-		Array.isArray or (val) -> {}.toString.call(val) is '[object Array]'
+	isArray = Array.isArray or (val) -> 
+		{}.toString.call(val) is '[object Array]'
 
 
 	# Existing object?
@@ -77,31 +78,39 @@ window.jtmpl = (target, tpl, model) ->
 					else s
 
 
-	# Return [tagType, tagName, fullTag] from regexp match
-	parseTag = (tag) ->
-		[switch tag[2]
-			when '/' then 'end'
-			when '#' then 'section'
-			when '^' then 'inverted_section'
-			when undefined then (if tag[1] is '{' then 'unescaped_var' else 'var')
-			else throw ':( internal error, tag ' + tag[0]
-		, tag[3], tag[0]]
-
-
 	# Parse template, remove jtmpl tags, inject data-jtmpl attributes
 	compile = (tpl, context, pos, openTagName) ->
 		pos = pos or 0
 		out = ''
-		htag = htagSection = htagSectionVar = null
+		tag = htag = htagSection = htagSectionVar = null
 
+		# Return [tagType, tagName, fullTag] from regexp match
+		parseTag = () ->
+			[switch tag[2]
+				when '/' then 'end'
+				when '#' then 'section'
+				when '^' then 'inverted_section'
+				when undefined then (if tag[1] is '{' then 'unescaped_var' else 'var')
+				else throw ':( internal error, tag ' + tag[0]
+			, tag[3], tag[0]]
+
+		# Create `proto` tag when htag is null, inject `data-jtmpl` attr in `out`, if needed
+		# Return [htagName, htagClosed, htagInjectPos]
+		processHTag = (proto) ->
+			[htag[1], htag[4] is '>', htag.index]
+
+		# Flush output
 		flush = () ->
 			out += tpl.slice(pos, re.lastIndex - (fullTag or '').length)
 			pos = re.lastIndex
 
-		# Match jtmpl tags
+		# Strip HTML comments that enclose tags
+		tpl = tpl.replace(new RegExp("<!--\\s*(#{ re.source })\\s*-->"), '$1')
+
+		# Main parsing loop
 		while tag = re.exec(tpl)
 
-			[tagType, tagName, fullTag] = parseTag(tag)
+			[tagType, tagName, fullTag] = parseTag()
 
 			flush()
 			hre.lastIndex = 0
@@ -115,18 +124,16 @@ window.jtmpl = (target, tpl, model) ->
 					# Exit recursion
 					return out
 
-				when 'var'
-					out += escapeHTML(if tagName is '.' then context else context[tagName])
-					console.log "tag #{ fullTag }, htag #{ htag and htag[0]+'$' or 'null' }"
-
-				when 'unescaped_var'
-					out += (if tagName is '.' then context else context[tagName])
-					console.log "tag #{ fullTag }, htag #{ htag and htag[0]+'$' or 'null' }"
+				when 'var' or 'unescaped_var'
+					val = if tagName is '.' then context else context[tagName]
+					val = tagType is 'unescaped_var' and val or escapeHTML(val)
+					if not htag
+						out += "<span data-jt=#{ tagName }>#{ val }</span>"
 
 				when 'section'
 					val = context[tagName]
-					if htag then [htagSection, htagSectionVar] = [htag, tagName]
-					console.log "tag=#{ fullTag }, htagSection=\"#{ htagSection and htagSection[0] or 'null' }\", htagSectionVar=#{ htagSectionVar }"
+					if not htag
+						out += "<div data-jt=#{ tagName }>"
 
 					# falsy value or empty collection?
 					if not val or isArray(val) and not val.length
@@ -142,10 +149,12 @@ window.jtmpl = (target, tpl, model) ->
 								re.lastIndex = pos
 						pos = re.lastIndex
 
+					if not htag
+						out += '</div>'
+
 				when 'inverted_section'
 					val = context[tagName]
 					if htag then [htagSection, htagSectionVar] = [htag, tagName]
-					console.log "tag=#{ fullTag }, htagSection=\"#{ htagSection and htagSection[0] or 'null' }\", htagSectionVar=#{ htagSectionVar }"
 
 					# falsy value or empty collection?
 					if not val or isArray(val) and not val.length
@@ -157,25 +166,25 @@ window.jtmpl = (target, tpl, model) ->
 						compile(tpl, val, pos, tagName)
 						pos = re.lastIndex
 
-
-
 		return out + tpl.slice(pos)
 
 
 	# Compile template
 	html = compile(tpl, model)
 
-	# temp
-	if target
-		target.innerHTML = html
-
 	# Done?
 	if not target
 		return html
+
+	# Construct DOM
+	target.innerHTML = html
 
 
 	# Bind event handlers
 	bind = (root) ->
 		;
+
+
+
 
 # :)

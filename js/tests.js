@@ -5,13 +5,13 @@
     return Array.prototype.slice.call(document.querySelectorAll(s));
   };
 
-  test('tests', function() {
-    equal(jtmpl('tpl{{a}}', {
+  test('compile', function() {
+    equal(jtmpl('tpl{{a}}xyz', {
       a: 'A'
-    }), 'tplA', 'var');
+    }), 'tpl<span data-jt="a">A</span>xyz', 'var');
     equal(jtmpl('{{#a}}{{.}}{{/a}}', {
-      a: [1, 2, 3]
-    }), '123', 'numeric array');
+      a: [1, 2]
+    }), '<span data-jt=".">1</span><span data-jt=".">2</span>', 'numeric array');
     equal(jtmpl('{{#a}}{{.}}{{/a}}', {
       a: []
     }), '', 'empty array');
@@ -21,7 +21,7 @@
           z: 1
         }
       ]
-    }), '1', 'object array');
+    }), '<span data-jt="z">1</span>', 'object array');
     equal(jtmpl('{{^a}}{{z}}{{/a}}', {
       a: [
         {

@@ -37,23 +37,23 @@
 </li>
 </ol>
 <p><br>
-<code>jtmpl</code> <em>takes care of the conversion of templates to DOM elements and all the event handling needed to keep them in sync with</em> <code>model</code>.</p>
+<code>jtmpl</code> <em>takes care of the conversion of</em> <code>template</code><em>s to</em> <code>DOM element</code><em>s and all the event handling needed to keep them in sync with</em> <code>model</code>.</p>
 <p><br>
-Other JS MV* frameworks require you either:</p>
+Other JavaScript MV* frameworks require you either:</p>
 <ul>
 <li><p>explicitly specify (via code or DOM element attributes) how to do the binding</p>
 </li>
 <li><p>build DOM via code :(</p>
 </li>
 </ul>
-<p><code>jtmpl</code> enables you to assume: <em>I just have live templates</em>. </p>
+<p><code>jtmpl</code> enables you to assume you just have live templates.</p>
 <p>It&#39;s still explicit&mdash;tags have types and names. And the boilerplate is gone.</p>
 <h2>Details</h2>
 <ul>
-<li><p>it&#39;s a template compiler with simple, but powerful <a href="http://mustache.github.io">syntax</a></p>
+<li><p>it&#39;s a template compiler of a simple, but powerful <a href="http://mustache.github.io">syntax</a></p>
 <pre><code>  &gt; jtmpl(&#39;Hello, {{who}}&#39;, { who: &#39;server&#39; })
 
-  Hello, &lt;span data-jtmpl=&quot;innerHTML=who&quot;&gt;server&lt;/span&gt;</code></pre>
+  Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
 <ul>
 <li><p><em>limitation by design is the contents of each <a href="http://mustache.github.io/mustache.5.html">section</a> must be valid structural HTML, you cannot freely mix Mustache and HTML tags</em></p>
 </li>
@@ -74,16 +74,26 @@ Other JS MV* frameworks require you either:</p>
 <li><p>it&#39;s a <a href="http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller">MV(C)</a> micro-framework for the browser</p>
 <pre><code>  &lt;!-- View --&gt;
   &lt;div id=jtmpl data-model=model&gt;
-      Hello, {{field}}
-      &lt;button onclick={{eventHandler}}&gt;Shout&lt;/button&gt;
+      Hello, {{who}}
+      &lt;button onclick={{click}}&gt;{{buttonText}}&lt;/button&gt;
   &lt;div&gt;
 
   &lt;!-- Model (View is controlled implicitly) --&gt;
   &lt;script&gt;
       model = {
-          field: &#39;browser&#39;,
-          eventHandler: function() {
-              this.field = &#39;BROWSER&#39;;
+          who: &#39;browser&#39;,
+          buttonText: &#39;Shout&#39;,
+          click: function() {
+              with (this) {
+                  if (field == &#39;browser&#39;) {
+                      field = &#39;BROWSER&#39;; 
+                      buttonText = &#39;Keep quiet&#39;;
+                  }
+                  else {
+                      field = &#39;browser&#39;; 
+                      buttonText = &#39;Shout again&#39;;
+                  } 
+              }
           }
       }
   &lt;/script&gt;

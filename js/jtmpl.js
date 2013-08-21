@@ -1,6 +1,6 @@
 (function() {
   window.jtmpl = function(target, tpl, model) {
-    var bind, compile, escapeHTML, hre, html, isArray, isObject, parseTag, re, reId;
+    var bind, compile, escapeHTML, hre, html, isArray, isObject, re, reId;
     reId = /^\#[\w-]+$/;
     if (typeof target === 'string' && typeof tpl === 'object' && model === void 0) {
       model = tpl;
@@ -17,7 +17,7 @@
       tpl = document.getElementById(tpl.substring(1)).innerHTML;
     }
     re = /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g;
-    hre = /<\s*([\w-]+)(?:\s+([\w-\{\}]*)(?:=((?:"[^"]*"?)|(?:'[^']*'?)|[\w-\{\}]+))?)*\s*(>)?\s*(<!--\s*)?$/;
+    hre = /<\s*([\w-]+)(?:\s+([\w-\{\}]*)(?:=((?:"[^"]*"?)|(?:'[^']*'?)|[\w-\{\}]+))?)*\s*(>)?$/;
     isArray = Array.isArray || function(val) {
       return {}.toString.call(val) === '[object Array]';
     };
@@ -42,39 +42,43 @@
         }
       });
     };
-    parseTag = function(tag) {
-      return [
-        (function() {
-          switch (tag[2]) {
-            case '/':
-              return 'end';
-            case '#':
-              return 'section';
-            case '^':
-              return 'inverted_section';
-            case void 0:
-              if (tag[1] === '{') {
-                return 'unescaped_var';
-              } else {
-                return 'var';
-              }
-            default:
-              throw ':( internal error, tag ' + tag[0];
-          }
-        })(), tag[3], tag[0]
-      ];
-    };
     compile = function(tpl, context, pos, openTagName) {
-      var collection, flush, fullTag, htag, htagSection, htagSectionVar, i, item, out, tag, tagName, tagType, val, _i, _len, _ref, _ref1, _ref2;
+      var collection, flush, fullTag, htag, htagSection, htagSectionVar, i, item, out, parseTag, processHTag, tag, tagName, tagType, val, _i, _len, _ref, _ref1;
       pos = pos || 0;
       out = '';
-      htag = htagSection = htagSectionVar = null;
+      tag = htag = htagSection = htagSectionVar = null;
+      parseTag = function() {
+        return [
+          (function() {
+            switch (tag[2]) {
+              case '/':
+                return 'end';
+              case '#':
+                return 'section';
+              case '^':
+                return 'inverted_section';
+              case void 0:
+                if (tag[1] === '{') {
+                  return 'unescaped_var';
+                } else {
+                  return 'var';
+                }
+              default:
+                throw ':( internal error, tag ' + tag[0];
+            }
+          })(), tag[3], tag[0]
+        ];
+      };
+      processHTag = function(proto) {
+        return [htag[1], htag[4] === '>', htag.index];
+      };
       flush = function() {
         out += tpl.slice(pos, re.lastIndex - (fullTag || '').length);
         return pos = re.lastIndex;
       };
+      tpl = tpl.replace(new RegExp("<!--\\s*(" + re.source + ")\\s*-->"), '$1');
       while (tag = re.exec(tpl)) {
-        _ref = parseTag(tag), tagType = _ref[0], tagName = _ref[1], fullTag = _ref[2];
+        _ref = parseTag(), tagType = _ref[0], tagName = _ref[1], fullTag = _ref[2];
         flush();
         hre.lastIndex = 0;
         htag = hre.exec(tpl.slice(0, re.lastIndex - (fullTag || '').length));
@@ -84,20 +88,18 @@
               throw (!openTagName ? ":( unexpected {{/" + tagName + "}}" : ":( expected {{/" + openTagName + "}}, got " + fullTag);
             }
             return out;
-          case 'var':
-            out += escapeHTML(tagName === '.' ? context : context[tagName]);
-            console.log("tag " + fullTag + ", htag " + (htag && htag[0] + '$' || 'null'));
-            break;
-          case 'unescaped_var':
-            out += (tagName === '.' ? context : context[tagName]);
-            console.log("tag " + fullTag + ", htag " + (htag && htag[0] + '$' || 'null'));
+          case 'var' || 'unescaped_var':
+            val = tagName === '.' ? context : context[tagName];
+            val = tagType === 'unescaped_var' && val || escapeHTML(val);
+            if (!htag) {
+              out += "<span data-jt=" + tagName + ">" + val + "</span>";
+            }
             break;
           case 'section':
             val = context[tagName];
-            if (htag) {
-              _ref1 = [htag, tagName], htagSection = _ref1[0], htagSectionVar = _ref1[1];
+            if (!htag) {
+              out += "<div data-jt=" + tagName + ">";
             }
-            console.log("tag=" + fullTag + ", htagSection=\"" + (htagSection && htagSection[0] || 'null') + "\", htagSectionVar=" + htagSectionVar);
             if (!val || isArray(val) && !val.length) {
               compile(tpl, context, pos, tagName);
               pos = re.lastIndex;
@@ -112,13 +114,15 @@
               }
               pos = re.lastIndex;
             }
+            if (!htag) {
+              out += '</div>';
+            }
             break;
           case 'inverted_section':
             val = context[tagName];
             if (htag) {
-              _ref2 = [htag, tagName], htagSection = _ref2[0], htagSectionVar = _ref2[1];
+              _ref1 = [htag, tagName], htagSection = _ref1[0], htagSectionVar = _ref1[1];
             }
-            console.log("tag=" + fullTag + ", htagSection=\"" + (htagSection && htagSection[0] || 'null') + "\", htagSectionVar=" + htagSectionVar);
             if (!val || isArray(val) && !val.length) {
               out += compile(tpl, val, pos, tagName);
               pos = re.lastIndex;
@@ -131,12 +135,10 @@
       return out + tpl.slice(pos);
     };
     html = compile(tpl, model);
-    if (target) {
-      target.innerHTML = html;
-    }
     if (!target) {
       return html;
     }
+    target.innerHTML = html;
     return bind = function(root) {};
   };
 
