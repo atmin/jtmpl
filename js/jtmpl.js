@@ -1,11 +1,7 @@
 (function() {
   window.jtmpl = function(target, tpl, model) {
-    var bind, escapeHTML, html, isArray, isObject, parse, parseTag, reHTopened, reHTopening, reHTproto, reId, reJT;
+    var bind, compile, escapeHTML, hre, html, isArray, isObject, parseTag, re, reId;
     reId = /^\#[\w-]+$/;
-    reJT = /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g;
-    reHTproto = /<\s*([\w-]+)(?:\s+([\w-]*)(?:=((?:"[^"]+")|(?:'[^']+')|[\w-]+))?)*/.source;
-    reHTopened = new RegExp(reHTproto + '(>)?\\s*$');
-    reHTopening = new RegExp(reHTproto + '\\s*>');
     if (typeof target === 'string' && typeof tpl === 'object' && model === void 0) {
       model = tpl;
       tpl = target;
@@ -20,6 +16,8 @@
     if (tpl.match && tpl.match(reId)) {
       tpl = document.getElementById(tpl.substring(1)).innerHTML;
     }
+    re = /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g;
+    hre = /<\s*([\w-]+)(?:\s+([\w-\{\}]*)(?:=((?:"[^"]*")|(?:'[^']*')|[\w-\{\}]+))?)*\s*(>)?\s*(<!--\s*)?/;
     isArray = Array.isArray || function(val) {
       return {}.toString.call(val) === '[object Array]';
     };
@@ -66,21 +64,22 @@
         })(), tag[3], tag[0]
       ];
     };
-    parse = function(tpl, context, pos, openTagName) {
+    compile = function(tpl, context, pos, openTagName) {
       var collection, emit, fullTag, htag, i, item, out, tag, tagName, tagType, val, _i, _len, _ref;
+      pos = pos || 0;
       out = '';
       htag = null;
       emit = function(s) {
         if (s) {
           return out += s;
         }
-        s = tpl.slice(pos, reJT.lastIndex - (fullTag || '').length);
-        reHTopened.lastIndex = 0;
-        htag = reHTopened.exec(s);
-        pos = reJT.lastIndex;
+        s = tpl.slice(pos, re.lastIndex - (fullTag || '').length);
+        hre.lastIndex = 0;
+        htag = hre.exec(s);
+        pos = re.lastIndex;
         return out += s;
       };
-      while (tag = reJT.exec(tpl)) {
+      while (tag = re.exec(tpl)) {
         _ref = parseTag(tag), tagType = _ref[0], tagName = _ref[1], fullTag = _ref[2];
         emit();
         switch (tagType) {
@@ -97,38 +96,38 @@
             break;
           case 'section':
             val = context[tagName];
-            pos = reJT.lastIndex;
+            pos = re.lastIndex;
             if (!val || isArray(val) && !val.length) {
-              parse(tpl, context, pos, tagName);
-              pos = reJT.lastIndex;
+              compile(tpl, context, pos, tagName);
+              pos = re.lastIndex;
             } else {
               collection = isArray(val) && val || [val];
               for (i = _i = 0, _len = collection.length; _i < _len; i = ++_i) {
                 item = collection[i];
                 emit();
-                emit(parse(tpl, item, pos, tagName));
+                emit(compile(tpl, item, pos, tagName));
                 if (i < collection.length - 1) {
-                  reJT.lastIndex = pos;
+                  re.lastIndex = pos;
                 }
               }
-              pos = reJT.lastIndex;
+              pos = re.lastIndex;
             }
             break;
           case 'inverted_section':
             val = context[tagName];
-            pos = reJT.lastIndex;
+            pos = re.lastIndex;
             if (!val || isArray(val) && !val.length) {
-              emit(parse(tpl, val, pos, tagName));
-              pos = reJT.lastIndex;
+              emit(compile(tpl, val, pos, tagName));
+              pos = re.lastIndex;
             } else {
-              parse(tpl, val, pos, tagName);
-              pos = reJT.lastIndex;
+              compile(tpl, val, pos, tagName);
+              pos = re.lastIndex;
             }
         }
       }
       return out + tpl.slice(pos);
     };
-    html = parse(tpl, model, 0);
+    html = compile(tpl, model);
     if (target) {
       target.innerHTML = html;
     }

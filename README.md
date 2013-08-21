@@ -170,17 +170,14 @@ Showcase of all features, tests
 				{{/checkboxes}}
 			</div>
 
-			<h3>Select&mdash;<code>model.selectedIndex</code></h3>
+			<h3>Select&mdash;<code>model.options</code></h3>
 			<select selectedIndex={{selectedIndex}}>
 				{{#options}}
-				<option>{{text}}</option>
+				<option selected={{checked}}>{{text}}</option>
 				{{/options}}
 			</select>
 
 			<h3>Radio group&mdash;<code>model.options</code></h3>
-			<p>
-				<em>&lt;select&gt; is bound to</em> <code>model.options</code>
-			</p>
 			<div>
 				{{#options}}
 				<label><input type="radio" name="radio-group" checked={{checked}}>{{text}}</label>
@@ -229,8 +226,6 @@ Showcase of all features, tests
 						text: 'three'
 					}
 				],
-
-				selectedIndex: 0,
 
 				checkboxes: {
 					fooCheck: true,

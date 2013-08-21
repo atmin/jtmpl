@@ -174,17 +174,14 @@ Other JS MV* frameworks require you either:</p>
             {{/checkboxes}}
         &lt;/div&gt;
 
-        &lt;h3&gt;Select&amp;mdash;&lt;code&gt;model.selectedIndex&lt;/code&gt;&lt;/h3&gt;
+        &lt;h3&gt;Select&amp;mdash;&lt;code&gt;model.options&lt;/code&gt;&lt;/h3&gt;
         &lt;select selectedIndex={{selectedIndex}}&gt;
             {{#options}}
-            &lt;option&gt;{{text}}&lt;/option&gt;
+            &lt;option selected={{checked}}&gt;{{text}}&lt;/option&gt;
             {{/options}}
         &lt;/select&gt;
 
         &lt;h3&gt;Radio group&amp;mdash;&lt;code&gt;model.options&lt;/code&gt;&lt;/h3&gt;
-        &lt;p&gt;
-            &lt;em&gt;&amp;lt;select&amp;gt; is bound to&lt;/em&gt; &lt;code&gt;model.options&lt;/code&gt;
-        &lt;/p&gt;
         &lt;div&gt;
             {{#options}}
             &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; checked={{checked}}&gt;{{text}}&lt;/label&gt;
@@ -233,8 +230,6 @@ Other JS MV* frameworks require you either:</p>
                     text: &#39;three&#39;
                 }
             ],
-
-            selectedIndex: 0,
 
             checkboxes: {
                 fooCheck: true,

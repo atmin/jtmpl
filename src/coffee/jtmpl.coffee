@@ -3,40 +3,7 @@
 # MIT license
 
 window.jtmpl = (target, tpl, model) ->
-
-	## Regular expressions
-
 	reId = /^\#[\w-]+$/
-	
-	# Match jtmpl tag
-	reJT = ///
-		\{\{(\{)?      # opening tag, maybe triple mustache (captured)
-		(\#|\^|/)?     # var, open block or close block tag?
-		([\w\.]+)      # tag name
-		(\})?\}\}      # closing tag
-	///g
-
-	# Prototype regexp, match incomplete opening HTML tag
-	reHTproto = ///
-		<\s*([\w-]+)   # capture HTML tag name
-		(?:	\s+		   # non-capturing group HTML attribute
-			([\w-]*)   # attribute name
-			(?: =
-				(
-					(?:"[^"]+") |    # attribute value double quoted
-					(?:'[^']+') |    # single quoted
-					[\w-]+           # or unquoted 
-				)
-			)?
-		)*
-	///.source
-
-	# Last opened opening HTML tag
-	reHTopened = new RegExp reHTproto + '(>)?\\s*$'
-
-	# Full opening HTML tag
-	reHTopening = new RegExp reHTproto + '\\s*>'
-
 
 
 	## Interface
@@ -61,6 +28,30 @@ window.jtmpl = (target, tpl, model) ->
 
 	## Implementation
 
+	# Match jtmpl tag
+	re = ///
+		\{\{(\{)?      # opening tag, maybe triple mustache (captured)
+		(\#|\^|/)?     # var, open block or close block tag?
+		([\w\.]+)      # tag name
+		(\})?\}\}      # closing tag
+	///g
+
+	# Last opened opening HTML tag
+	hre = ///
+		<\s*([\w-]+)   # capture HTML tag name
+		(?:	\s+		   # non-capturing group HTML attribute
+			([\w-\{\}]*)      # capture attribute name
+			(?: =             # capture optional attribute value
+				(   (?:"[^"]*") |    # attribute value double quoted
+					(?:'[^']*') |    # single quoted
+					[\w-\{\}]+       # or unquoted 
+				)
+			)?
+		)*
+		\s*(>)?        # capture if it's closed
+		\s*(<!--\s*)?  # capture HTML comment begin
+	///
+
 	# Array?
 	isArray = 
 		Array.isArray or (val) -> {}.toString.call(val) is '[object Array]'
@@ -84,7 +75,7 @@ window.jtmpl = (target, tpl, model) ->
 					else s
 
 
-	# Return [tagType, tagName] from regexp match
+	# Return [tagType, tagName, fullTag] from regexp match
 	parseTag = (tag) ->
 		[switch tag[2]
 			when '/' then 'end'
@@ -96,21 +87,22 @@ window.jtmpl = (target, tpl, model) ->
 
 
 	# Parse template, remove jtmpl tags, inject data-jtmpl attributes
-	parse = (tpl, context, pos, openTagName) ->
+	compile = (tpl, context, pos, openTagName) ->
+		pos = pos or 0
 		out = ''
 		htag = null
 
 		emit = (s) ->
 			if s
 				return out += s
-			s = tpl.slice(pos, reJT.lastIndex - (fullTag or '').length)
-			reHTopened.lastIndex = 0
-			htag = reHTopened.exec(s)
-			pos = reJT.lastIndex
+			s = tpl.slice(pos, re.lastIndex - (fullTag or '').length)
+			hre.lastIndex = 0
+			htag = hre.exec(s)
+			pos = re.lastIndex
 			out += s
 
 		# Match jtmpl tags
-		while tag = reJT.exec(tpl)
+		while tag = re.exec(tpl)
 
 			[tagType, tagName, fullTag] = parseTag(tag)
 
@@ -132,44 +124,44 @@ window.jtmpl = (target, tpl, model) ->
 
 				when 'section'
 					val = context[tagName]
-					pos = reJT.lastIndex
+					pos = re.lastIndex
 
 					# falsy value or empty collection?
 					if not val or isArray(val) and not val.length
 						# discard section
-						parse(tpl, context, pos, tagName)
-						pos = reJT.lastIndex
+						compile(tpl, context, pos, tagName)
+						pos = re.lastIndex
 					else
 						# output section
 						collection = isArray(val) and val or [val]
 						for item, i in collection
 							emit()
-							emit(parse(tpl, item, pos, tagName))
+							emit(compile(tpl, item, pos, tagName))
 							if i < collection.length - 1
-								reJT.lastIndex = pos
-						pos = reJT.lastIndex
+								re.lastIndex = pos
+						pos = re.lastIndex
 
 				when 'inverted_section'
 					val = context[tagName]
-					pos = reJT.lastIndex
+					pos = re.lastIndex
 
 					# falsy value or empty collection?
 					if not val or isArray(val) and not val.length
 						# output section
-						emit(parse(tpl, val, pos, tagName))
-						pos = reJT.lastIndex
+						emit(compile(tpl, val, pos, tagName))
+						pos = re.lastIndex
 					else
 						# discard section
-						parse(tpl, val, pos, tagName)
-						pos = reJT.lastIndex
+						compile(tpl, val, pos, tagName)
+						pos = re.lastIndex
 
 
 
 		return out + tpl.slice(pos)
 
 
-	# Parse template
-	html = parse(tpl, model, 0)
+	# Compile template
+	html = compile(tpl, model)
 
 	# temp
 	if target
