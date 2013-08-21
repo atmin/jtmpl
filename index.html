@@ -41,12 +41,13 @@
 <p><br>
 Other JS MV* frameworks require you either:</p>
 <ul>
-<li><p>explicitly specify via DOM element attributes how to do the binding</p>
+<li><p>explicitly specify (via code or DOM element attributes) how to do the binding</p>
 </li>
 <li><p>build DOM via code :(</p>
 </li>
 </ul>
-<p><code>jtmpl</code> enables you to assume: <em>I just have live templates</em></p>
+<p><code>jtmpl</code> enables you to assume: <em>I just have live templates</em>. </p>
+<p>It&#39;s still explicit&mdash;tags have types and names. And the boilerplate is gone.</p>
 <h2>Details</h2>
 <ul>
 <li><p>it&#39;s a template compiler with simple, but powerful <a href="http://mustache.github.io">syntax</a></p>
@@ -56,7 +57,7 @@ Other JS MV* frameworks require you either:</p>
 <ul>
 <li><p><em>limitation by design is the contents of each <a href="http://mustache.github.io/mustache.5.html">section</a> must be valid structural HTML, you cannot freely mix Mustache and HTML tags</em></p>
 </li>
-<li><p><em>variables are automatically enclosed in a</em> <code>&lt;span&gt;</code> <em>if they aren&#39;t HTML contents already</em></p>
+<li><p><em>variables are automatically enclosed in a</em> <code>&lt;span&gt;</code> <em>if they aren&#39;t HTML tag contents already</em></p>
 </li>
 <li><p><em>similarly, sections are automatically enclosed in a</em> <code>&lt;div&gt;</code> <em>if needed</em></p>
 </li>
@@ -92,7 +93,7 @@ Other JS MV* frameworks require you either:</p>
 <ul>
 <li><p><em>or, to invoke manually:</em> <code>jtmpl(&#39;#target-id&#39;, &#39;template contents or &quot;#template-id&quot;&#39;, model)</code> </p>
 </li>
-<li><p><em>template contents can be already prerendered by server to save the client some processing and make page SEO-friendly</em></p>
+<li><p><em>template contents can be already prerendered by server to save the client some processing and help for SEO</em></p>
 </li>
 </ul>
 </li>
@@ -137,7 +138,7 @@ Other JS MV* frameworks require you either:</p>
         &lt;h3&gt;Collection&amp;mdash;&lt;code&gt;model.collection&lt;/code&gt;&lt;/h3&gt;
         &lt;ul&gt;
             {{#collection}}
-            &lt;li&gt;type &lt;code&gt;aa{{type}}&lt;/code&gt;, value &lt;code&gt;{{value}}&lt;/code&gt;&lt;/li&gt;
+            &lt;li&gt;type &lt;code&gt;{{type}}&lt;/code&gt;, value &lt;code&gt;{{value}}&lt;/code&gt;&lt;/li&gt;
             {{/collection}}
             {{^collection}}
             &lt;li&gt;&amp;lt; empty &amp;gt;&lt;/li&gt;
@@ -153,10 +154,8 @@ Other JS MV* frameworks require you either:</p>
         &lt;/p&gt;
 
         &lt;h3&gt;innerHTML&amp;mdash;&lt;code&gt;model.innerHTML&lt;/code&gt;&lt;/h3&gt;
-        &lt;div&gt;
-            &lt;!-- {{{innerHTML}}} --&gt;     
-            &lt;!-- `jtmpl` accepts tags in HTML comments and automatically strips them --&gt;
-        &lt;/div&gt;
+        &lt;!-- {{{innerHTML}}} --&gt;     
+        &lt;!-- `jtmpl` accepts tags in HTML comments and automatically strips them --&gt;
 
         &lt;h3&gt;Data binding&amp;mdash;&lt;code&gt;model.field&lt;/code&gt;&lt;/h3&gt;
         &lt;label for=&quot;field&quot;&gt;Enter something&lt;/label&gt; &lt;input id=&quot;field&quot; value={{field}}&gt;
@@ -167,15 +166,13 @@ Other JS MV* frameworks require you either:</p>
         &lt;/p&gt;
 
         &lt;h3&gt;Checkboxes&amp;mdash;&lt;code&gt;model.checkboxes&lt;/code&gt;&lt;/h3&gt;
-        &lt;div&gt;
-            {{#checkboxes}}
+        {{#checkboxes}}
             &lt;label&gt;&lt;input type=&quot;checkbox&quot; checked={{fooCheck}}&gt; check foo&lt;/label&gt;
             &lt;label&gt;&lt;input type=&quot;checkbox&quot; checked={{barCheck}}&gt; check bar&lt;/label&gt;
-            {{/checkboxes}}
-        &lt;/div&gt;
+        {{/checkboxes}}
 
         &lt;h3&gt;Select&amp;mdash;&lt;code&gt;model.options&lt;/code&gt;&lt;/h3&gt;
-        &lt;select selectedIndex={{selectedIndex}}&gt;
+        &lt;select&gt;
             {{#options}}
             &lt;option selected={{checked}}&gt;{{text}}&lt;/option&gt;
             {{/options}}
@@ -269,6 +266,7 @@ Other JS MV* frameworks require you either:</p>
         </footer>
         <script src="js/highlight.min.js"></script>
         <script>hljs.initHighlightingOnLoad();</script>
+        <script src="js/jtmpl.js"></script>
         <script>
           (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
           (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),

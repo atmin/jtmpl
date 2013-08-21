@@ -24,7 +24,7 @@
 		<h3>Collection&mdash;<code>model.collection</code></h3>
 		<ul>
 			{{#collection}}
-			<li>type <code>aa{{type}}</code>, value <code>{{value}}</code></li>
+			<li>type <code>{{type}}</code>, value <code>{{value}}</code></li>
 			{{/collection}}
 			{{^collection}}
 			<li>&lt; empty &gt;</li>
@@ -40,10 +40,8 @@
 		</p>
 
 		<h3>innerHTML&mdash;<code>model.innerHTML</code></h3>
-		<div>
-			<!-- {{{innerHTML}}} -->     
-			<!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
-		</div>
+		<!-- {{{innerHTML}}} -->     
+		<!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
 
 		<h3>Data binding&mdash;<code>model.field</code></h3>
 		<label for="field">Enter something</label> <input id="field" value={{field}}>
@@ -54,15 +52,13 @@
 		</p>
 
 		<h3>Checkboxes&mdash;<code>model.checkboxes</code></h3>
-		<div>
-			{{#checkboxes}}
+		{{#checkboxes}}
 			<label><input type="checkbox" checked={{fooCheck}}> check foo</label>
 			<label><input type="checkbox" checked={{barCheck}}> check bar</label>
-			{{/checkboxes}}
-		</div>
+		{{/checkboxes}}
 
 		<h3>Select&mdash;<code>model.options</code></h3>
-		<select selectedIndex={{selectedIndex}}>
+		<select>
 			{{#options}}
 			<option selected={{checked}}>{{text}}</option>
 			{{/options}}

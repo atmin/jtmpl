@@ -33,11 +33,13 @@ In a nutshell:
 <br>
 Other JS MV* frameworks require you either:
 
-* explicitly specify via DOM element attributes how to do the binding
+* explicitly specify (via code or DOM element attributes) how to do the binding
 
 * build DOM via code :(
 
-`jtmpl` enables you to assume: _I just have live templates_
+`jtmpl` enables you to assume: _I just have live templates_. 
+
+It's still explicit&mdash;tags have types and names. And the boilerplate is gone.
 
 
 Details
@@ -51,7 +53,7 @@ Details
 
 	* _limitation by design is the contents of each [section](http://mustache.github.io/mustache.5.html) must be valid structural HTML, you cannot freely mix Mustache and HTML tags_
 
-	* _variables are automatically enclosed in a_ `<span>` _if they aren't HTML contents already_
+	* _variables are automatically enclosed in a_ `<span>` _if they aren't HTML tag contents already_
 
 	* _similarly, sections are automatically enclosed in a_ `<div>` _if needed_
 
@@ -85,7 +87,7 @@ Details
 
     * _or, to invoke manually:_ `jtmpl('#target-id', 'template contents or "#template-id"', model)` 
 
-    * _template contents can be already prerendered by server to save the client some processing and make page SEO-friendly_
+    * _template contents can be already prerendered by server to save the client some processing and help for SEO_
 
 
 * based on [Object.observe](http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe)
@@ -133,7 +135,7 @@ Showcase of all features, tests
 			<h3>Collection&mdash;<code>model.collection</code></h3>
 			<ul>
 				{{#collection}}
-				<li>type <code>aa{{type}}</code>, value <code>{{value}}</code></li>
+				<li>type <code>{{type}}</code>, value <code>{{value}}</code></li>
 				{{/collection}}
 				{{^collection}}
 				<li>&lt; empty &gt;</li>
@@ -149,10 +151,8 @@ Showcase of all features, tests
 			</p>
 
 			<h3>innerHTML&mdash;<code>model.innerHTML</code></h3>
-			<div>
-				<!-- {{{innerHTML}}} -->     
-				<!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
-			</div>
+			<!-- {{{innerHTML}}} -->     
+			<!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
 
 			<h3>Data binding&mdash;<code>model.field</code></h3>
 			<label for="field">Enter something</label> <input id="field" value={{field}}>
@@ -163,15 +163,13 @@ Showcase of all features, tests
 			</p>
 
 			<h3>Checkboxes&mdash;<code>model.checkboxes</code></h3>
-			<div>
-				{{#checkboxes}}
+			{{#checkboxes}}
 				<label><input type="checkbox" checked={{fooCheck}}> check foo</label>
 				<label><input type="checkbox" checked={{barCheck}}> check bar</label>
-				{{/checkboxes}}
-			</div>
+			{{/checkboxes}}
 
 			<h3>Select&mdash;<code>model.options</code></h3>
-			<select selectedIndex={{selectedIndex}}>
+			<select>
 				{{#options}}
 				<option selected={{checked}}>{{text}}</option>
 				{{/options}}

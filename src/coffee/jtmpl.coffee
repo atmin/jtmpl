@@ -40,17 +40,19 @@ window.jtmpl = (target, tpl, model) ->
 	hre = ///
 		<\s*([\w-]+)   # capture HTML tag name
 		(?:	\s+		   # non-capturing group HTML attribute
-			([\w-\{\}]*)      # capture attribute name
-			(?: =             # capture optional attribute value
-				(   (?:"[^"]*") |    # attribute value double quoted
-					(?:'[^']*') |    # single quoted
+			([\w-\{\}]*)      # capture last attribute name
+			(?: =             # capture optional last attribute value
+				(   (?:"[^"]*"?) |   # attribute value double quoted (allow unclosed)
+					(?:'[^']*'?) |   # single quoted
 					[\w-\{\}]+       # or unquoted 
 				)
 			)?
 		)*
-		\s*(>)?        # capture if it's closed
+		\s*(>)?        # capture if tag closed
 		\s*(<!--\s*)?  # capture HTML comment begin
+		$              # end of slice
 	///
+
 
 	# Array?
 	isArray = 
@@ -90,41 +92,41 @@ window.jtmpl = (target, tpl, model) ->
 	compile = (tpl, context, pos, openTagName) ->
 		pos = pos or 0
 		out = ''
-		htag = null
+		htag = htagSection = htagSectionVar = null
 
-		emit = (s) ->
-			if s
-				return out += s
-			s = tpl.slice(pos, re.lastIndex - (fullTag or '').length)
-			hre.lastIndex = 0
-			htag = hre.exec(s)
+		flush = () ->
+			out += tpl.slice(pos, re.lastIndex - (fullTag or '').length)
 			pos = re.lastIndex
-			out += s
 
 		# Match jtmpl tags
 		while tag = re.exec(tpl)
 
 			[tagType, tagName, fullTag] = parseTag(tag)
 
-			emit()
+			flush()
+			hre.lastIndex = 0
+			htag = hre.exec(tpl.slice(0, re.lastIndex - (fullTag or '').length))
 
 			switch tagType
 				when 'end'
 					if tagName isnt openTagName
-						throw (if not openTagName then ':( unexpected {{/#{tagName}}}' else ':( expected {{/#{openTagName}}}, got #{fullTag}')
+						throw (if not openTagName then ":( unexpected {{/#{ tagName }}}" else ":( expected {{/#{ openTagName }}}, got #{ fullTag }")
 						
 					# Exit recursion
 					return out
 
 				when 'var'
-					emit(escapeHTML(if tagName is '.' then context else context[tagName]))
+					out += escapeHTML(if tagName is '.' then context else context[tagName])
+					console.log "tag #{ fullTag }, htag #{ htag and htag[0]+'$' or 'null' }"
 
 				when 'unescaped_var'
-					emit(if tagName is '.' then context else context[tagName])
+					out += (if tagName is '.' then context else context[tagName])
+					console.log "tag #{ fullTag }, htag #{ htag and htag[0]+'$' or 'null' }"
 
 				when 'section'
 					val = context[tagName]
-					pos = re.lastIndex
+					if htag then [htagSection, htagSectionVar] = [htag, tagName]
+					console.log "tag=#{ fullTag }, htagSection=\"#{ htagSection and htagSection[0] or 'null' }\", htagSectionVar=#{ htagSectionVar }"
 
 					# falsy value or empty collection?
 					if not val or isArray(val) and not val.length
@@ -135,20 +137,20 @@ window.jtmpl = (target, tpl, model) ->
 						# output section
 						collection = isArray(val) and val or [val]
 						for item, i in collection
-							emit()
-							emit(compile(tpl, item, pos, tagName))
+							out += compile(tpl, item, pos, tagName)
 							if i < collection.length - 1
 								re.lastIndex = pos
 						pos = re.lastIndex
 
 				when 'inverted_section'
 					val = context[tagName]
-					pos = re.lastIndex
+					if htag then [htagSection, htagSectionVar] = [htag, tagName]
+					console.log "tag=#{ fullTag }, htagSection=\"#{ htagSection and htagSection[0] or 'null' }\", htagSectionVar=#{ htagSectionVar }"
 
 					# falsy value or empty collection?
 					if not val or isArray(val) and not val.length
 						# output section
-						emit(compile(tpl, val, pos, tagName))
+						out += compile(tpl, val, pos, tagName)
 						pos = re.lastIndex
 					else
 						# discard section

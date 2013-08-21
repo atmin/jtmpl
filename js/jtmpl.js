@@ -17,7 +17,7 @@
       tpl = document.getElementById(tpl.substring(1)).innerHTML;
     }
     re = /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g;
-    hre = /<\s*([\w-]+)(?:\s+([\w-\{\}]*)(?:=((?:"[^"]*")|(?:'[^']*')|[\w-\{\}]+))?)*\s*(>)?\s*(<!--\s*)?/;
+    hre = /<\s*([\w-]+)(?:\s+([\w-\{\}]*)(?:=((?:"[^"]*"?)|(?:'[^']*'?)|[\w-\{\}]+))?)*\s*(>)?\s*(<!--\s*)?$/;
     isArray = Array.isArray || function(val) {
       return {}.toString.call(val) === '[object Array]';
     };
@@ -65,38 +65,39 @@
       ];
     };
     compile = function(tpl, context, pos, openTagName) {
-      var collection, emit, fullTag, htag, i, item, out, tag, tagName, tagType, val, _i, _len, _ref;
+      var collection, flush, fullTag, htag, htagSection, htagSectionVar, i, item, out, tag, tagName, tagType, val, _i, _len, _ref, _ref1, _ref2;
       pos = pos || 0;
       out = '';
-      htag = null;
-      emit = function(s) {
-        if (s) {
-          return out += s;
-        }
-        s = tpl.slice(pos, re.lastIndex - (fullTag || '').length);
-        hre.lastIndex = 0;
-        htag = hre.exec(s);
-        pos = re.lastIndex;
-        return out += s;
+      htag = htagSection = htagSectionVar = null;
+      flush = function() {
+        out += tpl.slice(pos, re.lastIndex - (fullTag || '').length);
+        return pos = re.lastIndex;
       };
       while (tag = re.exec(tpl)) {
         _ref = parseTag(tag), tagType = _ref[0], tagName = _ref[1], fullTag = _ref[2];
-        emit();
+        flush();
+        hre.lastIndex = 0;
+        htag = hre.exec(tpl.slice(0, re.lastIndex - (fullTag || '').length));
         switch (tagType) {
           case 'end':
             if (tagName !== openTagName) {
-              throw (!openTagName ? ':( unexpected {{/#{tagName}}}' : ':( expected {{/#{openTagName}}}, got #{fullTag}');
+              throw (!openTagName ? ":( unexpected {{/" + tagName + "}}" : ":( expected {{/" + openTagName + "}}, got " + fullTag);
             }
             return out;
           case 'var':
-            emit(escapeHTML(tagName === '.' ? context : context[tagName]));
+            out += escapeHTML(tagName === '.' ? context : context[tagName]);
+            console.log("tag " + fullTag + ", htag " + (htag && htag[0] + '$' || 'null'));
             break;
           case 'unescaped_var':
-            emit(tagName === '.' ? context : context[tagName]);
+            out += (tagName === '.' ? context : context[tagName]);
+            console.log("tag " + fullTag + ", htag " + (htag && htag[0] + '$' || 'null'));
             break;
           case 'section':
             val = context[tagName];
-            pos = re.lastIndex;
+            if (htag) {
+              _ref1 = [htag, tagName], htagSection = _ref1[0], htagSectionVar = _ref1[1];
+            }
+            console.log("tag=" + fullTag + ", htagSection=\"" + (htagSection && htagSection[0] || 'null') + "\", htagSectionVar=" + htagSectionVar);
             if (!val || isArray(val) && !val.length) {
               compile(tpl, context, pos, tagName);
               pos = re.lastIndex;
@@ -104,8 +105,7 @@
               collection = isArray(val) && val || [val];
               for (i = _i = 0, _len = collection.length; _i < _len; i = ++_i) {
                 item = collection[i];
-                emit();
-                emit(compile(tpl, item, pos, tagName));
+                out += compile(tpl, item, pos, tagName);
                 if (i < collection.length - 1) {
                   re.lastIndex = pos;
                 }
@@ -115,9 +115,12 @@
             break;
           case 'inverted_section':
             val = context[tagName];
-            pos = re.lastIndex;
+            if (htag) {
+              _ref2 = [htag, tagName], htagSection = _ref2[0], htagSectionVar = _ref2[1];
+            }
+            console.log("tag=" + fullTag + ", htagSection=\"" + (htagSection && htagSection[0] || 'null') + "\", htagSectionVar=" + htagSectionVar);
             if (!val || isArray(val) && !val.length) {
-              emit(compile(tpl, val, pos, tagName));
+              out += compile(tpl, val, pos, tagName);
               pos = re.lastIndex;
             } else {
               compile(tpl, val, pos, tagName);
