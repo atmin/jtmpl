@@ -6,15 +6,15 @@ test 'compile', ->
 		'var'
 
 	equal jtmpl('{{#a}}{{.}}{{/a}}', { a: [1, 2]}), 
-		'<span data-jt=".">1</span><span data-jt=".">2</span>', 
+		'<div data-jt="a"><span data-jt=".">1</span><span data-jt=".">2</span></div>', 
 		'numeric array'
 
 	equal jtmpl('{{#a}}{{.}}{{/a}}', { a: []}), 
-		'', 
+		'<div data-jt="a"></div>', 
 		'empty array'
 
 	equal jtmpl('{{#a}}{{z}}{{/a}}', { a: [{z:1}]}),
-		'<span data-jt="z">1</span>',
+		'<div data-jt="a"><span data-jt="z">1</span></div>',
 		'object array'
 
 	equal jtmpl('{{^a}}{{z}}{{/a}}', { a: [{z:1}]}), 
@@ -22,7 +22,7 @@ test 'compile', ->
 		'object array false'
 
 	equal jtmpl('{{#a}}1{{/a}}', { a: true }),
-		'1',
+		'<div data-jt="a">1</div>',
 		'positive condition'
 
 	equal jtmpl('{{^a}}1{{/a}}', { a: true }), 
@@ -30,7 +30,7 @@ test 'compile', ->
 		'negative condition'
 
 	equal jtmpl('{{#a}}1{{/a}}', { a: false }), 
-		'', 
+		'<div data-jt="a"></div>', 
 		'positive condition false'
 
 	equal jtmpl('{{^a}}1{{/a}}', { a: false }),

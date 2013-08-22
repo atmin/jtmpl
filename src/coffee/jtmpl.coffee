@@ -128,12 +128,12 @@ window.jtmpl = (target, tpl, model) ->
 					val = if tagName is '.' then context else context[tagName]
 					val = tagType is 'unescaped_var' and val or escapeHTML(val)
 					if not htag
-						out += "<span data-jt=#{ tagName }>#{ val }</span>"
+						out += "<span data-jt=\"#{ tagName }\">#{ val }</span>"
 
 				when 'section'
 					val = context[tagName]
 					if not htag
-						out += "<div data-jt=#{ tagName }>"
+						out += "<div data-jt=\"#{ tagName }\">"
 
 					# falsy value or empty collection?
 					if not val or isArray(val) and not val.length

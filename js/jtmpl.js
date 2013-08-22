@@ -92,13 +92,13 @@
             val = tagName === '.' ? context : context[tagName];
             val = tagType === 'unescaped_var' && val || escapeHTML(val);
             if (!htag) {
-              out += "<span data-jt=" + tagName + ">" + val + "</span>";
+              out += "<span data-jt=\"" + tagName + "\">" + val + "</span>";
             }
             break;
           case 'section':
             val = context[tagName];
             if (!htag) {
-              out += "<div data-jt=" + tagName + ">";
+              out += "<div data-jt=\"" + tagName + "\">";
             }
             if (!val || isArray(val) && !val.length) {
               compile(tpl, context, pos, tagName);
