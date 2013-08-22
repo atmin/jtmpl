@@ -1,6 +1,6 @@
 (function() {
   window.jtmpl = function(target, tpl, model) {
-    var bind, compile, escapeHTML, hre, html, isArray, isObject, re, reId;
+    var bind, compile, escapeHTML, hre, html, isArray, isObject, parseTag, re, reId;
     reId = /^\#[\w-]+$/;
     if (typeof target === 'string' && typeof tpl === 'object' && model === void 0) {
       model = tpl;
@@ -42,33 +42,33 @@
         }
       });
     };
+    parseTag = function(tag) {
+      return [
+        (function() {
+          switch (tag[2]) {
+            case '/':
+              return 'end';
+            case '#':
+              return 'section';
+            case '^':
+              return 'inverted_section';
+            case void 0:
+              if (tag[1] === '{') {
+                return 'unescaped_var';
+              } else {
+                return 'var';
+              }
+            default:
+              throw ':( internal error, tag ' + tag[0];
+          }
+        })(), tag[3], tag[0]
+      ];
+    };
     compile = function(tpl, context, pos, openTagName) {
-      var collection, flush, fullTag, htag, htagSection, htagSectionVar, i, item, out, parseTag, processHTag, tag, tagName, tagType, val, _i, _len, _ref, _ref1;
+      var collection, flush, fullTag, htag, htagSection, htagSectionVar, i, injectTag, item, out, processHTag, tag, tagName, tagType, val, _i, _len, _ref, _ref1;
       pos = pos || 0;
       out = '';
       tag = htag = htagSection = htagSectionVar = null;
-      parseTag = function() {
-        return [
-          (function() {
-            switch (tag[2]) {
-              case '/':
-                return 'end';
-              case '#':
-                return 'section';
-              case '^':
-                return 'inverted_section';
-              case void 0:
-                if (tag[1] === '{') {
-                  return 'unescaped_var';
-                } else {
-                  return 'var';
-                }
-              default:
-                throw ':( internal error, tag ' + tag[0];
-            }
-          })(), tag[3], tag[0]
-        ];
-      };
       processHTag = function(proto) {
         return [htag[1], htag[4] === '>', htag.index];
       };
@@ -77,8 +77,9 @@
         return pos = re.lastIndex;
       };
       tpl = tpl.replace(new RegExp("<!--\\s*(" + re.source + ")\\s*-->"), '$1');
+      injectTag = function() {};
       while (tag = re.exec(tpl)) {
-        _ref = parseTag(), tagType = _ref[0], tagName = _ref[1], fullTag = _ref[2];
+        _ref = parseTag(tag), tagType = _ref[0], tagName = _ref[1], fullTag = _ref[2];
         flush();
         hre.lastIndex = 0;
         htag = hre.exec(tpl.slice(0, re.lastIndex - (fullTag || '').length));
@@ -92,16 +93,21 @@
             val = tagName === '.' ? context : context[tagName];
             val = tagType === 'unescaped_var' && val || escapeHTML(val);
             if (!htag) {
-              out += "<span data-jt=\"" + tagName + "\">" + val + "</span>";
+              out += "<span data-jt=\"" + fullTag + "\">" + val + "</span>";
+            } else {
+              out += val;
+              injectTag();
             }
             break;
           case 'section':
             val = context[tagName];
             if (!htag) {
-              out += "<div data-jt=\"" + tagName + "\">";
+              out += "<div data-jt=\"" + fullTag + "\">";
+            } else {
+              injectTag();
             }
             if (!val || isArray(val) && !val.length) {
-              compile(tpl, context, pos, tagName);
+              out += "<!-- " + (compile(tpl, item, pos, tagName)) + " -->";
               pos = re.lastIndex;
             } else {
               collection = isArray(val) && val || [val];
@@ -120,15 +126,20 @@
             break;
           case 'inverted_section':
             val = context[tagName];
-            if (htag) {
+            if (!htag) {
+              out += "<div data-jt=\"" + fullTag + "\">";
+            } else {
               _ref1 = [htag, tagName], htagSection = _ref1[0], htagSectionVar = _ref1[1];
             }
             if (!val || isArray(val) && !val.length) {
               out += compile(tpl, val, pos, tagName);
               pos = re.lastIndex;
             } else {
-              compile(tpl, val, pos, tagName);
+              out += "<!-- " + (compile(tpl, val, pos, tagName)) + " -->";
               pos = re.lastIndex;
+            }
+            if (!htag) {
+              out += '</div>';
             }
         }
       }

@@ -77,22 +77,23 @@ window.jtmpl = (target, tpl, model) ->
 					when '>' then '&gt;'
 					else s
 
+	# Return [tagType, tagName, fullTag] from regexp match
+	parseTag = (tag) ->
+		[switch tag[2]
+			when '/' then 'end'
+			when '#' then 'section'
+			when '^' then 'inverted_section'
+			when undefined then (if tag[1] is '{' then 'unescaped_var' else 'var')
+			else throw ':( internal error, tag ' + tag[0]
+		, tag[3], tag[0]]
+
+
 
 	# Parse template, remove jtmpl tags, inject data-jtmpl attributes
 	compile = (tpl, context, pos, openTagName) ->
 		pos = pos or 0
 		out = ''
 		tag = htag = htagSection = htagSectionVar = null
-
-		# Return [tagType, tagName, fullTag] from regexp match
-		parseTag = () ->
-			[switch tag[2]
-				when '/' then 'end'
-				when '#' then 'section'
-				when '^' then 'inverted_section'
-				when undefined then (if tag[1] is '{' then 'unescaped_var' else 'var')
-				else throw ':( internal error, tag ' + tag[0]
-			, tag[3], tag[0]]
 
 		# Create `proto` tag when htag is null, inject `data-jtmpl` attr in `out`, if needed
 		# Return [htagName, htagClosed, htagInjectPos]
@@ -107,10 +108,13 @@ window.jtmpl = (target, tpl, model) ->
 		# Strip HTML comments that enclose tags
 		tpl = tpl.replace(new RegExp("<!--\\s*(#{ re.source })\\s*-->"), '$1')
 
+		injectTag = () ->
+			;
+
 		# Main parsing loop
 		while tag = re.exec(tpl)
 
-			[tagType, tagName, fullTag] = parseTag()
+			[tagType, tagName, fullTag] = parseTag(tag)
 
 			flush()
 			hre.lastIndex = 0
@@ -128,17 +132,22 @@ window.jtmpl = (target, tpl, model) ->
 					val = if tagName is '.' then context else context[tagName]
 					val = tagType is 'unescaped_var' and val or escapeHTML(val)
 					if not htag
-						out += "<span data-jt=\"#{ tagName }\">#{ val }</span>"
+						out += "<span data-jt=\"#{ fullTag }\">#{ val }</span>"
+					else
+						out += val
+						injectTag()
 
 				when 'section'
 					val = context[tagName]
 					if not htag
-						out += "<div data-jt=\"#{ tagName }\">"
+						out += "<div data-jt=\"#{ fullTag }\">"
+					else
+						injectTag()
 
 					# falsy value or empty collection?
 					if not val or isArray(val) and not val.length
-						# discard section
-						compile(tpl, context, pos, tagName)
+						# compile section recursively, enclose in HTML comment
+						out += "<!-- #{ compile(tpl, item, pos, tagName) } -->"
 						pos = re.lastIndex
 					else
 						# output section
@@ -154,7 +163,10 @@ window.jtmpl = (target, tpl, model) ->
 
 				when 'inverted_section'
 					val = context[tagName]
-					if htag then [htagSection, htagSectionVar] = [htag, tagName]
+					if not htag
+						out += "<div data-jt=\"#{ fullTag }\">"
+					else
+						[htagSection, htagSectionVar] = [htag, tagName]
 
 					# falsy value or empty collection?
 					if not val or isArray(val) and not val.length
@@ -162,9 +174,12 @@ window.jtmpl = (target, tpl, model) ->
 						out += compile(tpl, val, pos, tagName)
 						pos = re.lastIndex
 					else
-						# discard section
-						compile(tpl, val, pos, tagName)
+						# compile section recursively, enclose in HTML comment
+						out += "<!-- #{ compile(tpl, val, pos, tagName) } -->"
 						pos = re.lastIndex
+						
+					if not htag
+						out += '</div>'
 
 		return out + tpl.slice(pos)
 
