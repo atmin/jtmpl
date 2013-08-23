@@ -115,7 +115,7 @@
               if (typeof val !== 'function') {
                 if (htag[3] && !htag[5]) {
                   if (typeof val === 'boolean') {
-                    out = out.replace(/[\w-_]+=$/, '') + (val && tagName || '');
+                    out = out.replace(/[\w-_]+=$/, '') + (val && htag[2] || '');
                   } else {
                     out += '"' + val + '"';
                   }

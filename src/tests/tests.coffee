@@ -48,3 +48,8 @@ test 'compile', ->
 	equal jtmpl('<p attr="{{a}}"></p>', { a: 42 }),
 		'<p data-jt="attr=a" attr="42"></p>',
 		'var on attribute'
+
+	equal jtmpl('<div>{{#outer}}<div>{{#inner}}{{.}}{{/inner}}</div>{{/outer}}</div>', 
+			{ outer: [{ inner: [1, 2, 3] }, { inner: [1, 2] }, { inner: [1] }] }),
+		'<div data-jt="#outer"><div data-jt="#inner"><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner"><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner"><span data-jt=".">1</span></div></div>',
+		'nested sections'

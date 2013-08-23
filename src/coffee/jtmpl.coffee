@@ -139,7 +139,7 @@ window.jtmpl = (target, tpl, model) ->
 			[tagType, tagName, fullTag, fullTagNoDelim] = parseTag(tag)
 
 			flush()
-			htag = out.match(hre) # .replace(/\n/g, '')
+			htag = out.match(hre)
 
 			switch tagType
 				when 'end'
@@ -162,7 +162,7 @@ window.jtmpl = (target, tpl, model) ->
 								# output boolean HTML attr?
 								if typeof val is 'boolean'
 									# erase "attr=" part, output attr if needed
-									out = out.replace(/[\w-_]+=$/, '') + (val and tagName or '')
+									out = out.replace(/[\w-_]+=$/, '') + (val and htag[2] or '')
 								else
 									out += '"' + val + '"'
 							else
@@ -181,6 +181,7 @@ window.jtmpl = (target, tpl, model) ->
 					if tagType == 'section'
 						# section and (falsy value or empty collection)?
 						if not val or isArray(val) and not val.length
+							# emit section in HTML comment
 							emitSection(val or context, '#')
 							pos = re.lastIndex
 						else
@@ -198,7 +199,7 @@ window.jtmpl = (target, tpl, model) ->
 							emitSection(context)
 							pos = re.lastIndex
 						else
-							# compile section recursively, enclose in HTML comment
+							# emit section in HTML comment
 							emitSection(context, '^')
 							pos = re.lastIndex
 
