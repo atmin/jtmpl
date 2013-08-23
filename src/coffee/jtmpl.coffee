@@ -40,18 +40,19 @@ window.jtmpl = (target, tpl, model) ->
 
 	# Last opened opening HTML tag
 	hre = ///
-		<\s*([\w-]+)   # capture HTML tag name
-		(?:	\s+		   # non-capturing group HTML attribute
-			([\w-\{\}]*)      # capture last attribute name
-			(?: =             # capture optional last attribute value
-				(   (?:"[^"]*"?) |   # attribute value double quoted (allow unclosed)
-					(?:'[^']*'?) |   # single quoted
-					[\w-\{\}]+       # or unquoted 
+		(<\s*[\w-_]+)   # capture HTML tag opening and name `htag[1]`
+		(?:\s+ 		    # non-capturing group HTML attribute
+			([\w-\{\}]*)      # capture last attribute name `htag[2]`
+			(=)?              # capture the = `htag[3]`
+			(?:               # capture optional last attribute value
+				(   (?: "[^">]*"?) |   # attribute value double quoted (allow unclosed)
+					(?: '[^'>]*'?) |   # single quoted
+					[^\s>]+            # or unquoted `htag[4]`
 				)
 			)?
 		)*
-		\s*(>)?        # capture if tag closed
-		$              # end of slice
+		\s*(>)?        # capture if tag closed `htag[5]`
+		\s*$           # whitespace, end of slice
 	///
 
 
@@ -68,7 +69,7 @@ window.jtmpl = (target, tpl, model) ->
 	escapeHTML = (val) ->
 		(val? and val or '')
 			.toString()
-			.replace /[&"<>\\]/g, (s) ->
+			.replace /[&\"<>\\]/g, (s) ->
 				switch s
 					when '&' then '&amp;'
 					when '\\'then '\\\\'
@@ -77,7 +78,7 @@ window.jtmpl = (target, tpl, model) ->
 					when '>' then '&gt;'
 					else s
 
-	# Return [tagType, tagName, fullTag] from regexp match
+	# Return [tagType, tagName, fullTag, fullTagNoDelim] from regexp match
 	parseTag = (tag) ->
 		[switch tag[2]
 			when '/' then 'end'
@@ -85,40 +86,60 @@ window.jtmpl = (target, tpl, model) ->
 			when '^' then 'inverted_section'
 			when undefined then (if tag[1] is '{' then 'unescaped_var' else 'var')
 			else throw ':( internal error, tag ' + tag[0]
-		, tag[3], tag[0]]
-
+		, tag[3], tag[0], (tag[2] or '') + tag[3]]
 
 
 	# Parse template, remove jtmpl tags, inject data-jtmpl attributes
-	compile = (tpl, context, pos, openTagName) ->
-		pos = pos or 0
+	compile = (tpl, context, position, openTagName) ->
+		pos = position or 0
 		out = ''
 		tag = htag = htagSection = htagSectionVar = null
 
-		# Create `proto` tag when htag is null, inject `data-jtmpl` attr in `out`, if needed
-		# Return [htagName, htagClosed, htagInjectPos]
-		processHTag = (proto) ->
-			[htag[1], htag[4] is '>', htag.index]
+		## Template preprocessing
+		# Strip HTML comments that enclose tags
+		tpl = tpl.replace(new RegExp("<!--\\s*(#{ re.source })\\s*-->"), '$1')
 
+		# Strip quotes around html element attributes associated with tags
+		tpl = tpl.replace(new RegExp("([\\w-_]+)=\"(#{ re.source })\"", 'g'), '$1=$2')
+
+		# If tags stand on their own line remove the line, keep the tag only
+		tpl = tpl.replace(new RegExp("\\n\\s*(#{ re.source })\\s*\\n", 'g'), '\n$1')
+
+		## Routines
 		# Flush output
 		flush = () ->
 			out += tpl.slice(pos, re.lastIndex - (fullTag or '').length)
 			pos = re.lastIndex
 
-		# Strip HTML comments that enclose tags
-		tpl = tpl.replace(new RegExp("<!--\\s*(#{ re.source })\\s*-->"), '$1')
+		# get prop=value string
+		getPropString = (val, quote) ->
+			quote = quote or ''
+			htag[3] and not htag[5] and (htag[2] + htag[3] + quote + val + quote) or val
 
+		# emit current section, possibly enclosed in a comment to serve as template
+		emitSection = (context, commentProto) ->
+			out += (if commentProto then "<!-- #{ commentProto } " else '') + 
+					compile(tpl, context, pos, tagName) +
+					(if commentProto then ' -->' else '')
+
+		# inject data-jt attribute
 		injectTag = () ->
-			;
+			p = htag.index + htag[1].length
+			t = "#{ getPropString(fullTagNoDelim) }"
+			# attribute already injected?
+			if m = out.match(new RegExp("[\\s\\S]{#{ p }}(\\sdata-jt=\"([^\"]*))\""))
+				p = p + m[1].length
+				out = "#{ out.slice(0, p) }#{ m[2].length and ' ' or '' }#{ t }#{ out.slice(p) }"
+			else				
+				out = "#{ out.slice(0, p) } data-jt=\"#{ t }\"#{ out.slice(p) }"
 
-		# Main parsing loop
+		## Main parsing loop
 		while tag = re.exec(tpl)
 
-			[tagType, tagName, fullTag] = parseTag(tag)
+			[tagType, tagName, fullTag, fullTagNoDelim] = parseTag(tag)
 
 			flush()
-			hre.lastIndex = 0
-			htag = hre.exec(tpl.slice(0, re.lastIndex - (fullTag or '').length))
+			htag = out.match(hre) # .replace(/\n/g, '')
 
 			switch tagType
 				when 'end'
@@ -128,57 +149,60 @@ window.jtmpl = (target, tpl, model) ->
 					# Exit recursion
 					return out
 
-				when 'var' or 'unescaped_var'
+				when 'var', 'unescaped_var'
 					val = if tagName is '.' then context else context[tagName]
-					val = tagType is 'unescaped_var' and val or escapeHTML(val)
+					escaped = tagType is 'unescaped_var' and val or escapeHTML(val)
 					if not htag
-						out += "<span data-jt=\"#{ fullTag }\">#{ val }</span>"
-					else
-						out += val
-						injectTag()
-
-				when 'section'
-					val = context[tagName]
-					if not htag
-						out += "<div data-jt=\"#{ fullTag }\">"
+						out += "<span data-jt=\"#{ fullTagNoDelim }\">#{ escaped }</span>"
 					else
 						injectTag()
+						if typeof val isnt 'function'
+							# output HTML attr?
+							if htag[3] and not htag[5]
+								# output boolean HTML attr?
+								if typeof val is 'boolean'
+									# erase "attr=" part, output attr if needed
+									out = out.replace(/[\w-_]+=$/, '') + (val and tagName or '')
+								else
+									out += '"' + val + '"'
+							else
+								out += val
 
-					# falsy value or empty collection?
-					if not val or isArray(val) and not val.length
-						# compile section recursively, enclose in HTML comment
-						out += "<!-- #{ compile(tpl, item, pos, tagName) } -->"
-						pos = re.lastIndex
-					else
-						# output section
-						collection = isArray(val) and val or [val]
-						for item, i in collection
-							out += compile(tpl, item, pos, tagName)
-							if i < collection.length - 1
-								re.lastIndex = pos
-						pos = re.lastIndex
-
-					if not htag
-						out += '</div>'
-
-				when 'inverted_section'
+				when 'section', 'inverted_section'
 					val = context[tagName]
-					if not htag
-						out += "<div data-jt=\"#{ fullTag }\">"
+					if not htag and not htagSection and htagSectionVar isnt tagName
+						emitEndDiv = true
+						out += "<div data-jt=\"#{ fullTagNoDelim }\">"
 					else
+						if not htag then htag = htagSection
 						[htagSection, htagSectionVar] = [htag, tagName]
+						injectTag()
 
-					# falsy value or empty collection?
-					if not val or isArray(val) and not val.length
-						# output section
-						out += compile(tpl, val, pos, tagName)
-						pos = re.lastIndex
+					if tagType == 'section'
+						# section and (falsy value or empty collection)?
+						if not val or isArray(val) and not val.length
+							emitSection(val or context, '#')
+							pos = re.lastIndex
+						else
+							# output section
+							collection = isArray(val) and val or [val]
+							for item, i in collection
+								emitSection(if isObject(val) then item else context)
+								if i < collection.length - 1
+									re.lastIndex = pos
+							pos = re.lastIndex
 					else
-						# compile section recursively, enclose in HTML comment
-						out += "<!-- #{ compile(tpl, val, pos, tagName) } -->"
-						pos = re.lastIndex
-						
-					if not htag
+						# falsy value or empty collection?
+						if not val or isArray(val) and not val.length
+							# output section
+							emitSection(context)
+							pos = re.lastIndex
+						else
+							# compile section recursively, enclose in HTML comment
+							emitSection(context, '^')
+							pos = re.lastIndex
+
+					if emitEndDiv
 						out += '</div>'
 
 		return out + tpl.slice(pos)

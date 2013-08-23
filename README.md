@@ -57,7 +57,7 @@ Details
 
 	* _similarly, sections are automatically enclosed in a_ `<div>` _if needed_
 
-	* `data-jtmpl` _attributes containing metadata for_ `Stage2` _are injected in HTML elements_
+	* `data-jt` _attributes containing metadata for_ `Stage2` _are injected in HTML elements_
 
 	* _partials are not currently supported, plans are to support id-based and URL-based partials_
 
@@ -67,10 +67,10 @@ Details
 * it's a [MV(C)](http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) micro-framework for the browser
 
 		<!-- View -->
-		<div id=jtmpl data-model=model>
+		<script id="jtmpl" data-model="model" type="text/html">
 			Hello, {{who}}
 			<button onclick={{click}}>{{buttonText}}</button>
-		<div>
+		</script>
 
 		<!-- Model (View is controlled implicitly) -->
 		<script>
@@ -92,7 +92,7 @@ Details
 			}
 		</script>
 
-		<!-- do the dirty work (`jtmpl` will detect `div[id=jtmpl][data-model=model]`) -->
+		<!-- do the dirty work (`jtmpl` will detect `*[id=jtmpl][data-model]`) -->
 		<script src="js/jtmpl.min.js"></script>
 
     * _or, to invoke manually:_ `jtmpl('#target-id', 'template contents or "#template-id"', model)` 

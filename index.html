@@ -61,7 +61,7 @@ Other JavaScript MV* frameworks require you either:</p>
 </li>
 <li><p><em>similarly, sections are automatically enclosed in a</em> <code>&lt;div&gt;</code> <em>if needed</em></p>
 </li>
-<li><p><code>data-jtmpl</code> <em>attributes containing metadata for</em> <code>Stage2</code> <em>are injected in HTML elements</em></p>
+<li><p><code>data-jt</code> <em>attributes containing metadata for</em> <code>Stage2</code> <em>are injected in HTML elements</em></p>
 </li>
 <li><p><em>partials are not currently supported, plans are to support id-based and URL-based partials</em></p>
 </li>
@@ -73,10 +73,10 @@ Other JavaScript MV* frameworks require you either:</p>
 <ul>
 <li><p>it&#39;s a <a href="http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller">MV(C)</a> micro-framework for the browser</p>
 <pre><code>  &lt;!-- View --&gt;
-  &lt;div id=jtmpl data-model=model&gt;
+  &lt;script id=&quot;jtmpl&quot; data-model=&quot;model&quot; type=&quot;text/html&quot;&gt;
       Hello, {{who}}
       &lt;button onclick={{click}}&gt;{{buttonText}}&lt;/button&gt;
-  &lt;div&gt;
+  &lt;/script&gt;
 
   &lt;!-- Model (View is controlled implicitly) --&gt;
   &lt;script&gt;
@@ -98,7 +98,7 @@ Other JavaScript MV* frameworks require you either:</p>
       }
   &lt;/script&gt;
 
-  &lt;!-- do the dirty work (`jtmpl` will detect `div[id=jtmpl][data-model=model]`) --&gt;
+  &lt;!-- do the dirty work (`jtmpl` will detect `*[id=jtmpl][data-model]`) --&gt;
   &lt;script src=&quot;js/jtmpl.min.js&quot;&gt;&lt;/script&gt;</code></pre>
 <ul>
 <li><p><em>or, to invoke manually:</em> <code>jtmpl(&#39;#target-id&#39;, &#39;template contents or &quot;#template-id&quot;&#39;, model)</code> </p>

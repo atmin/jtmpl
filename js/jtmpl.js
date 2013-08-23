@@ -17,7 +17,7 @@
       tpl = document.getElementById(tpl.substring(1)).innerHTML;
     }
     re = /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g;
-    hre = /<\s*([\w-]+)(?:\s+([\w-\{\}]*)(?:=((?:"[^"]*"?)|(?:'[^']*'?)|[\w-\{\}]+))?)*\s*(>)?$/;
+    hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?(?:((?:"[^">]*"?)|(?:'[^'>]*'?)|[^\s>]+))?)*\s*(>)?\s*$/;
     isArray = Array.isArray || function(val) {
       return {}.toString.call(val) === '[object Array]';
     };
@@ -25,7 +25,7 @@
       return val && typeof val === 'object';
     };
     escapeHTML = function(val) {
-      return ((val != null) && val || '').toString().replace(/[&"<>\\]/g, function(s) {
+      return ((val != null) && val || '').toString().replace(/[&\"<>\\]/g, function(s) {
         switch (s) {
           case '&':
             return '&amp;';
@@ -61,84 +61,108 @@
             default:
               throw ':( internal error, tag ' + tag[0];
           }
-        })(), tag[3], tag[0]
+        })(), tag[3], tag[0], (tag[2] || '') + tag[3]
       ];
     };
-    compile = function(tpl, context, pos, openTagName) {
-      var collection, flush, fullTag, htag, htagSection, htagSectionVar, i, injectTag, item, out, processHTag, tag, tagName, tagType, val, _i, _len, _ref, _ref1;
-      pos = pos || 0;
+    compile = function(tpl, context, position, openTagName) {
+      var collection, emitEndDiv, emitSection, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, htagSection, htagSectionVar, i, injectTag, item, out, pos, tag, tagName, tagType, val, _i, _len, _ref, _ref1;
+      pos = position || 0;
       out = '';
       tag = htag = htagSection = htagSectionVar = null;
-      processHTag = function(proto) {
-        return [htag[1], htag[4] === '>', htag.index];
-      };
+      tpl = tpl.replace(new RegExp("<!--\\s*(" + re.source + ")\\s*-->"), '$1');
+      tpl = tpl.replace(new RegExp("([\\w-_]+)=\"(" + re.source + ")\"", 'g'), '$1=$2');
+      tpl = tpl.replace(new RegExp("\\n\\s*(" + re.source + ")\\s*\\n", 'g'), '\n$1');
       flush = function() {
         out += tpl.slice(pos, re.lastIndex - (fullTag || '').length);
         return pos = re.lastIndex;
       };
-      tpl = tpl.replace(new RegExp("<!--\\s*(" + re.source + ")\\s*-->"), '$1');
-      injectTag = function() {};
+      getPropString = function(val, quote) {
+        quote = quote || '';
+        return htag[3] && !htag[5] && (htag[2] + htag[3] + quote + val + quote) || val;
+      };
+      emitSection = function(context, commentProto) {
+        return out += (commentProto ? "<!-- " + commentProto + " " : '') + compile(tpl, context, pos, tagName) + (commentProto ? ' -->' : '');
+      };
+      injectTag = function() {
+        var m, p, t;
+        p = htag.index + htag[1].length;
+        t = "" + (getPropString(fullTagNoDelim));
+        if (m = out.match(new RegExp("[\\s\\S]{" + p + "}(\\sdata-jt=\"([^\"]*))\""))) {
+          p = p + m[1].length;
+          return out = "" + (out.slice(0, p)) + (m[2].length && ' ' || '') + t + (out.slice(p));
+        } else {
+          return out = "" + (out.slice(0, p)) + " data-jt=\"" + t + "\"" + (out.slice(p));
+        }
+      };
       while (tag = re.exec(tpl)) {
-        _ref = parseTag(tag), tagType = _ref[0], tagName = _ref[1], fullTag = _ref[2];
+        _ref = parseTag(tag), tagType = _ref[0], tagName = _ref[1], fullTag = _ref[2], fullTagNoDelim = _ref[3];
         flush();
-        hre.lastIndex = 0;
-        htag = hre.exec(tpl.slice(0, re.lastIndex - (fullTag || '').length));
+        htag = out.match(hre);
         switch (tagType) {
           case 'end':
             if (tagName !== openTagName) {
               throw (!openTagName ? ":( unexpected {{/" + tagName + "}}" : ":( expected {{/" + openTagName + "}}, got " + fullTag);
             }
             return out;
-          case 'var' || 'unescaped_var':
+          case 'var':
+          case 'unescaped_var':
             val = tagName === '.' ? context : context[tagName];
-            val = tagType === 'unescaped_var' && val || escapeHTML(val);
+            escaped = tagType === 'unescaped_var' && val || escapeHTML(val);
             if (!htag) {
-              out += "<span data-jt=\"" + fullTag + "\">" + val + "</span>";
+              out += "<span data-jt=\"" + fullTagNoDelim + "\">" + escaped + "</span>";
             } else {
-              out += val;
               injectTag();
+              if (typeof val !== 'function') {
+                if (htag[3] && !htag[5]) {
+                  if (typeof val === 'boolean') {
+                    out = out.replace(/[\w-_]+=$/, '') + (val && tagName || '');
+                  } else {
+                    out += '"' + val + '"';
+                  }
+                } else {
+                  out += val;
+                }
+              }
             }
             break;
           case 'section':
-            val = context[tagName];
-            if (!htag) {
-              out += "<div data-jt=\"" + fullTag + "\">";
-            } else {
-              injectTag();
-            }
-            if (!val || isArray(val) && !val.length) {
-              out += "<!-- " + (compile(tpl, item, pos, tagName)) + " -->";
-              pos = re.lastIndex;
-            } else {
-              collection = isArray(val) && val || [val];
-              for (i = _i = 0, _len = collection.length; _i < _len; i = ++_i) {
-                item = collection[i];
-                out += compile(tpl, item, pos, tagName);
-                if (i < collection.length - 1) {
-                  re.lastIndex = pos;
-                }
-              }
-              pos = re.lastIndex;
-            }
-            if (!htag) {
-              out += '</div>';
-            }
-            break;
           case 'inverted_section':
             val = context[tagName];
-            if (!htag) {
-              out += "<div data-jt=\"" + fullTag + "\">";
+            if (!htag && !htagSection && htagSectionVar !== tagName) {
+              emitEndDiv = true;
+              out += "<div data-jt=\"" + fullTagNoDelim + "\">";
             } else {
+              if (!htag) {
+                htag = htagSection;
+              }
               _ref1 = [htag, tagName], htagSection = _ref1[0], htagSectionVar = _ref1[1];
+              injectTag();
             }
-            if (!val || isArray(val) && !val.length) {
-              out += compile(tpl, val, pos, tagName);
-              pos = re.lastIndex;
+            if (tagType === 'section') {
+              if (!val || isArray(val) && !val.length) {
+                emitSection(val || context, '#');
+                pos = re.lastIndex;
+              } else {
+                collection = isArray(val) && val || [val];
+                for (i = _i = 0, _len = collection.length; _i < _len; i = ++_i) {
+                  item = collection[i];
+                  emitSection(isObject(val) ? item : context);
+                  if (i < collection.length - 1) {
+                    re.lastIndex = pos;
+                  }
+                }
+                pos = re.lastIndex;
+              }
             } else {
-              out += "<!-- " + (compile(tpl, val, pos, tagName)) + " -->";
-              pos = re.lastIndex;
+              if (!val || isArray(val) && !val.length) {
+                emitSection(context);
+                pos = re.lastIndex;
+              } else {
+                emitSection(context, '^');
+                pos = re.lastIndex;
+              }
             }
-            if (!htag) {
+            if (emitEndDiv) {
               out += '</div>';
             }
         }
