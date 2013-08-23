@@ -1,7 +1,7 @@
 _`{{`_ `jtmpl` _`}}`_
 =====================
 
-#### Humanistic JavaScript MV framework
+#### Humanistic JavaScript MV framework (Live Mustache Templates)
 
 <br>
  _Code is work in progress, feel free to explore concept_
@@ -104,7 +104,7 @@ Details
 
 * no dependencies, [polyfill](https://github.com/jdarling/Object.observe) built-in
 
-* IE 8+, Firefox, Chrome, Opera
+* Firefox, Chrome, Opera, IE 9 (IE8 requires Array.map polyfill)
 
 * Downloads: [jtmpl.coffee](src/coffee/jtmpl.coffee), [jtmpl.js](js/jtmpl.js), [jtmpl.min.js](js/jtmpl.min.js)
 
@@ -143,7 +143,7 @@ Showcase of all features, tests
 			</p>
 
 			<h3>Collection&mdash;<code>model.collection</code></h3>
-			<ul>
+			<ul class="dummy-class just for the_test">
 				{{#collection}}
 				<li>type <code>{{type}}</code>, value <code>{{value}}</code></li>
 				{{/collection}}

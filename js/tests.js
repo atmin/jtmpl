@@ -11,27 +11,27 @@
     }), 'tpl<span data-jt="a">A</span>xyz', 'var');
     equal(jtmpl('{{#a}}{{.}}{{/a}}', {
       a: [1, 2]
-    }), '<div data-jt="#a"><span data-jt=".">1</span><span data-jt=".">2</span></div>', 'numeric array');
+    }), '<div data-jt="#a"><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span></div>', 'numeric array');
     equal(jtmpl('{{#a}}{{.}}{{/a}}', {
       a: []
-    }), '<div data-jt="#a"><!-- # <span data-jt="."></span> --></div>', 'empty array');
+    }), '<div data-jt="#a"><!-- # <<<.>>> --></div>', 'empty array');
     equal(jtmpl('{{#a}}{{z}}{{/a}}', {
       a: [
         {
           z: 1
         }
       ]
-    }), '<div data-jt="#a"><span data-jt="z">1</span></div>', 'object array');
+    }), '<div data-jt="#a"><!-- # <<<z>>> --><span data-jt="z">1</span></div>', 'object array');
     equal(jtmpl('{{^a}}{{z}}{{/a}}', {
       a: [
         {
           z: 1
         }
       ]
-    }), '<div data-jt="^a"><!-- ^ <span data-jt="z"></span> --></div>', 'object array false');
+    }), '<div data-jt="^a"><!-- ^ <<<z>>> --></div>', 'object array false');
     equal(jtmpl('{{#a}}1{{/a}}', {
       a: true
-    }), '<div data-jt="#a">1</div>', 'positive condition');
+    }), '<div data-jt="#a"><!-- # 1 -->1</div>', 'positive condition');
     equal(jtmpl('{{^a}}1{{/a}}', {
       a: true
     }), '<div data-jt="^a"><!-- ^ 1 --></div>', 'negative condition');
@@ -40,7 +40,7 @@
     }), '<div data-jt="#a"><!-- # 1 --></div>', 'positive condition false');
     equal(jtmpl('{{^a}}1{{/a}}', {
       a: false
-    }), '<div data-jt="^a">1</div>', 'negative condition false');
+    }), '<div data-jt="^a"><!-- ^ 1 -->1</div>', 'negative condition false');
     equal(jtmpl('<p>{{a}}</p>', {
       a: 1
     }), '<p data-jt="a">1</p>', 'inject var tag');
@@ -60,7 +60,7 @@
           inner: [1]
         }
       ]
-    }), '<div data-jt="#outer"><div data-jt="#inner"><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner"><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner"><span data-jt=".">1</span></div></div>', 'nested sections');
+    }), '<div data-jt="#outer"><!-- # <div><<<#inner>>><<<.>>><<</inner>>></div> --><div data-jt="#inner"><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner"><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner"><!-- # <<<.>>> --><span data-jt=".">1</span></div></div>', 'nested sections');
   });
 
 }).call(this);

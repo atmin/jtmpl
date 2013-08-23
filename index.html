@@ -15,7 +15,7 @@
     <body>
     	<a href="https://github.com/atmin/jtmpl"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png" alt="Fork me on GitHub"></a>
         <h1><em><code>{{</code></em> <code>jtmpl</code> <em><code>}}</code></em></h1>
-<h4>Humanistic JavaScript MV framework</h4>
+<h4>Humanistic JavaScript MV framework (Live Mustache Templates)</h4>
 <p><br>
  <em>Code is work in progress, feel free to explore concept</em></p>
 <h2>Why</h2>
@@ -113,7 +113,7 @@ Other JavaScript MV* frameworks require you either:</p>
 </li>
 <li><p>no dependencies, <a href="https://github.com/jdarling/Object.observe">polyfill</a> built-in</p>
 </li>
-<li><p>IE 8+, Firefox, Chrome, Opera</p>
+<li><p>Firefox, Chrome, Opera, IE 9 (IE8 requires Array.map polyfill)</p>
 </li>
 <li><p>Downloads: <a href="src/coffee/jtmpl.coffee">jtmpl.coffee</a>, <a href="js/jtmpl.js">jtmpl.js</a>, <a href="js/jtmpl.min.js">jtmpl.min.js</a></p>
 </li>
@@ -146,7 +146,7 @@ Other JavaScript MV* frameworks require you either:</p>
         &lt;/p&gt;
 
         &lt;h3&gt;Collection&amp;mdash;&lt;code&gt;model.collection&lt;/code&gt;&lt;/h3&gt;
-        &lt;ul&gt;
+        &lt;ul class=&quot;dummy-class just for the_test&quot;&gt;
             {{#collection}}
             &lt;li&gt;type &lt;code&gt;{{type}}&lt;/code&gt;, value &lt;code&gt;{{value}}&lt;/code&gt;&lt;/li&gt;
             {{/collection}}

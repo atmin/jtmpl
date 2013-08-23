@@ -1,8 +1,13 @@
 (function() {
-  window.jtmpl = function(target, tpl, model) {
-    var bind, compile, escapeHTML, hre, html, isArray, isObject, parseTag, re, reId;
+  var root;
+
+  root = this;
+
+  root.jtmpl = function(target, tpl, model, options) {
+    var bind, compile, escapeHTML, hre, html, isArray, isObject, parseTag, quoteRE, re, reId;
     reId = /^\#[\w-]+$/;
     if (typeof target === 'string' && typeof tpl === 'object' && model === void 0) {
+      options = model;
       model = tpl;
       tpl = target;
       target = null;
@@ -16,7 +21,13 @@
     if (tpl.match && tpl.match(reId)) {
       tpl = document.getElementById(tpl.substring(1)).innerHTML;
     }
-    re = /\{\{(\{)?(\#|\^|\/)?([\w\.]+)(\})?\}\}/g;
+    quoteRE = function(s) {
+      return (s + '').replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
+    };
+    options = options || {};
+    options.delimiters = (options.delimiters || '{{ }}').split(' ');
+    options.compiledDelimiters = (options.compiledDelimiters || '<<< >>>').split(' ');
+    re = new RegExp(quoteRE(options.delimiters[0]) + /(\{)?(\#|\^|\/)?([\w\.]+)(\})?/.source + quoteRE(options.delimiters[1]), 'g');
     hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?(?:((?:"[^">]*"?)|(?:'[^'>]*'?)|[^\s>]+))?)*\s*(>)?\s*$/;
     isArray = Array.isArray || function(val) {
       return {}.toString.call(val) === '[object Array]';
@@ -65,13 +76,13 @@
       ];
     };
     compile = function(tpl, context, position, openTagName) {
-      var collection, emitEndDiv, emitSection, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, htagSection, htagSectionVar, i, injectTag, item, out, pos, tag, tagName, tagType, val, _i, _len, _ref, _ref1;
+      var collection, discardSection, emitEndDiv, emitSection, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, htagSection, htagSectionVar, i, injectTag, item, out, pos, section, tag, tagName, tagType, val, _i, _len, _ref, _ref1;
       pos = position || 0;
       out = '';
       tag = htag = htagSection = htagSectionVar = null;
       tpl = tpl.replace(new RegExp("<!--\\s*(" + re.source + ")\\s*-->"), '$1');
       tpl = tpl.replace(new RegExp("([\\w-_]+)=\"(" + re.source + ")\"", 'g'), '$1=$2');
-      tpl = tpl.replace(new RegExp("\\n\\s*(" + re.source + ")\\s*\\n", 'g'), '\n$1');
+      tpl = tpl.replace(new RegExp("\\n\\s*(" + re.source + ")\\s*\\n", 'g'), '\n$1\n');
       flush = function() {
         out += tpl.slice(pos, re.lastIndex - (fullTag || '').length);
         return pos = re.lastIndex;
@@ -80,8 +91,11 @@
         quote = quote || '';
         return htag[3] && !htag[5] && (htag[2] + htag[3] + quote + val + quote) || val;
       };
-      emitSection = function(context, commentProto) {
-        return out += (commentProto ? "<!-- " + commentProto + " " : '') + compile(tpl, context, pos, tagName) + (commentProto ? ' -->' : '');
+      emitSection = function(context) {
+        return out += compile(tpl, context, pos, tagName);
+      };
+      discardSection = function() {
+        return compile(tpl, context, pos, tagName);
       };
       injectTag = function() {
         var m, p, t;
@@ -138,9 +152,15 @@
               _ref1 = [htag, tagName], htagSection = _ref1[0], htagSectionVar = _ref1[1];
               injectTag();
             }
+            section = tpl.slice(pos).match(new RegExp('([\\s\\S]*?)' + quoteRE(options.delimiters[0] + '/' + tagName + options.delimiters[1])));
+            if (!section) {
+              throw ":( unclosed section " + fullTag;
+            }
+            section = section[1].replace(new RegExp(quoteRE(options.delimiters[0]), 'g'), options.compiledDelimiters[0]).replace(new RegExp(quoteRE(options.delimiters[1]), 'g'), options.compiledDelimiters[1]);
+            out += "<!-- " + tag[2] + " " + section + " -->";
             if (tagType === 'section') {
               if (!val || isArray(val) && !val.length) {
-                emitSection(val || context, '#');
+                discardSection();
                 pos = re.lastIndex;
               } else {
                 collection = isArray(val) && val || [val];
@@ -158,7 +178,7 @@
                 emitSection(context);
                 pos = re.lastIndex;
               } else {
-                emitSection(context, '^');
+                discardSection(context, '^');
                 pos = re.lastIndex;
               }
             }
@@ -174,7 +194,15 @@
       return html;
     }
     target.innerHTML = html;
-    return bind = function(root) {};
+    bind = function(root, context, parent) {
+      var node, _i, _len, _ref, _results;
+      _ref = root.childNodes;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        node = _ref[_i];      }
+      return _results;
+    };
+    return bind(target, model);
   };
 
 }).call(this);

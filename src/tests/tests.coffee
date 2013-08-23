@@ -6,23 +6,23 @@ test 'compile', ->
 		'var'
 
 	equal jtmpl('{{#a}}{{.}}{{/a}}', { a: [1, 2]}), 
-		'<div data-jt="#a"><span data-jt=".">1</span><span data-jt=".">2</span></div>', 
+		'<div data-jt="#a"><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span></div>', 
 		'numeric array'
 
 	equal jtmpl('{{#a}}{{.}}{{/a}}', { a: []}), 
-		'<div data-jt="#a"><!-- # <span data-jt="."></span> --></div>', 
+		'<div data-jt="#a"><!-- # <<<.>>> --></div>', 
 		'empty array'
 
 	equal jtmpl('{{#a}}{{z}}{{/a}}', { a: [{z:1}]}),
-		'<div data-jt="#a"><span data-jt="z">1</span></div>',
+		'<div data-jt="#a"><!-- # <<<z>>> --><span data-jt="z">1</span></div>',
 		'object array'
 
 	equal jtmpl('{{^a}}{{z}}{{/a}}', { a: [{z:1}]}), 
-		'<div data-jt="^a"><!-- ^ <span data-jt="z"></span> --></div>', 
+		'<div data-jt="^a"><!-- ^ <<<z>>> --></div>', 
 		'object array false'
 
 	equal jtmpl('{{#a}}1{{/a}}', { a: true }),
-		'<div data-jt="#a">1</div>',
+		'<div data-jt="#a"><!-- # 1 -->1</div>',
 		'positive condition'
 
 	equal jtmpl('{{^a}}1{{/a}}', { a: true }), 
@@ -34,7 +34,7 @@ test 'compile', ->
 		'positive condition false'
 
 	equal jtmpl('{{^a}}1{{/a}}', { a: false }),
-		'<div data-jt="^a">1</div>',
+		'<div data-jt="^a"><!-- ^ 1 -->1</div>',
 		'negative condition false'
 
 	equal jtmpl('<p>{{a}}</p>', { a: 1}),
@@ -51,5 +51,5 @@ test 'compile', ->
 
 	equal jtmpl('<div>{{#outer}}<div>{{#inner}}{{.}}{{/inner}}</div>{{/outer}}</div>', 
 			{ outer: [{ inner: [1, 2, 3] }, { inner: [1, 2] }, { inner: [1] }] }),
-		'<div data-jt="#outer"><div data-jt="#inner"><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner"><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner"><span data-jt=".">1</span></div></div>',
+		'<div data-jt="#outer"><!-- # <div><<<#inner>>><<<.>>><<</inner>>></div> --><div data-jt="#inner"><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner"><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner"><!-- # <<<.>>> --><span data-jt=".">1</span></div></div>',
 		'nested sections'
