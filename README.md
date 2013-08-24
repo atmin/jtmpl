@@ -159,7 +159,7 @@ Showcase of all features, tests
 			</p>
 
 			<h3>innerHTML&mdash;<code>model.innerHTML</code></h3>
-			<!-- {{{innerHTML}}} -->     
+			<div><!-- {{{innerHTML}}} --></div>
 			<!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
 
 			<h3>Data binding&mdash;<code>model.field</code></h3>
@@ -216,7 +216,7 @@ Showcase of all features, tests
 
 				removeDisabled: false,
 
-				field: null,
+				field: '',
 
 				innerHTML: '<p>Hi, how are you?</p>',
 

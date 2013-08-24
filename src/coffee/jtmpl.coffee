@@ -106,7 +106,7 @@ root.jtmpl = (target, tpl, model, options) ->
 	compile = (tpl, context, position, openTagName) ->
 		pos = position or 0
 		out = ''
-		tag = htag = htagSection = htagSectionVar = null
+		tag = htag = null
 
 		## Template preprocessing
 		# Strip HTML comments that enclose tags
@@ -188,16 +188,13 @@ root.jtmpl = (target, tpl, model, options) ->
 								out += val
 
 				when 'section', 'inverted_section'
-					val = context[tagName]
-					if not htag and not htagSection and htagSectionVar isnt tagName
-						emitEndDiv = true
+					if not htag
 						out += "<div data-jt=\"#{ fullTagNoDelim }\">"
 					else
-						if not htag then htag = htagSection
-						[htagSection, htagSectionVar] = [htag, tagName]
 						injectTag()
 
 					# emit section template in a HTML comment
+					val = context[tagName]
 					section = tpl.slice(pos).match(
 						new RegExp('([\\s\\S]*?)' + quoteRE(options.delimiters[0] + '/' + tagName + options.delimiters[1])))
 					if not section
@@ -208,7 +205,7 @@ root.jtmpl = (target, tpl, model, options) ->
 					out += "<!-- #{ tag[2] } #{ section } -->"
 
 					if tagType == 'section'
-						# section and (falsy value or empty collection)?
+						# falsy value or empty collection?
 						if not val or isArray(val) and not val.length
 							discardSection()
 							pos = re.lastIndex
@@ -230,7 +227,7 @@ root.jtmpl = (target, tpl, model, options) ->
 							discardSection(context, '^')
 							pos = re.lastIndex
 
-					if emitEndDiv
+					if not htag
 						out += '</div>'
 
 		return out + tpl.slice(pos)

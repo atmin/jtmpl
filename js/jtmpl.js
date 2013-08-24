@@ -76,10 +76,10 @@
       ];
     };
     compile = function(tpl, context, position, openTagName) {
-      var collection, discardSection, emitEndDiv, emitSection, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, htagSection, htagSectionVar, i, injectTag, item, out, pos, section, tag, tagName, tagType, val, _i, _len, _ref, _ref1;
+      var collection, discardSection, emitSection, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectTag, item, out, pos, section, tag, tagName, tagType, val, _i, _len, _ref;
       pos = position || 0;
       out = '';
-      tag = htag = htagSection = htagSectionVar = null;
+      tag = htag = null;
       tpl = tpl.replace(new RegExp("<!--\\s*(" + re.source + ")\\s*-->"), '$1');
       tpl = tpl.replace(new RegExp("([\\w-_]+)=\"(" + re.source + ")\"", 'g'), '$1=$2');
       tpl = tpl.replace(new RegExp("\\n\\s*(" + re.source + ")\\s*\\n", 'g'), '\n$1\n');
@@ -143,17 +143,12 @@
             break;
           case 'section':
           case 'inverted_section':
-            val = context[tagName];
-            if (!htag && !htagSection && htagSectionVar !== tagName) {
-              emitEndDiv = true;
+            if (!htag) {
               out += "<div data-jt=\"" + fullTagNoDelim + "\">";
             } else {
-              if (!htag) {
-                htag = htagSection;
-              }
-              _ref1 = [htag, tagName], htagSection = _ref1[0], htagSectionVar = _ref1[1];
               injectTag();
             }
+            val = context[tagName];
             section = tpl.slice(pos).match(new RegExp('([\\s\\S]*?)' + quoteRE(options.delimiters[0] + '/' + tagName + options.delimiters[1])));
             if (!section) {
               throw ":( unclosed section " + fullTag;
@@ -184,7 +179,7 @@
                 pos = re.lastIndex;
               }
             }
-            if (emitEndDiv) {
+            if (!htag) {
               out += '</div>';
             }
         }
