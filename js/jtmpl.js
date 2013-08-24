@@ -126,7 +126,9 @@
               out += "<span data-jt=\"" + fullTagNoDelim + "\">" + escaped + "</span>";
             } else {
               injectTag();
-              if (typeof val !== 'function') {
+              if (typeof val === 'function') {
+                out = out.replace(/[\w-_]+=$/, '');
+              } else {
                 if (htag[3] && !htag[5]) {
                   if (typeof val === 'boolean') {
                     out = out.replace(/[\w-_]+=$/, '') + (val && htag[2] || '');
@@ -199,7 +201,20 @@
       _ref = root.childNodes;
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        node = _ref[_i];      }
+        node = _ref[_i];
+        switch (node.nodeType) {
+          case node.ELEMENT_NODE:
+            _results.push(console.log(node.getAttribute('data-jt')));
+            break;
+          case node.TEXT_NODE:
+            break;
+          case node.COMMENT_NODE:
+            _results.push(node.data);
+            break;
+          default:
+            throw ":( unexpected nodeType " + node.nodeType;
+        }
+      }
       return _results;
     };
     return bind(target, model);

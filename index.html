@@ -65,8 +65,6 @@ Other JavaScript MV* frameworks require you either:</p>
 </li>
 <li><p><em>partials are not currently supported, plans are to support id-based and URL-based partials</em></p>
 </li>
-<li><p><em>setting a new delimiter is not currently supported</em></p>
-</li>
 </ul>
 </li>
 </ul>
@@ -85,12 +83,12 @@ Other JavaScript MV* frameworks require you either:</p>
           buttonText: &#39;Shout&#39;,
           click: function() {
               with (this) {
-                  if (field == &#39;browser&#39;) {
-                      field = &#39;BROWSER&#39;; 
+                  if (who == &#39;browser&#39;) {
+                      who = &#39;BROWSER&#39;; 
                       buttonText = &#39;Keep quiet&#39;;
                   }
                   else {
-                      field = &#39;browser&#39;; 
+                      who = &#39;browser&#39;; 
                       buttonText = &#39;Shout again&#39;;
                   } 
               }
@@ -155,7 +153,7 @@ Other JavaScript MV* frameworks require you either:</p>
             {{/collection}}
         &lt;/ul&gt;
         &lt;button onclick={{add}}&gt;Add random&lt;/button&gt;
-        &lt;button onclick=&quot;{{remove}}&quot;&gt;Remove last&lt;/button&gt;
+        &lt;button onclick=&quot;{{remove}}&quot; disabled={{removeDisabled}}&gt;Remove last&lt;/button&gt;
 
         &lt;h3&gt;Toggle text&amp;mdash;&lt;code&gt;model.text&lt;/code&gt;&lt;/h3&gt;
         &lt;a href=&quot;#&quot; onclick=&#39;{{toggle}}&#39;&gt;Toggle&lt;/a&gt;
@@ -219,6 +217,8 @@ Other JavaScript MV* frameworks require you either:</p>
                 }
             ],
 
+            removeDisabled: false,
+
             field: null,
 
             innerHTML: &#39;&lt;p&gt;Hi, how are you?&lt;/p&gt;&#39;,
@@ -257,6 +257,7 @@ Other JavaScript MV* frameworks require you either:</p>
             },
             remove: function() {
                 this.collection.pop();
+                this.removeDisabled = this.collection.length == 0;
             }
         };
     &lt;/script&gt;

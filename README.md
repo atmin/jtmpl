@@ -61,8 +61,6 @@ Details
 
 	* _partials are not currently supported, plans are to support id-based and URL-based partials_
 
-	* _setting a new delimiter is not currently supported_
-
 
 * it's a [MV(C)](http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) micro-framework for the browser
 
@@ -79,12 +77,12 @@ Details
 				buttonText: 'Shout',
 				click: function() {
 					with (this) {
-						if (field == 'browser') {
-							field = 'BROWSER'; 
+						if (who == 'browser') {
+							who = 'BROWSER'; 
 							buttonText = 'Keep quiet';
 						}
 						else {
-							field = 'browser'; 
+							who = 'browser'; 
 							buttonText = 'Shout again';
 						} 
 					}
@@ -152,7 +150,7 @@ Showcase of all features, tests
 				{{/collection}}
 			</ul>
 			<button onclick={{add}}>Add random</button>
-			<button onclick="{{remove}}">Remove last</button>
+			<button onclick="{{remove}}" disabled={{removeDisabled}}>Remove last</button>
 
 			<h3>Toggle text&mdash;<code>model.text</code></h3>
 			<a href="#" onclick='{{toggle}}'>Toggle</a>
@@ -216,6 +214,8 @@ Showcase of all features, tests
 					}
 				],
 
+				removeDisabled: false,
+
 				field: null,
 
 				innerHTML: '<p>Hi, how are you?</p>',
@@ -254,6 +254,7 @@ Showcase of all features, tests
 				},
 				remove: function() {
 					this.collection.pop();
+					this.removeDisabled = this.collection.length == 0;
 				}
 			};
 		</script>

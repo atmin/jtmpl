@@ -1,5 +1,8 @@
 $ = (s) -> Array.prototype.slice.call document.querySelectorAll s
 
+
+
+
 test 'compile', ->
 	equal jtmpl('tpl{{a}}xyz', { a: 'A'}), 
 		'tpl<span data-jt="a">A</span>xyz',
@@ -58,3 +61,13 @@ test 'compile', ->
 			{ outer: [{ inner: [1, 2, 3] }, { inner: [1, 2] }, { inner: [1] }] }),
 		'<div data-jt="#outer"><!-- # <<<#inner>>><<<.>>><<</inner>>> --><div data-jt="#inner"><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner"><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner"><!-- # <<<.>>> --><span data-jt=".">1</span></div></div>',
 		'nested sections no divs'
+
+
+
+
+
+
+test 'bind', ->
+	equal jtmpl('tpl{{a}}xyz', { a: 'A'}), 
+		'tpl<span data-jt="a">A</span>xyz',
+		'var'	

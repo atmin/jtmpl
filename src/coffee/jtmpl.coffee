@@ -8,6 +8,7 @@ root.jtmpl = (target, tpl, model, options) ->
 	reId = /^\#[\w-]+$/
 
 
+
 	## Interface
 
 	# `jtmpl(tpl, model)`?
@@ -26,6 +27,7 @@ root.jtmpl = (target, tpl, model, options) ->
 
 	# `jtmpl('#template-id', ...)` or `jtmpl(element, '#template-id', ...)`
 	tpl = document.getElementById(tpl.substring(1)).innerHTML if tpl.match and tpl.match(reId)
+
 
 
 
@@ -99,7 +101,8 @@ root.jtmpl = (target, tpl, model, options) ->
 		, tag[3], tag[0], (tag[2] or '') + tag[3]]
 
 
-	# Parse template, remove jtmpl tags, inject data-jtmpl attributes
+
+	# Parse template, remove jtmpl tags, add data-jt attrs and structure as HTML comments
 	compile = (tpl, context, position, openTagName) ->
 		pos = position or 0
 		out = ''
@@ -126,7 +129,7 @@ root.jtmpl = (target, tpl, model, options) ->
 			quote = quote or ''
 			htag[3] and not htag[5] and (htag[2] + htag[3] + quote + val + quote) or val
 
-		# emit current section, possibly enclosed in a comment to serve as template
+		# emit current section
 		emitSection = (context) ->
 			out += compile(tpl, context, pos, tagName)
 
@@ -138,7 +141,8 @@ root.jtmpl = (target, tpl, model, options) ->
 		injectTag = () ->
 			p = htag.index + htag[1].length
 			t = "#{ getPropString(fullTagNoDelim) }"
-			# attribute already injected?
+			# attribute exists?
+			# regex [\s\S]{N} matches N characters
 			if m = out.match(new RegExp("[\\s\\S]{#{ p }}(\\sdata-jt=\"([^\"]*))\""))
 				p = p + m[1].length
 				out = "#{ out.slice(0, p) }#{ m[2].length and ' ' or '' }#{ t }#{ out.slice(p) }"
@@ -168,12 +172,15 @@ root.jtmpl = (target, tpl, model, options) ->
 						out += "<span data-jt=\"#{ fullTagNoDelim }\">#{ escaped }</span>"
 					else
 						injectTag()
-						if typeof val isnt 'function'
+						if typeof val is 'function'
+							# erase "attr=" part
+							out = out.replace(/[\w-_]+=$/, '')
+						else
 							# output HTML attr?
 							if htag[3] and not htag[5]
 								# output boolean HTML attr?
 								if typeof val is 'boolean'
-									# erase "attr=" part, output attr if needed
+									# erase "attr=" part, output attr if true
 									out = out.replace(/[\w-_]+=$/, '') + (val and htag[2] or '')
 								else
 									out += '"' + val + '"'
@@ -213,7 +220,8 @@ root.jtmpl = (target, tpl, model, options) ->
 								if i < collection.length - 1
 									re.lastIndex = pos
 							pos = re.lastIndex
-					else # tagType == 'inverted_section'
+
+					else# tagType == 'inverted_section'
 						# falsy value or empty collection?
 						if not val or isArray(val) and not val.length
 							emitSection(context)
@@ -239,10 +247,23 @@ root.jtmpl = (target, tpl, model, options) ->
 	target.innerHTML = html
 
 
+
 	# Bind event handlers
 	bind = (root, context, parent) ->
 		for node in root.childNodes
-			;
+			switch node.nodeType
+				# Tag
+				when node.ELEMENT_NODE
+					console.log node.getAttribute('data-jt')
+				# Text
+				when node.TEXT_NODE
+					;
+				# Comment
+				when node.COMMENT_NODE
+					node.data
+				else
+					throw ":( unexpected nodeType #{ node.nodeType }"
+
 
 	bind(target, model)
 

@@ -31,7 +31,7 @@
 			{{/collection}}
 		</ul>
 		<button onclick={{add}}>Add random</button>
-		<button onclick="{{remove}}">Remove last</button>
+		<button onclick="{{remove}}" disabled={{removeDisabled}}>Remove last</button>
 
 		<h3>Toggle text&mdash;<code>model.text</code></h3>
 		<a href="#" onclick='{{toggle}}'>Toggle</a>
@@ -95,6 +95,8 @@
 				}
 			],
 
+			removeDisabled: false,
+
 			field: null,
 
 			innerHTML: '<p>Hi, how are you?</p>',
@@ -133,6 +135,7 @@
 			},
 			remove: function() {
 				this.collection.pop();
+				this.removeDisabled = this.collection.length == 0;
 			}
 		};
 	</script>
