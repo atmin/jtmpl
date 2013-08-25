@@ -1,10 +1,10 @@
 (function() {
-  var root;
+  var $, isArray, isObject, repr, root;
 
   root = this;
 
   root.jtmpl = function(target, tpl, model, options) {
-    var bind, compile, escapeHTML, hre, html, isArray, isObject, matchHTMLTag, parseTag, quoteRE, re, reId;
+    var bind, compile, escapeHTML, hre, html, matchHTMLTag, parseTag, quoteRE, re, reId;
     reId = /^\#[\w-]+$/;
     if (typeof target === 'string' && typeof tpl === 'object' && model === void 0) {
       options = model;
@@ -33,12 +33,6 @@
     re = new RegExp(quoteRE(options.delimiters[0]) + /(\{)?(\#|\^|\/)?([\w\.]+)(\})?/.source + quoteRE(options.delimiters[1]), 'g');
     hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?(?:((?:"[^">]*"?)|(?:'[^'>]*'?)|[^\s>]+))?)*\s*(>)?\s*$/;
     matchHTMLTag = /^(\s*<([\w-_]+))(?:(\s*data-jt="[^"]*)")?[^>]*>.*?<\/\2>\s*$/;
-    isArray = Array.isArray || function(val) {
-      return {}.toString.call(val) === '[object Array]';
-    };
-    isObject = function(val) {
-      return val && typeof val === 'object';
-    };
     escapeHTML = function(val) {
       return ((val != null) && val || '').toString().replace(/[&\"<>\\]/g, function(s) {
         switch (s) {
@@ -112,6 +106,7 @@
       };
       addSectionItem = function(s) {
         var m, p;
+        s = s.trim();
         m = s.match(matchHTMLTag);
         return out += !m ? "<" + options.defaultSectionItem + " data-jt=\".\">" + s + "</" + options.defaultSectionItem + ">" : (p = m[1].length + (m[3] && m[3].length || 0), "" + (s.slice(0, p)) + (!m[3] && ' data-jt="."' || ' .') + (s.slice(p)));
       };
@@ -160,7 +155,7 @@
             if (!section) {
               throw ":( unclosed section " + fullTag;
             }
-            section = section[1].replace(new RegExp(quoteRE(options.delimiters[0]), 'g'), options.compiledDelimiters[0]).replace(new RegExp(quoteRE(options.delimiters[1]), 'g'), options.compiledDelimiters[1]);
+            section = section[1].trim().replace(new RegExp(quoteRE(options.delimiters[0]), 'g'), options.compiledDelimiters[0]).replace(new RegExp(quoteRE(options.delimiters[1]), 'g'), options.compiledDelimiters[1]);
             out += "<!-- " + tag[2] + " " + section + " -->";
             if (tagType === 'section') {
               if (!val || isArray(val) && !val.length) {
@@ -199,29 +194,123 @@
       return html;
     }
     target.innerHTML = html;
-    bind = function(root, context, parent) {
-      var node, _i, _len, _ref, _results;
+    target.setAttribute('data-jt', '.');
+    bind = function(root, context, level) {
+      var attr, bindVarProp, bindings, k, kv, node, tmp, v, _i, _j, _len, _len1, _ref, _ref1, _ref2;
+      bindings = [];
+      level = level || '';
+      bindVarProp = function(node, v, prop) {};
       _ref = root.childNodes;
-      _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         node = _ref[_i];
         switch (node.nodeType) {
           case node.ELEMENT_NODE:
-            _results.push(console.log(node.getAttribute('data-jt')));
+            if (attr = node.getAttribute('data-jt')) {
+              _ref1 = attr.split(' ');
+              for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+                kv = _ref1[_j];
+                _ref2 = kv.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref2[0], k = _ref2[1], v = _ref2[2];
+                bindings.push([k, v]);
+              }
+            }
+            bind(node, context, level + '    ');
             break;
           case node.TEXT_NODE:
             break;
           case node.COMMENT_NODE:
-            _results.push(node.data);
             break;
           default:
             throw ":( unexpected nodeType " + node.nodeType;
         }
       }
-      return _results;
+      if (bindings.length) {
+        console.log(context);
+        return Object.observe(context, function(changes) {
+          var change, _k, _len2, _results;
+          _results = [];
+          for (_k = 0, _len2 = changes.length; _k < _len2; _k++) {
+            change = changes[_k];
+            _results.push(console.log(">>>" + change.name + " was " + change.type + " and is now " + change.object[change.name]));
+          }
+          return _results;
+        });
+      }
     };
     return bind(target, model);
   };
+
+  isArray = Array.isArray || function(val) {
+    return {}.toString.call(val) === '[object Array]';
+  };
+
+  isObject = function(val) {
+    return val && typeof val === 'object';
+  };
+
+  repr = function(o, depth, max) {
+    var e, k;
+    if (depth == null) {
+      depth = 0;
+    }
+    if (max == null) {
+      max = 2;
+    }
+    if (depth > max) {
+      return '<..>';
+    } else {
+      switch (typeof o) {
+        case 'string':
+          return "\"" + (o.replace(/"/g, '\\"')) + "\"";
+        case 'function':
+          return 'function';
+        case 'object':
+          if (o === null) {
+            'null';
+          }
+          if (isArray(o)) {
+            return '[' + [
+              (function() {
+                var _i, _len, _results;
+                _results = [];
+                for (_i = 0, _len = o.length; _i < _len; _i++) {
+                  e = o[_i];
+                  _results.push('' + repr(e, depth + 1, max));
+                }
+                return _results;
+              })()
+            ] + ']';
+          } else {
+            return '{' + [
+              (function() {
+                var _i, _len, _ref, _results;
+                _ref = o.keys();
+                _results = [];
+                for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                  k = _ref[_i];
+                  _results.push('' + k + ':' + repr(o[k], depth + 1, max));
+                }
+                return _results;
+              })()
+            ] + '}';
+          }
+          break;
+        case 'undefined':
+          return 'undefined';
+        default:
+          return o;
+      }
+    }
+  };
+
+  $ = function(s) {
+    return Array.prototype.slice.call(document.querySelectorAll(s));
+  };
+
+  if (!String.prototype.trim) {
+    String.prototype.trim = function() {
+      return this.replace(/^\s+|\s+$/g, '');
+    };
+  }
 
 }).call(this);
 

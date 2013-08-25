@@ -15,9 +15,20 @@
     <body>
     	<a href="https://github.com/atmin/jtmpl"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png" alt="Fork me on GitHub"></a>
         <h1><em><code>{{</code></em> <code>jtmpl</code> <em><code>}}</code></em></h1>
-<h4>Humanistic JavaScript MV framework (Live Mustache Templates)</h4>
+<h4>Humanistic JavaScript MV framework</h4>
 <p><br>
- <em>Code is work in progress, feel free to explore concept</em></p>
+ <em>Code is work in progress (<code>Stage1</code> is mostly finished), feel free to explore concept</em></p>
+<h2>What</h2>
+<p><code>jtmpl</code> is a DOM-aware templating engine. It renders a <a href="http://mustache.github.io">Mustache</a> HTML template using a <code>model</code> object and infers bindings from template structure, so when <code>model</code> changes DOM is updated accordingly and vice versa. </p>
+<p>There&#39;s never need to touch the DOM directly, <code>model</code> is the <a href="http://en.wikipedia.org/wiki/Single_Source_of_Truth">single source of truth</a></p>
+<p>Other JavaScript MV* frameworks require you either:</p>
+<ul>
+<li><p>explicitly specify (via code or DOM element attributes) how to do the binding</p>
+</li>
+<li><p>build DOM via code :(</p>
+</li>
+</ul>
+<p><code>jtmpl</code> provides you live templates that just work.</p>
 <h2>Why</h2>
 <ul>
 <li><p>embrace <a href="http://en.wikipedia.org/wiki/Keep_it_simple">KISS</a> and <a href="http://en.wikipedia.org/wiki/Don&#39;t_repeat_yourself">DRY</a></p>
@@ -28,29 +39,16 @@
 </li>
 </ul>
 <h2>How</h2>
-<p>In a nutshell:</p>
 <ol>
 <li><p>Compile Mustache-compatible template using a <code>model</code> object into a valid HTML string (with added metadata)</p>
 <p> <code>Stage1</code> can be processed server-side or browser-side</p>
 </li>
-<li><p>Using <code>Stage1</code> output generate DOM and bind elements properties to <code>model</code> properties, so your model is the <a href="http://en.wikipedia.org/wiki/Single_Source_of_Truth">single source of truth</a></p>
+<li><p>Using <code>Stage1</code> output generate DOM and bind elements properties to <code>model</code> properties </p>
 </li>
 </ol>
-<p><br>
-<code>jtmpl</code> <em>takes care of the conversion of</em> <code>template</code><em>s to</em> <code>DOM element</code><em>s and all the event handling needed to keep them in sync with</em> <code>model</code>.</p>
-<p><br>
-Other JavaScript MV* frameworks require you either:</p>
-<ul>
-<li><p>explicitly specify (via code or DOM element attributes) how to do the binding</p>
-</li>
-<li><p>build DOM via code :(</p>
-</li>
-</ul>
-<p><code>jtmpl</code> enables you to assume you just have live templates.</p>
-<p>It&#39;s still explicit&mdash;tags have types and names. And the boilerplate is gone.</p>
 <h2>Details</h2>
 <ul>
-<li><p>it&#39;s a template compiler of a simple, but powerful <a href="http://mustache.github.io">syntax</a></p>
+<li><p><code>Stage1</code> is a template compiler</p>
 <pre><code>  &gt; jtmpl(&#39;Hello, {{who}}&#39;, { who: &#39;server&#39; })
 
   Hello, &lt;span data-jt=&quot;{{who}}&quot;&gt;server&lt;/span&gt;</code></pre>
@@ -69,7 +67,7 @@ Other JavaScript MV* frameworks require you either:</p>
 </li>
 </ul>
 <ul>
-<li><p>it&#39;s a <a href="http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller">MV(C)</a> micro-framework for the browser</p>
+<li><p><code>Stage2</code> is a <a href="http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller">MV(C)</a> framework for the browser</p>
 <pre><code>  &lt;!-- View --&gt;
   &lt;script id=&quot;jtmpl&quot; data-model=&quot;model&quot; type=&quot;text/html&quot;&gt;
       Hello, {{who}}
@@ -146,7 +144,7 @@ Other JavaScript MV* frameworks require you either:</p>
         &lt;h3&gt;Collection&amp;mdash;&lt;code&gt;model.collection&lt;/code&gt;&lt;/h3&gt;
         &lt;ul class=&quot;dummy-class just for the_test&quot;&gt;
             {{#collection}}
-            &lt;li&gt;type &lt;code&gt;{{type}}&lt;/code&gt;, value &lt;code&gt;{{value}}&lt;/code&gt;&lt;/li&gt;
+            &lt;li&gt;type: &lt;code&gt;{{type}}&lt;/code&gt;, value: &lt;code&gt;{{value}}&lt;/code&gt;&lt;/li&gt;
             {{/collection}}
             {{^collection}}
             &lt;li&gt;&amp;lt; empty &amp;gt;&lt;/li&gt;

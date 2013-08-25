@@ -86,16 +86,6 @@ root.jtmpl = (target, tpl, model, options) ->
 	///
 
 
-	# Array?
-	isArray = Array.isArray or (val) -> 
-		{}.toString.call(val) is '[object Array]'
-
-
-	# Existing object?
-	isObject = (val) -> 
-		val and typeof val is 'object'
-
-
 	escapeHTML = (val) ->
 		(val? and val or '')
 			.toString()
@@ -167,6 +157,7 @@ root.jtmpl = (target, tpl, model, options) ->
 		# inject data-jt attribute on section item
 		# expect compiled section as parameter, add to output
 		addSectionItem = (s) ->
+			s = s.trim()
 			m = s.match(matchHTMLTag)
 			out += if not m
 				"<#{ options.defaultSectionItem } data-jt=\".\">#{ s }</#{ options.defaultSectionItem }>"
@@ -229,7 +220,7 @@ root.jtmpl = (target, tpl, model, options) ->
 						new RegExp('([\\s\\S]*?)' + quoteRE(options.delimiters[0] + '/' + tagName + options.delimiters[1])))
 					if not section
 						throw ":( unclosed section #{ fullTag }"
-					section = section[1]
+					section = section[1].trim()
 						.replace(new RegExp(quoteRE(options.delimiters[0]), 'g'), options.compiledDelimiters[0])
 						.replace(new RegExp(quoteRE(options.delimiters[1]), 'g'), options.compiledDelimiters[1])
 					out += "<!-- #{ tag[2] } #{ section } -->"
@@ -276,27 +267,88 @@ root.jtmpl = (target, tpl, model, options) ->
 
 	# Construct DOM
 	target.innerHTML = html
+	target.setAttribute('data-jt', '.')
 
 
 
 	# Bind event handlers
-	bind = (root, context, parent) ->
+	bind = (root, context, level) ->
+		bindings = []
+		level = level or ''
+
+		bindVarProp = (node, v, prop) ->
+			;
+
 		for node in root.childNodes
 			switch node.nodeType
 				# Tag
 				when node.ELEMENT_NODE
-					console.log node.getAttribute('data-jt')
+					if attr = node.getAttribute('data-jt')
+						# iterate key[=value] pairs
+						for kv in attr.split(' ')
+							# console.log '>>> ' + kv
+							[tmp, k, v] = kv.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/)
+							bindings.push([k, v])
+
+					bind(node, context, level + '    ')
 				# Text
 				when node.TEXT_NODE
-					;
+					;# console.log node.nodeValue;
 				# Comment
 				when node.COMMENT_NODE
-					node.data
+					;# console.log node.nodeValue
 				else
 					throw ":( unexpected nodeType #{ node.nodeType }"
 
+		if bindings.length
+			console.log context
+			Object.observe(context, (changes) ->
+				for change in changes
+					console.log(">>>" + change.name + " was " + change.type + " and is now " + change.object[change.name])
+				)
+
 
 	bind(target, model)
+
+
+
+
+
+
+
+
+## Utils
+
+# Array?
+isArray = Array.isArray or (val) -> {}.toString.call(val) is '[object Array]'
+
+
+# Existing object?
+isObject = (val) -> val and typeof val is 'object'
+
+
+# https://gist.github.com/JacobOscarson/734620
+repr = (o, depth=0, max=2) ->
+  if depth > max
+    '<..>'
+  else
+    switch typeof o
+      when 'string' then "\"#{o.replace /"/g, '\\"'}\""
+      when 'function' then 'function'
+      when 'object'
+        if o is null then 'null'
+        if isArray o
+          '[' + [''+repr(e, depth + 1, max) for e in o] + ']'
+        else
+          '{' + [''+k+':'+repr(o[k], depth + 1, max) for k in o.keys()] + '}'
+      when 'undefined' then 'undefined'
+      else o
+
+# Simplest jQuery ever
+$ = (s) -> Array.prototype.slice.call document.querySelectorAll s
+
+# JavaScript 1.8.1 feature polyfill
+if !String.prototype.trim then String.prototype.trim = -> this.replace(/^\s+|\s+$/g, '')
 
 
 

@@ -1,10 +1,30 @@
 _`{{`_ `jtmpl` _`}}`_
 =====================
 
-#### Humanistic JavaScript MV framework (Live Mustache Templates)
+#### Humanistic JavaScript MV framework
+
+
 
 <br>
- _Code is work in progress, feel free to explore concept_
+ _Code is work in progress (`Stage1` is mostly finished), feel free to explore concept_
+
+
+What
+----
+
+`jtmpl` is a DOM-aware templating engine. It renders a [Mustache](http://mustache.github.io) HTML template using a `model` object and infers bindings from template structure, so when `model` changes DOM is updated accordingly and vice versa. 
+
+There's never need to touch the DOM directly, `model` is the [single source of truth](http://en.wikipedia.org/wiki/Single_Source_of_Truth)
+
+Other JavaScript MV* frameworks require you either:
+
+* explicitly specify (via code or DOM element attributes) how to do the binding
+
+* build DOM via code :(
+
+`jtmpl` provides you live templates that just work.
+
+
 
 Why
 ---
@@ -16,36 +36,23 @@ Why
 * ideas by humans, automation by computers
 
 
+
 How
 ---
-
-In a nutshell:
 
 1. Compile Mustache-compatible template using a `model` object into a valid HTML string (with added metadata)
 
 	`Stage1` can be processed server-side or browser-side
 
-2. Using `Stage1` output generate DOM and bind elements properties to `model` properties, so your model is the [single source of truth](http://en.wikipedia.org/wiki/Single_Source_of_Truth)
+2. Using `Stage1` output generate DOM and bind elements properties to `model` properties 
 
-<br>
-`jtmpl` _takes care of the conversion of_ `template`_s to_ `DOM element`_s and all the event handling needed to keep them in sync with_ `model`.
 
-<br>
-Other JavaScript MV* frameworks require you either:
-
-* explicitly specify (via code or DOM element attributes) how to do the binding
-
-* build DOM via code :(
-
-`jtmpl` enables you to assume you just have live templates.
-
-It's still explicit&mdash;tags have types and names. And the boilerplate is gone.
 
 
 Details
 -------
 
-* it's a template compiler of a simple, but powerful [syntax](http://mustache.github.io)
+* `Stage1` is a template compiler
 	
 		> jtmpl('Hello, {{who}}', { who: 'server' })
 
@@ -62,7 +69,7 @@ Details
 	* _partials are not currently supported, plans are to support id-based and URL-based partials_
 
 
-* it's a [MV(C)](http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) micro-framework for the browser
+* `Stage2` is a [MV(C)](http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) framework for the browser
 
 		<!-- View -->
 		<script id="jtmpl" data-model="model" type="text/html">
@@ -143,7 +150,7 @@ Showcase of all features, tests
 			<h3>Collection&mdash;<code>model.collection</code></h3>
 			<ul class="dummy-class just for the_test">
 				{{#collection}}
-				<li>type <code>{{type}}</code>, value <code>{{value}}</code></li>
+				<li>type: <code>{{type}}</code>, value: <code>{{value}}</code></li>
 				{{/collection}}
 				{{^collection}}
 				<li>&lt; empty &gt;</li>
