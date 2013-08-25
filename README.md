@@ -22,7 +22,7 @@ Other JavaScript MV* frameworks require you either:
 
 * build DOM via code :(
 
-`jtmpl` provides you live templates that just work.
+`jtmpl` provides you _live_ templates that just work.
 
 
 
