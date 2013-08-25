@@ -4,7 +4,7 @@
   root = this;
 
   root.jtmpl = function(target, tpl, model, options) {
-    var bind, compile, escapeHTML, hre, html, isArray, isObject, parseTag, quoteRE, re, reId;
+    var bind, compile, escapeHTML, hre, html, isArray, isObject, matchHTMLTag, parseTag, quoteRE, re, reId;
     reId = /^\#[\w-]+$/;
     if (typeof target === 'string' && typeof tpl === 'object' && model === void 0) {
       options = model;
@@ -27,8 +27,12 @@
     options = options || {};
     options.delimiters = (options.delimiters || '{{ }}').split(' ');
     options.compiledDelimiters = (options.compiledDelimiters || '<<< >>>').split(' ');
+    options.defaultSection = options.defaultSectionTag || 'div';
+    options.defaultSectionItem = options.defaultSectionItem || 'div';
+    options.defaultVar = options.defaultVar || 'span';
     re = new RegExp(quoteRE(options.delimiters[0]) + /(\{)?(\#|\^|\/)?([\w\.]+)(\})?/.source + quoteRE(options.delimiters[1]), 'g');
     hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?(?:((?:"[^">]*"?)|(?:'[^'>]*'?)|[^\s>]+))?)*\s*(>)?\s*$/;
+    matchHTMLTag = /^(\s*<([\w-_]+))(?:(\s*data-jt="[^"]*)")?[^>]*>.*?<\/\2>\s*$/;
     isArray = Array.isArray || function(val) {
       return {}.toString.call(val) === '[object Array]';
     };
@@ -76,7 +80,7 @@
       ];
     };
     compile = function(tpl, context, position, openTagName) {
-      var collection, discardSection, emitSection, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectTag, item, out, pos, section, tag, tagName, tagType, val, _i, _len, _ref;
+      var addSectionItem, collection, discardSection, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectOuterTag, item, out, pos, section, tag, tagName, tagType, val, _i, _len, _ref;
       pos = position || 0;
       out = '';
       tag = htag = null;
@@ -91,22 +95,25 @@
         quote = quote || '';
         return htag[3] && !htag[5] && (htag[2] + htag[3] + quote + val + quote) || val;
       };
-      emitSection = function(context) {
-        return out += compile(tpl, context, pos, tagName);
-      };
       discardSection = function() {
         return compile(tpl, context, pos, tagName);
       };
-      injectTag = function() {
+      injectOuterTag = function() {
         var m, p, t;
         p = htag.index + htag[1].length;
         t = "" + (getPropString(fullTagNoDelim));
         if (m = out.match(new RegExp("[\\s\\S]{" + p + "}(\\sdata-jt=\"([^\"]*))\""))) {
           p = p + m[1].length;
-          return out = "" + (out.slice(0, p)) + (m[2].length && ' ' || '') + t + (out.slice(p));
+          out = "" + (out.slice(0, p)) + (m[2].length && ' ' || '') + t + (out.slice(p));
         } else {
-          return out = "" + (out.slice(0, p)) + " data-jt=\"" + t + "\"" + (out.slice(p));
+          out = "" + (out.slice(0, p)) + " data-jt=\"" + t + "\"" + (out.slice(p));
         }
+        return '';
+      };
+      addSectionItem = function(s) {
+        var m, p;
+        m = s.match(matchHTMLTag);
+        return out += !m ? "<" + options.defaultSectionItem + " data-jt=\".\">" + s + "</" + options.defaultSectionItem + ">" : (p = m[1].length + (m[3] && m[3].length || 0), "" + (s.slice(0, p)) + (!m[3] && ' data-jt="."' || ' .') + (s.slice(p)));
       };
       while (tag = re.exec(tpl)) {
         _ref = parseTag(tag), tagType = _ref[0], tagName = _ref[1], fullTag = _ref[2], fullTagNoDelim = _ref[3];
@@ -123,9 +130,9 @@
             val = tagName === '.' ? context : context[tagName];
             escaped = tagType === 'unescaped_var' && val || escapeHTML(val);
             if (!htag) {
-              out += "<span data-jt=\"" + fullTagNoDelim + "\">" + escaped + "</span>";
+              out += "<" + options.defaultVar + " data-jt=\"" + fullTagNoDelim + "\">" + escaped + "</" + options.defaultVar + ">";
             } else {
-              injectTag();
+              injectOuterTag();
               if (typeof val === 'function') {
                 out = out.replace(/[\w-_]+=$/, '');
               } else {
@@ -144,9 +151,9 @@
           case 'section':
           case 'inverted_section':
             if (!htag) {
-              out += "<div data-jt=\"" + fullTagNoDelim + "\">";
+              out += "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\">";
             } else {
-              injectTag();
+              injectOuterTag();
             }
             val = context[tagName];
             section = tpl.slice(pos).match(new RegExp('([\\s\\S]*?)' + quoteRE(options.delimiters[0] + '/' + tagName + options.delimiters[1])));
@@ -163,7 +170,7 @@
                 collection = isArray(val) && val || [val];
                 for (i = _i = 0, _len = collection.length; _i < _len; i = ++_i) {
                   item = collection[i];
-                  emitSection(isObject(val) ? item : context);
+                  addSectionItem(compile(tpl, (isObject(val) ? item : context), pos, tagName));
                   if (i < collection.length - 1) {
                     re.lastIndex = pos;
                   }
@@ -172,19 +179,20 @@
               }
             } else {
               if (!val || isArray(val) && !val.length) {
-                emitSection(context);
+                out += compile(tpl, context, pos, tagName);
                 pos = re.lastIndex;
               } else {
-                discardSection(context, '^');
+                discardSection(context);
                 pos = re.lastIndex;
               }
             }
             if (!htag) {
-              out += '</div>';
+              out += "</" + options.defaultSection + ">";
             }
         }
       }
-      return out + tpl.slice(pos);
+      out += tpl.slice(pos);
+      return out = out.replace(/data-jt="\.(\s\.)+"/g, 'data-jt="."');
     };
     html = compile(tpl, model);
     if (!target) {

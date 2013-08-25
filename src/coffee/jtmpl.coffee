@@ -34,13 +34,22 @@ root.jtmpl = (target, tpl, model, options) ->
 	## Implementation
 	quoteRE = (s) -> (s + '').replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1')
 
+	# options
 	options = options or {}
 
-	# options.delimiters are string-separated opening and closing delimiter
+	# string-separated opening and closing delimiter
 	options.delimiters = (options.delimiters or '{{ }}').split(' ')
-
-	# compiled delimiters appear in compiled section prototypes (embedded in HTML comment)
+	# delimiters are changed in the generated HTML comment-enclosed section prototype
+	# to avoid double-parsing
 	options.compiledDelimiters = (options.compiledDelimiters or '<<< >>>').split(' ')
+
+	# sections not enclosed in HTML tag are automatically enclosed
+	options.defaultSection = options.defaultSectionTag or 'div'
+	# default for section items
+	options.defaultSectionItem = options.defaultSectionItem or 'div'
+	# default for section items
+	options.defaultVar = options.defaultVar or 'span'
+
 
 	# Match jtmpl tag
 	re = new RegExp(quoteRE(options.delimiters[0]) + ///
@@ -52,8 +61,8 @@ root.jtmpl = (target, tpl, model, options) ->
 
 	# Last opened opening HTML tag
 	hre = ///
-		(<\s*[\w-_]+)   # capture HTML tag opening and name `htag[1]`
-		(?:\s+ 		    # non-capturing group HTML attribute
+		(< \s* [\w-_]+ )  # capture HTML tag opening and name `htag[1]`
+		(?: \s+ 		  # non-capturing group HTML attribute
 			([\w-\{\}]*)      # capture last attribute name `htag[2]`
 			(=)?              # capture the = `htag[3]`
 			(?:               # capture optional last attribute value
@@ -63,8 +72,17 @@ root.jtmpl = (target, tpl, model, options) ->
 				)
 			)?
 		)*
-		\s*(>)?        # capture if tag closed `htag[5]`
-		\s*$           # whitespace, end of slice
+		\s* (>)?          # capture if tag closed `htag[5]`
+		\s* $             # whitespace, end of slice
+	///
+
+	# Matches "<tag>....</tag>"?
+	matchHTMLTag = ///
+		^( \s* <([\w-_]+) )              # begin string; opening tag; capture data-jt position \1, tag name \2
+			(?: (\s* data-jt="[^"]*)")?  # existing data-jt attribute? capture inject property position \3
+			[^>]* >  
+		.*?                              # anything
+		</ \2 > \s* $                    # closing tag, end string
 	///
 
 
@@ -124,21 +142,17 @@ root.jtmpl = (target, tpl, model, options) ->
 			out += tpl.slice(pos, re.lastIndex - (fullTag or '').length)
 			pos = re.lastIndex
 
-		# get prop=value string
+		# get "prop=value" string or "value" if default prop
 		getPropString = (val, quote) ->
 			quote = quote or ''
 			htag[3] and not htag[5] and (htag[2] + htag[3] + quote + val + quote) or val
-
-		# emit current section
-		emitSection = (context) ->
-			out += compile(tpl, context, pos, tagName)
 
 		# discard current section
 		discardSection = () ->
 			compile(tpl, context, pos, tagName)
 
-		# inject data-jt attribute
-		injectTag = () ->
+		# inject data-jt attribute on section
+		injectOuterTag = () ->
 			p = htag.index + htag[1].length
 			t = "#{ getPropString(fullTagNoDelim) }"
 			# attribute exists?
@@ -146,8 +160,19 @@ root.jtmpl = (target, tpl, model, options) ->
 			if m = out.match(new RegExp("[\\s\\S]{#{ p }}(\\sdata-jt=\"([^\"]*))\""))
 				p = p + m[1].length
 				out = "#{ out.slice(0, p) }#{ m[2].length and ' ' or '' }#{ t }#{ out.slice(p) }"
-			else				
+			else
 				out = "#{ out.slice(0, p) } data-jt=\"#{ t }\"#{ out.slice(p) }"
+			''
+
+		# inject data-jt attribute on section item
+		# expect compiled section as parameter, add to output
+		addSectionItem = (s) ->
+			m = s.match(matchHTMLTag)
+			out += if not m
+				"<#{ options.defaultSectionItem } data-jt=\".\">#{ s }</#{ options.defaultSectionItem }>"
+			else
+				p = m[1].length + (m[3] and m[3].length or 0)
+				"#{ s.slice(0, p) }#{ not m[3] and ' data-jt="."' or ' .' }#{ s.slice(p) }"
 
 		## Main parsing loop
 		while tag = re.exec(tpl)
@@ -169,9 +194,9 @@ root.jtmpl = (target, tpl, model, options) ->
 					val = if tagName is '.' then context else context[tagName]
 					escaped = tagType is 'unescaped_var' and val or escapeHTML(val)
 					if not htag
-						out += "<span data-jt=\"#{ fullTagNoDelim }\">#{ escaped }</span>"
+						out += "<#{ options.defaultVar } data-jt=\"#{ fullTagNoDelim }\">#{ escaped }</#{ options.defaultVar }>"
 					else
-						injectTag()
+						injectOuterTag()
 						if typeof val is 'function'
 							# erase "attr=" part
 							out = out.replace(/[\w-_]+=$/, '')
@@ -189,12 +214,17 @@ root.jtmpl = (target, tpl, model, options) ->
 
 				when 'section', 'inverted_section'
 					if not htag
-						out += "<div data-jt=\"#{ fullTagNoDelim }\">"
+						out += "<#{ options.defaultSection } data-jt=\"#{ fullTagNoDelim }\">"
 					else
-						injectTag()
+						injectOuterTag()
 
 					# emit section template in a HTML comment
 					val = context[tagName]
+					# this is an oversimplification and will not work in all cases
+					# breaking case: {{#collection}}{{#collection}}...{{/collection}}{{/collection}}
+					# you cannot extract tree branch with a regular expression
+					# this approximation will work for cases when nested branches are
+					# named differently, than the section we're extracting
 					section = tpl.slice(pos).match(
 						new RegExp('([\\s\\S]*?)' + quoteRE(options.delimiters[0] + '/' + tagName + options.delimiters[1])))
 					if not section
@@ -213,7 +243,7 @@ root.jtmpl = (target, tpl, model, options) ->
 							# output section
 							collection = isArray(val) and val or [val]
 							for item, i in collection
-								emitSection(if isObject(val) then item else context)
+								addSectionItem(compile(tpl, (if isObject(val) then item else context), pos, tagName))
 								if i < collection.length - 1
 									re.lastIndex = pos
 							pos = re.lastIndex
@@ -221,16 +251,20 @@ root.jtmpl = (target, tpl, model, options) ->
 					else# tagType == 'inverted_section'
 						# falsy value or empty collection?
 						if not val or isArray(val) and not val.length
-							emitSection(context)
+							out += compile(tpl, context, pos, tagName)
 							pos = re.lastIndex
 						else
-							discardSection(context, '^')
+							discardSection(context)
 							pos = re.lastIndex
 
 					if not htag
-						out += '</div>'
+						out += "</#{ options.defaultSection }>"
 
-		return out + tpl.slice(pos)
+		# Remainder
+		out += tpl.slice(pos)
+
+		## Template postprocessing
+		out = out.replace(/data-jt="\.(\s\.)+"/g, 'data-jt="."')
 
 
 	# Compile template
