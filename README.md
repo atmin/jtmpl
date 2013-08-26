@@ -56,7 +56,7 @@ Details
 	
 		> jtmpl('Hello, {{who}}', { who: 'server' })
 
-		Hello, <span data-jt="{{who}}">server</span>
+		Hello, <span data-jt="who">server</span>
 
 	* _limitation by design is the contents of each [section](http://mustache.github.io/mustache.5.html) must be valid structural HTML, you cannot freely mix Mustache and HTML tags_
 
