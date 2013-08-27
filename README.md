@@ -40,7 +40,7 @@ Why
 How
 ---
 
-1. Compile Mustache-compatible template using a `model` object into a valid HTML string (with added metadata)
+1. Compile template using a `model` object into a valid HTML string (with added metadata)
 
 	`Stage1` can be processed server-side or browser-side
 
@@ -49,8 +49,8 @@ How
 
 
 
-Details
--------
+Hello, world
+------------
 
 * `Stage1` is a template compiler
 	
@@ -58,15 +58,6 @@ Details
 
 		Hello, <span data-jt="who">server</span>
 
-	* _limitation by design is the contents of each [section](http://mustache.github.io/mustache.5.html) must be valid structural HTML, you cannot freely mix Mustache and HTML tags_
-
-	* _variables are automatically enclosed in a_ `<span>` _if they aren't HTML tag contents already_
-
-	* _similarly, sections are automatically enclosed in a_ `<div>` _if needed_
-
-	* `data-jt` _attributes containing metadata for_ `Stage2` _are injected in HTML elements_
-
-	* _partials are not currently supported, plans are to support id-based and URL-based partials_
 
 
 * `Stage2` is a [MV(C)](http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) framework for the browser
@@ -97,7 +88,7 @@ Details
 			}
 		</script>
 
-		<!-- do the dirty work (`jtmpl` will detect `*[id=jtmpl][data-model]`) -->
+		<!-- that's all -->
 		<script src="js/jtmpl.min.js"></script>
 
     * _or, to invoke manually:_ `jtmpl('#target-id', 'template contents or "#template-id"', model)` 
@@ -105,14 +96,67 @@ Details
     * _template contents can be already prerendered by server to save the client some processing and help for SEO_
 
 
+
+Specifications
+--------------
+
 * based on [Object.observe](http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe)
 
 * no dependencies, [polyfill](https://github.com/jdarling/Object.observe) built-in
 
 * Firefox, Chrome, Opera, IE 9 (IE8 requires Array.map polyfill)
 
-* Downloads: [jtmpl.coffee](src/coffee/jtmpl.coffee), [jtmpl.js](js/jtmpl.js), [jtmpl.min.js](js/jtmpl.min.js)
 
+
+Downloads
+---------
+
+* [jtmpl.coffee](https://github.com/atmin/jtmpl/blob/dev/src/coffee/jtmpl.coffee)
+
+* [jtmpl.js](js/jtmpl.js)
+
+* [jtmpl.min.js](js/jtmpl.min.js)
+
+
+
+
+Details
+--------
+
+### Template specifics
+
+* limitation by design is the contents of each [section](http://mustache.github.io/mustache.5.html) must be valid structural HTML, you cannot freely mix Mustache and HTML tags
+
+* variables are automatically enclosed in a `<span>` if they aren't HTML tag contents already
+
+* similarly, sections are automatically enclosed in a `<div>` if needed
+
+* and the same goes for section items
+
+* `data-jt` attributes containing metadata for `Stage2` are injected in HTML elements
+
+* `Stage1` also emits section structures (with changed delimiters) embedded in HTML comments
+
+* partials are not currently supported, plans are to support id-based and URL-based partials
+
+
+### Interpretation of patterns
+
+* `<tag>{{var}}</tag>`&mdash;Whenever `var` changes, `tag.innerHTML` changes
+
+* `<tag prop="{{var}}"`&mdash;If `var` is null property is absent, otherwise equals `var`
+
+* `<tag prop="{{bool_var}}"`&mdash;If `bool_var` is true property is present, otherwise absent
+
+* `<tag class="{{class-name}} other-classes">`&mdash;`class-name` is expected to be boolean indicating if `tag` currently has this class
+
+* `<tag value="{{var}}">`&mdash;When `var` changes `tag.value` changes and vice versa
+
+* `<tag><!-- {{var}} --></tag>`&mdash;HTML comment is stripped when it contains one Mustache tag. This allows you to build easily templates that are valid HTML
+
+* `<tag onevent="{{handler}}">`&mdash;`on`-prefixed properties are event handlers. `handler` is expected to be a function, `this` is the `model`. No need to add `onchange` handlers, they are already handled
+
+* `<tag> {{#section}}...{{/section}} </tag>`&mdash;Whenever `section[i]` changes corresponding HTML element changes (you can insert or delete items via `Array.splice()` and only affected DOM elements are affected). There are no restrictions on the nesting level.
 
 
 
@@ -176,6 +220,11 @@ Showcase of all features, tests
 				You entered "{{field}}". Delete it and this message will disappear
 				{{/field}}
 			</p>
+
+			<h3>Data binding, toggle class&mdash;<code>model.field</code></h3>
+			<div>
+				<a href=# class="existing-class {{bound-class}}">Toggle me</a>
+			</div>
 
 			<h3>Checkboxes&mdash;<code>model.checkboxes</code></h3>
 			{{#checkboxes}}

@@ -40,30 +40,18 @@
 </ul>
 <h2>How</h2>
 <ol>
-<li><p>Compile Mustache-compatible template using a <code>model</code> object into a valid HTML string (with added metadata)</p>
+<li><p>Compile template using a <code>model</code> object into a valid HTML string (with added metadata)</p>
 <p> <code>Stage1</code> can be processed server-side or browser-side</p>
 </li>
 <li><p>Using <code>Stage1</code> output generate DOM and bind elements properties to <code>model</code> properties </p>
 </li>
 </ol>
-<h2>Details</h2>
+<h2>Hello, world</h2>
 <ul>
 <li><p><code>Stage1</code> is a template compiler</p>
 <pre><code>  &gt; jtmpl(&#39;Hello, {{who}}&#39;, { who: &#39;server&#39; })
 
   Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
-<ul>
-<li><p><em>limitation by design is the contents of each <a href="http://mustache.github.io/mustache.5.html">section</a> must be valid structural HTML, you cannot freely mix Mustache and HTML tags</em></p>
-</li>
-<li><p><em>variables are automatically enclosed in a</em> <code>&lt;span&gt;</code> <em>if they aren&#39;t HTML tag contents already</em></p>
-</li>
-<li><p><em>similarly, sections are automatically enclosed in a</em> <code>&lt;div&gt;</code> <em>if needed</em></p>
-</li>
-<li><p><code>data-jt</code> <em>attributes containing metadata for</em> <code>Stage2</code> <em>are injected in HTML elements</em></p>
-</li>
-<li><p><em>partials are not currently supported, plans are to support id-based and URL-based partials</em></p>
-</li>
-</ul>
 </li>
 </ul>
 <ul>
@@ -94,7 +82,7 @@
       }
   &lt;/script&gt;
 
-  &lt;!-- do the dirty work (`jtmpl` will detect `*[id=jtmpl][data-model]`) --&gt;
+  &lt;!-- that&#39;s all --&gt;
   &lt;script src=&quot;js/jtmpl.min.js&quot;&gt;&lt;/script&gt;</code></pre>
 <ul>
 <li><p><em>or, to invoke manually:</em> <code>jtmpl(&#39;#target-id&#39;, &#39;template contents or &quot;#template-id&quot;&#39;, model)</code> </p>
@@ -104,6 +92,7 @@
 </ul>
 </li>
 </ul>
+<h2>Specifications</h2>
 <ul>
 <li><p>based on <a href="http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe">Object.observe</a></p>
 </li>
@@ -111,7 +100,51 @@
 </li>
 <li><p>Firefox, Chrome, Opera, IE 9 (IE8 requires Array.map polyfill)</p>
 </li>
-<li><p>Downloads: <a href="src/coffee/jtmpl.coffee">jtmpl.coffee</a>, <a href="js/jtmpl.js">jtmpl.js</a>, <a href="js/jtmpl.min.js">jtmpl.min.js</a></p>
+</ul>
+<h2>Downloads</h2>
+<ul>
+<li><p><a href="https://github.com/atmin/jtmpl/blob/dev/src/coffee/jtmpl.coffee">jtmpl.coffee</a></p>
+</li>
+<li><p><a href="js/jtmpl.js">jtmpl.js</a></p>
+</li>
+<li><p><a href="js/jtmpl.min.js">jtmpl.min.js</a></p>
+</li>
+</ul>
+<h2>Details</h2>
+<h3>Template specifics</h3>
+<ul>
+<li><p>limitation by design is the contents of each <a href="http://mustache.github.io/mustache.5.html">section</a> must be valid structural HTML, you cannot freely mix Mustache and HTML tags</p>
+</li>
+<li><p>variables are automatically enclosed in a <code>&lt;span&gt;</code> if they aren&#39;t HTML tag contents already</p>
+</li>
+<li><p>similarly, sections are automatically enclosed in a <code>&lt;div&gt;</code> if needed</p>
+</li>
+<li><p>and the same goes for section items</p>
+</li>
+<li><p><code>data-jt</code> attributes containing metadata for <code>Stage2</code> are injected in HTML elements</p>
+</li>
+<li><p><code>Stage1</code> also emits section structures (with changed delimiters) embedded in HTML comments</p>
+</li>
+<li><p>partials are not currently supported, plans are to support id-based and URL-based partials</p>
+</li>
+</ul>
+<h3>Interpretation of patterns</h3>
+<ul>
+<li><p><code>&lt;tag&gt;{{var}}&lt;/tag&gt;</code>&mdash;Whenever <code>var</code> changes, <code>tag.innerHTML</code> changes</p>
+</li>
+<li><p><code>&lt;tag prop=&quot;{{var}}&quot;</code>&mdash;If <code>var</code> is null property is absent, otherwise equals <code>var</code></p>
+</li>
+<li><p><code>&lt;tag prop=&quot;{{bool_var}}&quot;</code>&mdash;If <code>bool_var</code> is true property is present, otherwise absent</p>
+</li>
+<li><p><code>&lt;tag class=&quot;{{class-name}} other-classes&quot;&gt;</code>&mdash;<code>class-name</code> is expected to be boolean indicating if <code>tag</code> currently has this class</p>
+</li>
+<li><p><code>&lt;tag value=&quot;{{var}}&quot;&gt;</code>&mdash;When <code>var</code> changes <code>tag.value</code> changes and vice versa</p>
+</li>
+<li><p><code>&lt;tag&gt;&lt;!-- {{var}} --&gt;&lt;/tag&gt;</code>&mdash;HTML comment is stripped when it contains one Mustache tag. This allows you to build easily templates that are valid HTML</p>
+</li>
+<li><p><code>&lt;tag onevent=&quot;{{handler}}&quot;&gt;</code>&mdash;<code>on</code>-prefixed properties are event handlers. <code>handler</code> is expected to be a function, <code>this</code> is the <code>model</code>. No need to add <code>onchange</code> handlers, they are already handled</p>
+</li>
+<li><p><code>&lt;tag&gt; {{#section}}...{{/section}} &lt;/tag&gt;</code>&mdash;Whenever <code>section[i]</code> changes corresponding HTML element changes (you can insert or delete items via <code>Array.splice()</code> and only affected DOM elements are affected). There are no restrictions on the nesting level.</p>
 </li>
 </ul>
 <h2>Kitchen Sink</h2>
@@ -170,6 +203,11 @@
             You entered &quot;{{field}}&quot;. Delete it and this message will disappear
             {{/field}}
         &lt;/p&gt;
+
+        &lt;h3&gt;Data binding, toggle class&amp;mdash;&lt;code&gt;model.field&lt;/code&gt;&lt;/h3&gt;
+        &lt;div&gt;
+            &lt;a href=# class=&quot;existing-class {{bound-class}}&quot;&gt;Toggle me&lt;/a&gt;
+        &lt;/div&gt;
 
         &lt;h3&gt;Checkboxes&amp;mdash;&lt;code&gt;model.checkboxes&lt;/code&gt;&lt;/h3&gt;
         {{#checkboxes}}
