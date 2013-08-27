@@ -177,6 +177,7 @@ Showcase of all features, tests
 		<style>
 			h2, h3 {margin-top: 64px}
 			body {padding: 1% 7%; color:#586e75}
+			.bound-class {color:red}
 		</style>
 		<script src="js/qunit.js"></script>
 	</head>
@@ -223,7 +224,7 @@ Showcase of all features, tests
 
 			<h3>Data binding, toggle class&mdash;<code>model.field</code></h3>
 			<div>
-				<a href=# class="existing-class {{bound-class}}">Toggle me</a>
+				<a href=# class="try2confuse-the_parser {{bound-class}}">Toggle me</a>
 			</div>
 
 			<h3>Checkboxes&mdash;<code>model.checkboxes</code></h3>
@@ -273,6 +274,8 @@ Showcase of all features, tests
 				removeDisabled: false,
 
 				field: '',
+
+				'bound-class': true,
 
 				innerHTML: '<p>Hi, how are you?</p>',
 

@@ -30,7 +30,7 @@
     options.defaultSection = options.defaultSectionTag || 'div';
     options.defaultSectionItem = options.defaultSectionItem || 'div';
     options.defaultVar = options.defaultVar || 'span';
-    re = new RegExp(quoteRE(options.delimiters[0]) + /(\{)?(\#|\^|\/)?([\w\.]+)(\})?/.source + quoteRE(options.delimiters[1]), 'g');
+    re = new RegExp(quoteRE(options.delimiters[0]) + /(\{)?(\#|\^|\/)?([\w\.\-_]+)(\})?/.source + quoteRE(options.delimiters[1]), 'g');
     hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?(?:((?:"[^">]*"?)|(?:'[^'>]*'?)|[^\s>]+))?)*\s*(>)?\s*$/;
     matchHTMLTag = /^(\s*<([\w-_]+))(?:(\s*data-jt="[^"]*)")?[^>]*>.*?<\/\2>\s*$/;
     escapeHTML = function(val) {
@@ -74,10 +74,10 @@
       ];
     };
     compile = function(tpl, context, position, openTagName) {
-      var addSectionItem, collection, discardSection, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectOuterTag, item, out, pos, section, tag, tagName, tagType, val, _i, _len, _ref;
+      var addSectionItem, collection, discardSection, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectOuterTag, item, lastSectionTag, out, pos, section, tag, tagName, tagType, val, _i, _len, _ref;
       pos = position || 0;
       out = '';
-      tag = htag = null;
+      tag = htag = lastSectionTag = null;
       tpl = tpl.replace(new RegExp("<!--\\s*(" + re.source + ")\\s*-->"), '$1');
       tpl = tpl.replace(new RegExp("([\\w-_]+)=\"(" + re.source + ")\"", 'g'), '$1=$2');
       tpl = tpl.replace(new RegExp("\\n\\s*(" + re.source + ")\\s*\\n", 'g'), '\n$1\n');
@@ -87,7 +87,7 @@
       };
       getPropString = function(val, quote) {
         quote = quote || '';
-        return htag[3] && !htag[5] && (htag[2] + htag[3] + quote + val + quote) || val;
+        return (htag[3] && !htag[5]) && (htag[2] + htag[3] + quote + val + quote) || val;
       };
       discardSection = function() {
         return compile(tpl, context, pos, tagName);
@@ -131,8 +131,17 @@
               if (typeof val === 'function') {
                 out = out.replace(/[\w-_]+=$/, '');
               } else {
-                if (htag[3] && !htag[5]) {
-                  if (typeof val === 'boolean') {
+                if (htag[2] === 'class') {
+                  if (typeof val !== 'boolean') {
+                    throw "" + tagName + " is not boolean";
+                  }
+                  if (val) {
+                    out += tagName;
+                  }
+                } else if (htag[3] && !htag[5]) {
+                  if (val === null) {
+                    out = out.replace(/[\w-_]+=$/, '');
+                  } else if (typeof val === 'boolean') {
                     out = out.replace(/[\w-_]+=$/, '') + (val && htag[2] || '');
                   } else {
                     out += '"' + val + '"';
@@ -146,7 +155,9 @@
           case 'section':
           case 'inverted_section':
             if (!htag) {
-              out += "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\">";
+              if (tagName !== lastSectionTag) {
+                out += "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\">";
+              }
             } else {
               injectOuterTag();
             }
@@ -181,9 +192,10 @@
                 pos = re.lastIndex;
               }
             }
-            if (!htag) {
+            if (!htag && tagName !== lastSectionTag) {
               out += "</" + options.defaultSection + ">";
             }
+            lastSectionTag = tagName;
         }
       }
       out += tpl.slice(pos);
@@ -196,11 +208,11 @@
     target.innerHTML = html;
     target.setAttribute('data-jt', '.');
     bind = function(root, context, level) {
-      var attr, bindVarProp, bindings, k, kv, node, tmp, v, _i, _j, _len, _len1, _ref, _ref1, _ref2;
-      bindings = [];
+      var attr, bindVarProp, k, kv, node, tmp, v, _i, _j, _len, _len1, _ref, _ref1, _ref2, _results;
       level = level || '';
       bindVarProp = function(node, v, prop) {};
       _ref = root.childNodes;
+      _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         node = _ref[_i];
         switch (node.nodeType) {
@@ -210,10 +222,13 @@
               for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
                 kv = _ref1[_j];
                 _ref2 = kv.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref2[0], k = _ref2[1], v = _ref2[2];
-                bindings.push([k, v]);
+                if (context._jt_model2dom == null) {
+                  context._jt_model2dom = [];
+                }
+                context._jt_model2dom.push([k, v]);
               }
             }
-            bind(node, context, level + '    ');
+            _results.push(bind(node, context, level + '    '));
             break;
           case node.TEXT_NODE:
             break;
@@ -223,18 +238,7 @@
             throw ":( unexpected nodeType " + node.nodeType;
         }
       }
-      if (bindings.length) {
-        console.log(context);
-        return Object.observe(context, function(changes) {
-          var change, _k, _len2, _results;
-          _results = [];
-          for (_k = 0, _len2 = changes.length; _k < _len2; _k++) {
-            change = changes[_k];
-            _results.push(console.log(">>>" + change.name + " was " + change.type + " and is now " + change.object[change.name]));
-          }
-          return _results;
-        });
-      }
+      return _results;
     };
     return bind(target, model);
   };

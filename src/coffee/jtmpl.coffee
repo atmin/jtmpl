@@ -55,24 +55,24 @@ root.jtmpl = (target, tpl, model, options) ->
 	re = new RegExp(quoteRE(options.delimiters[0]) + ///
 		(\{)?      # opening tag, maybe triple mustache (captured)
 		(\#|\^|/)?     # var, open block or close block tag?
-		([\w\.]+)      # tag name
+		([\w\.\-_]+)   # tag name
 		(\})?      # closing tag
 	///.source + quoteRE(options.delimiters[1]), 'g')
 
 	# Last opened opening HTML tag
 	hre = ///
-		(< \s* [\w-_]+ )  # capture HTML tag opening and name `htag[1]`
+		(< \s* [\w-_]+ )  # capture HTML tag opening and name \1
 		(?: \s+ 		  # non-capturing group HTML attribute
-			([\w-\{\}]*)      # capture last attribute name `htag[2]`
-			(=)?              # capture the = `htag[3]`
+			([\w-\{\}]*)      # capture last attribute name \2
+			(=)?              # capture the = \3
 			(?:               # capture optional last attribute value
 				(   (?: "[^">]*"?) |   # attribute value double quoted (allow unclosed)
 					(?: '[^'>]*'?) |   # single quoted
-					[^\s>]+            # or unquoted `htag[4]`
+					[^\s>]+            # or unquoted \4
 				)
 			)?
 		)*
-		\s* (>)?          # capture if tag closed `htag[5]`
+		\s* (>)?          # capture if tag closed \5
 		\s* $             # whitespace, end of slice
 	///
 
@@ -114,7 +114,7 @@ root.jtmpl = (target, tpl, model, options) ->
 	compile = (tpl, context, position, openTagName) ->
 		pos = position or 0
 		out = ''
-		tag = htag = null
+		tag = htag = lastSectionTag = null
 
 		## Template preprocessing
 		# Strip HTML comments that enclose tags
@@ -135,7 +135,7 @@ root.jtmpl = (target, tpl, model, options) ->
 		# get "prop=value" string or "value" if default prop
 		getPropString = (val, quote) ->
 			quote = quote or ''
-			htag[3] and not htag[5] and (htag[2] + htag[3] + quote + val + quote) or val
+			(htag[3] and not htag[5]) and (htag[2] + htag[3] + quote + val + quote) or val
 
 		# discard current section
 		discardSection = () ->
@@ -192,20 +192,33 @@ root.jtmpl = (target, tpl, model, options) ->
 							# erase "attr=" part
 							out = out.replace(/[\w-_]+=$/, '')
 						else
+							# HTML "class" attribute?
+							if htag[2] is 'class'
+								if typeof val isnt 'boolean'
+									throw "#{ tagName } is not boolean"
+								if val then out += tagName
+
 							# output HTML attr?
-							if htag[3] and not htag[5]
+							else if htag[3] and not htag[5]
+								# null value? remove attr
+								if val is null
+									# erase "attr=" part
+									out = out.replace(/[\w-_]+=$/, '')
 								# output boolean HTML attr?
-								if typeof val is 'boolean'
+								else if typeof val is 'boolean'
 									# erase "attr=" part, output attr if true
 									out = out.replace(/[\w-_]+=$/, '') + (val and htag[2] or '')
 								else
 									out += '"' + val + '"'
+
+							# output var
 							else
 								out += val
 
 				when 'section', 'inverted_section'
 					if not htag
-						out += "<#{ options.defaultSection } data-jt=\"#{ fullTagNoDelim }\">"
+						if tagName isnt lastSectionTag
+							out += "<#{ options.defaultSection } data-jt=\"#{ fullTagNoDelim }\">"
 					else
 						injectOuterTag()
 
@@ -248,8 +261,10 @@ root.jtmpl = (target, tpl, model, options) ->
 							discardSection(context)
 							pos = re.lastIndex
 
-					if not htag
+					if not htag and tagName isnt lastSectionTag
 						out += "</#{ options.defaultSection }>"
+
+					lastSectionTag = tagName
 
 		# Remainder
 		out += tpl.slice(pos)
@@ -273,7 +288,6 @@ root.jtmpl = (target, tpl, model, options) ->
 
 	# Bind event handlers
 	bind = (root, context, level) ->
-		bindings = []
 		level = level or ''
 
 		bindVarProp = (node, v, prop) ->
@@ -286,9 +300,10 @@ root.jtmpl = (target, tpl, model, options) ->
 					if attr = node.getAttribute('data-jt')
 						# iterate key[=value] pairs
 						for kv in attr.split(' ')
-							# console.log '>>> ' + kv
+							# remember binding
 							[tmp, k, v] = kv.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/)
-							bindings.push([k, v])
+							if not context._jt_model2dom? then context._jt_model2dom = []
+							context._jt_model2dom.push([k, v])
 
 					bind(node, context, level + '    ')
 				# Text
@@ -300,12 +315,12 @@ root.jtmpl = (target, tpl, model, options) ->
 				else
 					throw ":( unexpected nodeType #{ node.nodeType }"
 
-		if bindings.length
-			console.log context
-			Object.observe(context, (changes) ->
-				for change in changes
-					console.log(">>>" + change.name + " was " + change.type + " and is now " + change.object[change.name])
-				)
+		# if bindings.length
+		# 	console.log context
+		# 	Object.observe(context, (changes) ->
+		# 		for change in changes
+		# 			console.log(">>>" + change.name + " was " + change.type + " and is now " + change.object[change.name])
+		# 		)
 
 
 	bind(target, model)

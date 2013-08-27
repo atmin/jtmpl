@@ -61,7 +61,7 @@
         }
       ]
     }), '<div data-jt="#outer"><!-- # <div><<<#inner>>><<<.>>><<</inner>>></div> --><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span></div></div>', 'nested sections');
-    return equal(jtmpl('{{#outer}}{{#inner}}{{.}}{{/inner}}{{/outer}}', {
+    equal(jtmpl('{{#outer}}{{#inner}}{{.}}{{/inner}}{{/outer}}', {
       outer: [
         {
           inner: [1, 2, 3]
@@ -72,6 +72,18 @@
         }
       ]
     }), '<div data-jt="#outer"><!-- # <<<#inner>>><<<.>>><<</inner>>> --><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span></div></div>', 'nested sections no divs');
+    equal(jtmpl('<a class="some-class {{bound-class}}">', {
+      'bound-class': true
+    }), '<a data-jt="class=bound-class" class="some-class bound-class">', 'class attribute true');
+    equal(jtmpl('<a class="some-class {{bound-class}}">', {
+      'bound-class': false
+    }), '<a data-jt="class=bound-class" class="some-class ">', 'class attribute false');
+    equal(jtmpl('<a prop="{{prop}}">', {
+      prop: null
+    }), '<a data-jt="prop=prop" >', 'output null attribute');
+    return equal(jtmpl('<a prop="{{prop}}">', {
+      prop: 1
+    }), '<a data-jt="prop=prop" prop="1">', 'output non-null attribute');
   });
 
   test('bind', function() {

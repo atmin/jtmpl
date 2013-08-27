@@ -144,7 +144,7 @@
 </li>
 <li><p><code>&lt;tag onevent=&quot;{{handler}}&quot;&gt;</code>&mdash;<code>on</code>-prefixed properties are event handlers. <code>handler</code> is expected to be a function, <code>this</code> is the <code>model</code>. No need to add <code>onchange</code> handlers, they are already handled</p>
 </li>
-<li><p><code>&lt;tag&gt; {{#section}}...{{/section}} &lt;/tag&gt;</code>&mdash;Whenever <code>section[i]</code> changes corresponding HTML element changes (you can insert or delete items via <code>Array.splice()</code> and only affected DOM elements are affected). There are no restrictions on the nesting level.</p>
+<li><p><code>&lt;tag&gt; {{#section}}...{{/section}} &lt;/tag&gt;</code>&mdash;Whenever <code>section[i]</code> changes corresponding HTML element changes (you can insert or delete items via <code>Array.splice()</code> and only affected DOM elements are updated). There are no restrictions on the nesting level.</p>
 </li>
 </ul>
 <h2>Kitchen Sink</h2>
@@ -160,6 +160,7 @@
     &lt;style&gt;
         h2, h3 {margin-top: 64px}
         body {padding: 1% 7%; color:#586e75}
+        .bound-class {color:red}
     &lt;/style&gt;
     &lt;script src=&quot;js/qunit.js&quot;&gt;&lt;/script&gt;
 &lt;/head&gt;
@@ -206,7 +207,7 @@
 
         &lt;h3&gt;Data binding, toggle class&amp;mdash;&lt;code&gt;model.field&lt;/code&gt;&lt;/h3&gt;
         &lt;div&gt;
-            &lt;a href=# class=&quot;existing-class {{bound-class}}&quot;&gt;Toggle me&lt;/a&gt;
+            &lt;a href=# class=&quot;try2confuse-the_parser {{bound-class}}&quot;&gt;Toggle me&lt;/a&gt;
         &lt;/div&gt;
 
         &lt;h3&gt;Checkboxes&amp;mdash;&lt;code&gt;model.checkboxes&lt;/code&gt;&lt;/h3&gt;
@@ -256,6 +257,8 @@
             removeDisabled: false,
 
             field: &#39;&#39;,
+
+            &#39;bound-class&#39;: true,
 
             innerHTML: &#39;&lt;p&gt;Hi, how are you?&lt;/p&gt;&#39;,
 
