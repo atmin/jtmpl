@@ -6,7 +6,7 @@ _`{{`_ `jtmpl` _`}}`_
 
 
 <br>
- _Code is work in progress (`Stage1` is mostly finished), feel free to explore concept_
+ _Code is work in progress (`Stage1` (the harder part) is finished), feel free to explore concept_
 
 
 What
@@ -91,9 +91,6 @@ Hello, world
 		<!-- that's all -->
 		<script src="js/jtmpl.min.js"></script>
 
-    * _or, to invoke manually:_ `jtmpl('#target-id', 'template contents or "#template-id"', model)` 
-
-    * _template contents can be already prerendered by server to save the client some processing and help for SEO_
 
 
 
@@ -104,7 +101,10 @@ Specifications
 
 * no dependencies, [polyfill](https://github.com/jdarling/Object.observe) built-in
 
+* less than 4KB minified and gzipped
+
 * Firefox, Chrome, Opera, IE 9 (IE8 requires Array.map polyfill)
+
 
 
 
@@ -120,8 +120,23 @@ Downloads
 
 
 
+
 Details
 --------
+
+### API
+
+* `jtmpl(selector)`&mdash;returns an array, just a handy wrapper around `document.querySelectorAll`
+
+* `jtmpl('template or #element-id', model)`&mdash;compiles template string (or #element-id innerHTML) using `model`
+
+* `jtmpl('#target-id' or domElement, 'template contents or "#template-id"', model)`&mdash;compiles a template using `model`, injects it into target and binds it to `model`. Template contents can be already prerendered by server to save the client some processing and help for SEO
+
+* if jtmpl script is loaded in browser context and an element with id=`jtmpl` and `data-model` attribute is found, then:
+	1. Element's contents is rendered using `data-model`
+	2. If element is a script tag (type="text/html", good way to put template contents in an HTML file), then it is replaced with a div. Otherwise, the tag stays intact.
+
+
 
 ### Template specifics
 
@@ -138,6 +153,7 @@ Details
 * `Stage1` also emits section structures (with changed delimiters) embedded in HTML comments
 
 * partials are not currently supported, plans are to support id-based and URL-based partials
+
 
 
 ### Interpretation of patterns
@@ -157,6 +173,8 @@ Details
 * `<tag onevent="{{handler}}">`&mdash;`on`-prefixed properties are event handlers. `handler` is expected to be a function, `this` is the `model`. No need to add `onchange` handlers, they are already handled
 
 * `<tag> {{#section}}...{{/section}} </tag>`&mdash;Whenever `section[i]` changes corresponding HTML element changes (you can insert or delete items via `Array.splice()` and only affected DOM elements are updated). There are no restrictions on the nesting level.
+
+
 
 
 

@@ -17,7 +17,7 @@
         <h1><em><code>{{</code></em> <code>jtmpl</code> <em><code>}}</code></em></h1>
 <h4>Humanistic JavaScript MV framework</h4>
 <p><br>
- <em>Code is work in progress (<code>Stage1</code> is mostly finished), feel free to explore concept</em></p>
+ <em>Code is work in progress (<code>Stage1</code> (the harder part) is finished), feel free to explore concept</em></p>
 <h2>What</h2>
 <p><code>jtmpl</code> is a DOM-aware templating engine. It renders a <a href="http://mustache.github.io">Mustache</a> HTML template using a <code>model</code> object and infers bindings from template structure, so when <code>model</code> changes DOM is updated accordingly and vice versa. </p>
 <p>There&#39;s never need to touch the DOM directly, <code>model</code> is the <a href="http://en.wikipedia.org/wiki/Single_Source_of_Truth">single source of truth</a></p>
@@ -84,12 +84,6 @@
 
   &lt;!-- that&#39;s all --&gt;
   &lt;script src=&quot;js/jtmpl.min.js&quot;&gt;&lt;/script&gt;</code></pre>
-<ul>
-<li><p><em>or, to invoke manually:</em> <code>jtmpl(&#39;#target-id&#39;, &#39;template contents or &quot;#template-id&quot;&#39;, model)</code> </p>
-</li>
-<li><p><em>template contents can be already prerendered by server to save the client some processing and help for SEO</em></p>
-</li>
-</ul>
 </li>
 </ul>
 <h2>Specifications</h2>
@@ -97,6 +91,8 @@
 <li><p>based on <a href="http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe">Object.observe</a></p>
 </li>
 <li><p>no dependencies, <a href="https://github.com/jdarling/Object.observe">polyfill</a> built-in</p>
+</li>
+<li><p>less than 4KB minified and gzipped</p>
 </li>
 <li><p>Firefox, Chrome, Opera, IE 9 (IE8 requires Array.map polyfill)</p>
 </li>
@@ -111,6 +107,21 @@
 </li>
 </ul>
 <h2>Details</h2>
+<h3>API</h3>
+<ul>
+<li><p><code>jtmpl(selector)</code>&mdash;returns an array, just a handy wrapper around <code>document.querySelectorAll</code></p>
+</li>
+<li><p><code>jtmpl(&#39;template or #element-id&#39;, model)</code>&mdash;compiles template string (or #element-id innerHTML) using <code>model</code></p>
+</li>
+<li><p><code>jtmpl(&#39;#target-id&#39; or domElement, &#39;template contents or &quot;#template-id&quot;&#39;, model)</code>&mdash;compiles a template using <code>model</code>, injects it into target and binds it to <code>model</code>. Template contents can be already prerendered by server to save the client some processing and help for SEO</p>
+</li>
+<li><p>if jtmpl script is loaded in browser context and an element with id=<code>jtmpl</code> and <code>data-model</code> attribute is found, then:</p>
+<ol>
+<li>Element&#39;s contents is rendered using <code>data-model</code></li>
+<li>If element is a script tag (type=&quot;text/html&quot;, good way to put template contents in an HTML file), then it is replaced with a div. Otherwise, the tag stays intact.</li>
+</ol>
+</li>
+</ul>
 <h3>Template specifics</h3>
 <ul>
 <li><p>limitation by design is the contents of each <a href="http://mustache.github.io/mustache.5.html">section</a> must be valid structural HTML, you cannot freely mix Mustache and HTML tags</p>
