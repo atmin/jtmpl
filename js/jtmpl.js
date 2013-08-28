@@ -1,11 +1,17 @@
 (function() {
-  var $, isArray, isObject, repr, root;
+  var root;
 
   root = this;
 
   root.jtmpl = function(target, tpl, model, options) {
-    var bind, compile, escapeHTML, hre, html, matchHTMLTag, parseTag, quoteRE, re, reId;
+    var bind, compile, escapeHTML, hre, html, matchHTMLTag, parseTag, quoteRE, re, reId, tagRe;
     reId = /^\#[\w-]+$/;
+    if (typeof target === 'string' && (tpl == null)) {
+      if (typeof document === "undefined" || document === null) {
+        throw ':( this API is only available in a browser';
+      }
+      return Array.prototype.slice.call(document.querySelectorAll(target));
+    }
     if (typeof target === 'string' && typeof tpl === 'object' && model === void 0) {
       options = model;
       model = tpl;
@@ -30,7 +36,8 @@
     options.defaultSection = options.defaultSectionTag || 'div';
     options.defaultSectionItem = options.defaultSectionItem || 'div';
     options.defaultVar = options.defaultVar || 'span';
-    re = new RegExp(quoteRE(options.delimiters[0]) + /(\{)?(\#|\^|\/)?([\w\.\-_]+)(\})?/.source + quoteRE(options.delimiters[1]), 'g');
+    tagRe = /(\{)?(\#|\^|\/)?([\w\.\-_]+)(\})?/;
+    re = new RegExp(quoteRE(options.delimiters[0]) + tagRe.source + quoteRE(options.delimiters[1]), 'g');
     hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?(?:((?:"[^">]*"?)|(?:'[^'>]*'?)|[^\s>]+))?)*\s*(>)?\s*$/;
     matchHTMLTag = /^(\s*<([\w-_]+))(?:(\s*data-jt="[^"]*)")?[^>]*>.*?<\/\2>\s*$/;
     escapeHTML = function(val) {
@@ -169,14 +176,14 @@
             section = section[1].trim().replace(new RegExp(quoteRE(options.delimiters[0]), 'g'), options.compiledDelimiters[0]).replace(new RegExp(quoteRE(options.delimiters[1]), 'g'), options.compiledDelimiters[1]);
             out += "<!-- " + tag[2] + " " + section + " -->";
             if (tagType === 'section') {
-              if (!val || isArray(val) && !val.length) {
+              if (!val || Array.isArray(val) && !val.length) {
                 discardSection();
                 pos = re.lastIndex;
               } else {
-                collection = isArray(val) && val || [val];
+                collection = Array.isArray(val) && val || [val];
                 for (i = _i = 0, _len = collection.length; _i < _len; i = ++_i) {
                   item = collection[i];
-                  addSectionItem(compile(tpl, (isObject(val) ? item : context), pos, tagName));
+                  addSectionItem(compile(tpl, (val && typeof val === 'object' ? item : context), pos, tagName));
                   if (i < collection.length - 1) {
                     re.lastIndex = pos;
                   }
@@ -184,7 +191,7 @@
                 pos = re.lastIndex;
               }
             } else {
-              if (!val || isArray(val) && !val.length) {
+              if (!val || Array.isArray(val) && !val.length) {
                 out += compile(tpl, context, pos, tagName);
                 pos = re.lastIndex;
               } else {
@@ -208,9 +215,9 @@
     target.innerHTML = html;
     target.setAttribute('data-jt', '.');
     bind = function(root, context, level) {
-      var attr, bindVarProp, k, kv, node, tmp, v, _i, _j, _len, _len1, _ref, _ref1, _ref2, _results;
+      var attr, k, kv, node, observer, tmp, v, _i, _j, _len, _len1, _ref, _ref1, _ref2, _results;
       level = level || '';
-      bindVarProp = function(node, v, prop) {};
+      observer = function(changes) {};
       _ref = root.childNodes;
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -221,6 +228,11 @@
               _ref1 = attr.split(' ');
               for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
                 kv = _ref1[_j];
+                if (kv.slice(0, 1) === '#') {
+
+                } else if (kv.slice(0, 1) === '^') {
+
+                }
                 _ref2 = kv.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref2[0], k = _ref2[1], v = _ref2[2];
                 if (context._jt_model2dom == null) {
                   context._jt_model2dom = [];
@@ -242,79 +254,6 @@
     };
     return bind(target, model);
   };
-
-  isArray = Array.isArray || function(val) {
-    return {}.toString.call(val) === '[object Array]';
-  };
-
-  isObject = function(val) {
-    return val && typeof val === 'object';
-  };
-
-  repr = function(o, depth, max) {
-    var e, k;
-    if (depth == null) {
-      depth = 0;
-    }
-    if (max == null) {
-      max = 2;
-    }
-    if (depth > max) {
-      return '<..>';
-    } else {
-      switch (typeof o) {
-        case 'string':
-          return "\"" + (o.replace(/"/g, '\\"')) + "\"";
-        case 'function':
-          return 'function';
-        case 'object':
-          if (o === null) {
-            'null';
-          }
-          if (isArray(o)) {
-            return '[' + [
-              (function() {
-                var _i, _len, _results;
-                _results = [];
-                for (_i = 0, _len = o.length; _i < _len; _i++) {
-                  e = o[_i];
-                  _results.push('' + repr(e, depth + 1, max));
-                }
-                return _results;
-              })()
-            ] + ']';
-          } else {
-            return '{' + [
-              (function() {
-                var _i, _len, _ref, _results;
-                _ref = o.keys();
-                _results = [];
-                for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                  k = _ref[_i];
-                  _results.push('' + k + ':' + repr(o[k], depth + 1, max));
-                }
-                return _results;
-              })()
-            ] + '}';
-          }
-          break;
-        case 'undefined':
-          return 'undefined';
-        default:
-          return o;
-      }
-    }
-  };
-
-  $ = function(s) {
-    return Array.prototype.slice.call(document.querySelectorAll(s));
-  };
-
-  if (!String.prototype.trim) {
-    String.prototype.trim = function() {
-      return this.replace(/^\s+|\s+$/g, '');
-    };
-  }
 
 }).call(this);
 

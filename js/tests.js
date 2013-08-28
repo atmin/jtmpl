@@ -1,10 +1,4 @@
 (function() {
-  var $;
-
-  $ = function(s) {
-    return Array.prototype.slice.call(document.querySelectorAll(s));
-  };
-
   test('compile', function() {
     equal(jtmpl('tpl{{a}}xyz', {
       a: 'A'

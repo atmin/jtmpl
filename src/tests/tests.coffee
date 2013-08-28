@@ -1,8 +1,3 @@
-$ = (s) -> Array.prototype.slice.call document.querySelectorAll s
-
-
-
-
 test 'compile', ->
 	equal jtmpl('tpl{{a}}xyz', { a: 'A'}), 
 		'tpl<span data-jt="a">A</span>xyz',

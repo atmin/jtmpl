@@ -11,6 +11,12 @@ root.jtmpl = (target, tpl, model, options) ->
 
 	## Interface
 
+	# `jtmpl(selector)`?
+	if typeof target is 'string' and not tpl?
+		if not document?
+			throw ':( this API is only available in a browser'
+		return Array.prototype.slice.call(document.querySelectorAll(target))
+
 	# `jtmpl(tpl, model)`?
 	if typeof target is 'string' and typeof tpl is 'object' and model == undefined
 		options = model
@@ -52,12 +58,13 @@ root.jtmpl = (target, tpl, model, options) ->
 
 
 	# Match jtmpl tag
-	re = new RegExp(quoteRE(options.delimiters[0]) + ///
+	tagRe = ///
 		(\{)?      # opening tag, maybe triple mustache (captured)
 		(\#|\^|/)?     # var, open block or close block tag?
 		([\w\.\-_]+)   # tag name
 		(\})?      # closing tag
-	///.source + quoteRE(options.delimiters[1]), 'g')
+	///
+	re = new RegExp(quoteRE(options.delimiters[0]) + tagRe.source + quoteRE(options.delimiters[1]), 'g')
 
 	# Last opened opening HTML tag
 	hre = ///
@@ -200,7 +207,7 @@ root.jtmpl = (target, tpl, model, options) ->
 
 							# output HTML attr?
 							else if htag[3] and not htag[5]
-								# null value? remove attr
+								# null value?
 								if val is null
 									# erase "attr=" part
 									out = out.replace(/[\w-_]+=$/, '')
@@ -240,21 +247,21 @@ root.jtmpl = (target, tpl, model, options) ->
 
 					if tagType == 'section'
 						# falsy value or empty collection?
-						if not val or isArray(val) and not val.length
+						if not val or Array.isArray(val) and not val.length
 							discardSection()
 							pos = re.lastIndex
 						else
 							# output section
-							collection = isArray(val) and val or [val]
+							collection = Array.isArray(val) and val or [val]
 							for item, i in collection
-								addSectionItem(compile(tpl, (if isObject(val) then item else context), pos, tagName))
+								addSectionItem(compile(tpl, (if val and typeof val is 'object' then item else context), pos, tagName))
 								if i < collection.length - 1
 									re.lastIndex = pos
 							pos = re.lastIndex
 
 					else# tagType == 'inverted_section'
 						# falsy value or empty collection?
-						if not val or isArray(val) and not val.length
+						if not val or Array.isArray(val) and not val.length
 							out += compile(tpl, context, pos, tagName)
 							pos = re.lastIndex
 						else
@@ -290,7 +297,8 @@ root.jtmpl = (target, tpl, model, options) ->
 	bind = (root, context, level) ->
 		level = level or ''
 
-		bindVarProp = (node, v, prop) ->
+		# context observer
+		observer = (changes) ->
 			;
 
 		for node in root.childNodes
@@ -300,6 +308,12 @@ root.jtmpl = (target, tpl, model, options) ->
 					if attr = node.getAttribute('data-jt')
 						# iterate key[=value] pairs
 						for kv in attr.split(' ')
+							# section?
+							if kv.slice(0, 1) is '#'
+								;
+							# inverted section?
+							else if kv.slice(0, 1) is '^'
+								;
 							# remember binding
 							[tmp, k, v] = kv.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/)
 							if not context._jt_model2dom? then context._jt_model2dom = []
@@ -330,40 +344,6 @@ root.jtmpl = (target, tpl, model, options) ->
 
 
 
-
-
-## Utils
-
-# Array?
-isArray = Array.isArray or (val) -> {}.toString.call(val) is '[object Array]'
-
-
-# Existing object?
-isObject = (val) -> val and typeof val is 'object'
-
-
-# https://gist.github.com/JacobOscarson/734620
-repr = (o, depth=0, max=2) ->
-  if depth > max
-    '<..>'
-  else
-    switch typeof o
-      when 'string' then "\"#{o.replace /"/g, '\\"'}\""
-      when 'function' then 'function'
-      when 'object'
-        if o is null then 'null'
-        if isArray o
-          '[' + [''+repr(e, depth + 1, max) for e in o] + ']'
-        else
-          '{' + [''+k+':'+repr(o[k], depth + 1, max) for k in o.keys()] + '}'
-      when 'undefined' then 'undefined'
-      else o
-
-# Simplest jQuery ever
-$ = (s) -> Array.prototype.slice.call document.querySelectorAll s
-
-# JavaScript 1.8.1 feature polyfill
-if !String.prototype.trim then String.prototype.trim = -> this.replace(/^\s+|\s+$/g, '')
 
 
 

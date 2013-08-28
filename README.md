@@ -103,7 +103,7 @@ Specifications
 
 * less than 4KB minified and gzipped
 
-* Firefox, Chrome, Opera, IE 9 (IE8 requires Array.map polyfill)
+* Firefox, Chrome, Opera, IE 9 (IE8 requires Array.isArray, Array.map and String.trim [polyfills](http://stackoverflow.com/questions/2790001/fixing-javascript-array-functions-in-internet-explorer-indexof-foreach-etc))
 
 
 
