@@ -312,7 +312,14 @@ root.jtmpl = (target, tpl, model, options) ->
 
 	# Bind event handlers
 	bind = (root, context) ->
-		itemIndex = 0
+
+
+
+
+
+
+
+		###
 		contextVal = null
 
 		# context observer
@@ -359,15 +366,95 @@ root.jtmpl = (target, tpl, model, options) ->
 			if context
 				if not context[-128128]? then context[-128128] = []
 				context[-128128].push([k, v, node])
+		###
 
 
+
+
+
+
+		sectionObserver = (changes) ->
+			;
+
+		contextObserver = (changes) ->
+			;
+
+		innerHTMLObserver = (field) ->
+			(changes) ->
+				for change in changes
+					if change.name is field and change.type is 'updated'
+						this.innerHTML = change.object[field]
+			
+		classObserver = (field) ->
+			(changes) ->
+				for change in changes
+					if change.name is field and change.type is 'updated'
+						(change.object[field] and addClass or removeClass)(this, field)
+
+		attributeObserver = (attr, field) ->
+			(changes) ->
+				for change in changes
+					if change.name is field and change.type is 'updated'
+						this.setAttribute(attr, change.object[field])
+
+
+
+
+		itemIndex = 0
+		nodeContext = null
+
+		# iterate children
 		for node in root.childNodes
-			nodeContext = context
+
 			switch node.nodeType
-				# Tag
+
 				when node.ELEMENT_NODE
 					if attr = node.getAttribute('data-jt')
 
+						# iterate bound template tags
+						for jt in attr.trim().split(' ')
+
+							# (inverted) section?
+							if jt.slice(0, 1) in ['#', '^']
+								nodeContext = context[jt.slice(1)]
+								Object.observe(nodeContext or context, sectionObserver.bind(node))
+
+							# section item?
+							else if jt is '.'
+								nodeContext = context[itemIndex++]
+								if typeof nodeContext isnt 'object' then nodeContext = null
+
+							# var
+							else
+								[tmp, k, v] = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/)
+
+								# attach event?
+								if k and k.indexOf('on') is 0
+									handler = context[v]
+									if typeof handler is 'function'
+										addEvent(k.slice(2), node, handler.bind(context))
+									else
+										throw ":( #{ v } is not a function, cannot attach event handler"
+
+								# node.innerHTML?
+								else if not v
+									Object.observe(context, innerHTMLObserver(k).bind(node))
+
+								# class?
+								else if k is 'class'
+									Object.observe(context, classObserver(v).bind(node))
+
+								# attribute
+								else
+									Object.observe(context, attributeObserver(k, v).bind(node))
+
+					bind(node, nodeContext or context)
+
+
+
+
+
+					###
 						# iterate key[=value] pairs
 						for kv in attr.split(' ')
 
@@ -398,12 +485,11 @@ root.jtmpl = (target, tpl, model, options) ->
 
 					observeContext(nodeContext)
 					bind(node, nodeContext)
+					###
 
-				# Text
 				when node.TEXT_NODE
-					;# console.log node.nodeValue;
+					;
 
-				# Comment
 				when node.COMMENT_NODE
 					;
 					# # collection template?
@@ -420,7 +506,7 @@ root.jtmpl = (target, tpl, model, options) ->
 				else
 					throw ":( unexpected nodeType #{ node.nodeType }"
 
-		observeContext(context)
+		# observeContext(context)
 
 
 

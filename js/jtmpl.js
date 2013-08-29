@@ -239,100 +239,176 @@
     target.innerHTML = html;
     target.setAttribute('data-jt', '.');
     bind = function(root, context) {
-      var addBinding, attr, contextVal, handler, itemIndex, k, kv, node, nodeChange, nodeContext, observeContext, observer, sectionName, tmp, v, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
-      itemIndex = 0;
-      contextVal = null;
-      observer = function(changes) {
-        var b, change, k, node, v, val, _i, _len, _ref, _results;
-        _ref = changes.filter(function(el, i, arr) {
-          return el.name.indexOf('_jt_') !== 0;
-        });
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          change = _ref[_i];
-          switch (change.type) {
-            case 'updated':
-              _results.push((function() {
-                var _j, _len1, _ref1, _results1;
-                _ref1 = change.object[-128128];
-                _results1 = [];
-                for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-                  b = _ref1[_j];
-                  k = b[0], v = b[1], node = b[2];
-                  if ((v && change.name === v) || (!v && change.name === k)) {
-                    val = change.object[v || k];
-                    if (!v) {
-                      _results1.push(node.innerHTML = val);
-                    } else if (k === 'class') {
-                      if (val) {
-                        _results1.push(addClass(node, v));
-                      } else {
-                        _results1.push(removeClass(node, v));
-                      }
-                    } else {
-                      _results1.push(node.setAttribute(k, val));
-                    }
-                  } else {
-                    _results1.push(void 0);
-                  }
-                }
-                return _results1;
-              })());
-              break;
-            case 'deleted':
-              break;
-            default:
+
+      /*
+      		contextVal = null
+      
+      		# context observer
+      		observer = (changes) ->
+      			for change in changes.filter((el, i, arr) -> el.name.indexOf('_jt_') isnt 0)
+      				switch change.type
+      
+      					when 'updated'
+      						# iterate bindings
+      						for b in change.object[-128128]
+      							[k, v, node] = b
+      							# model property changed?
+      							if (v and change.name is v) or (not v and change.name is k)
+      								val = change.object[v or k]
+      								# node contents?
+      								if not v
+      									node.innerHTML = val
+      								# class?
+      								else if k is 'class'
+      									if val then addClass(node, v) else removeClass(node, v)
+      								# attribute
+      								else
+      									node.setAttribute(k, val)
+      
+      					when 'deleted'
+      						;
+      
+      
+      
+      		# handle DOM element change events
+      		nodeChange = (e) ->
+      			;
+      
+      		observeContext = (context) ->
+      			if context and not context._jt_observer
+      				context._jt_observer = observer
+      				Object.observe(context, context._jt_observer)
+      
+      		addBinding = (context, k, v, node) ->
+      			# special index voodoo is because you can't:
+      			# array._some_custom_prop = something and then use it
+      			# array.pop() (or other destructive operation)
+      			# => strange things happen to _some_custom_prop
+      			if context
+      				if not context[-128128]? then context[-128128] = []
+      				context[-128128].push([k, v, node])
+      */
+      var attr, attributeObserver, classObserver, contextObserver, handler, innerHTMLObserver, itemIndex, jt, k, node, nodeContext, sectionObserver, tmp, v, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3, _results;
+      sectionObserver = function(changes) {};
+      contextObserver = function(changes) {};
+      innerHTMLObserver = function(field) {
+        return function(changes) {
+          var change, _i, _len, _results;
+          _results = [];
+          for (_i = 0, _len = changes.length; _i < _len; _i++) {
+            change = changes[_i];
+            if (change.name === field && change.type === 'updated') {
+              _results.push(this.innerHTML = change.object[field]);
+            } else {
               _results.push(void 0);
+            }
           }
-        }
-        return _results;
+          return _results;
+        };
       };
-      nodeChange = function(e) {};
-      observeContext = function(context) {
-        if (context && !context._jt_observer) {
-          context._jt_observer = observer;
-          return Object.observe(context, context._jt_observer);
-        }
-      };
-      addBinding = function(context, k, v, node) {
-        if (context) {
-          if (context[-128128] == null) {
-            context[-128128] = [];
+      classObserver = function(field) {
+        return function(changes) {
+          var change, _i, _len, _results;
+          _results = [];
+          for (_i = 0, _len = changes.length; _i < _len; _i++) {
+            change = changes[_i];
+            if (change.name === field && change.type === 'updated') {
+              _results.push((change.object[field] && addClass || removeClass)(this, field));
+            } else {
+              _results.push(void 0);
+            }
           }
-          return context[-128128].push([k, v, node]);
-        }
+          return _results;
+        };
       };
+      attributeObserver = function(attr, field) {
+        return function(changes) {
+          var change, _i, _len, _results;
+          _results = [];
+          for (_i = 0, _len = changes.length; _i < _len; _i++) {
+            change = changes[_i];
+            if (change.name === field && change.type === 'updated') {
+              _results.push(this.setAttribute(attr, change.object[field]));
+            } else {
+              _results.push(void 0);
+            }
+          }
+          return _results;
+        };
+      };
+      itemIndex = 0;
+      nodeContext = null;
       _ref = root.childNodes;
+      _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         node = _ref[_i];
-        nodeContext = context;
         switch (node.nodeType) {
           case node.ELEMENT_NODE:
             if (attr = node.getAttribute('data-jt')) {
-              _ref1 = attr.split(' ');
+              _ref1 = attr.trim().split(' ');
               for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-                kv = _ref1[_j];
-                _ref2 = kv.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref2[0], k = _ref2[1], v = _ref2[2];
-                if (kv === '.') {
+                jt = _ref1[_j];
+                if ((_ref2 = jt.slice(0, 1)) === '#' || _ref2 === '^') {
+                  nodeContext = context[jt.slice(1)];
+                  Object.observe(nodeContext || context, sectionObserver.bind(node));
+                } else if (jt === '.') {
                   nodeContext = context[itemIndex++];
-                } else if ((_ref3 = kv.slice(0, 1)) === '#' || _ref3 === '^') {
-                  sectionName = kv.slice(1);
-                  nodeContext = context[sectionName];
-                  addBinding(nodeContext, kv, null, node);
-                } else if (k && k.indexOf('on') === 0) {
-                  handler = context[v];
-                  if (typeof handler === 'function') {
-                    addEvent(k.slice(2), node, handler.bind(context));
-                  } else {
-                    throw ":( " + v + " is not a function, cannot attach event handler";
+                  if (typeof nodeContext !== 'object') {
+                    nodeContext = null;
                   }
                 } else {
-                  addBinding(nodeContext, k, v, node);
+                  _ref3 = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref3[0], k = _ref3[1], v = _ref3[2];
+                  if (k && k.indexOf('on') === 0) {
+                    handler = context[v];
+                    if (typeof handler === 'function') {
+                      addEvent(k.slice(2), node, handler.bind(context));
+                    } else {
+                      throw ":( " + v + " is not a function, cannot attach event handler";
+                    }
+                  } else if (!v) {
+                    Object.observe(context, innerHTMLObserver(k).bind(node));
+                  } else if (k === 'class') {
+                    Object.observe(context, classObserver(v).bind(node));
+                  } else {
+                    Object.observe(context, attributeObserver(k, v).bind(node));
+                  }
                 }
               }
             }
-            observeContext(nodeContext);
-            bind(node, nodeContext);
+            _results.push(bind(node, nodeContext || context));
+
+            /*
+            						# iterate key[=value] pairs
+            						for kv in attr.split(' ')
+            
+            							# parse
+            							[tmp, k, v] = kv.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/)
+            
+            							# section item?
+            							if kv is '.'
+            								nodeContext = context[itemIndex++]
+            
+            							# (inverted) section?
+            							else if kv.slice(0, 1) in ['#', '^']
+            								sectionName = kv.slice(1)
+            								nodeContext = context[sectionName]
+            								addBinding(nodeContext, kv, null, node)
+            
+            							# attach event?
+            							else if k and k.indexOf('on') is 0
+            								handler = context[v]
+            								if typeof handler is 'function'
+            									addEvent(k.slice(2), node, handler.bind(context))
+            								else
+            									throw ":( #{ v } is not a function, cannot attach event handler"
+            
+            							else
+            								addBinding(nodeContext, k, v, node)							
+            
+            
+            					observeContext(nodeContext)
+            					bind(node, nodeContext)
+            */
             break;
           case node.TEXT_NODE:
             break;
@@ -342,7 +418,7 @@
             throw ":( unexpected nodeType " + node.nodeType;
         }
       }
-      return observeContext(context);
+      return _results;
     };
     return bind(target, model);
   };
