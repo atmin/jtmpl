@@ -94,7 +94,7 @@
 </li>
 <li><p>less than 4KB minified and gzipped</p>
 </li>
-<li><p>Firefox, Chrome, Opera, IE 9 (IE8 requires Array.isArray, Array.map and String.trim <a href="http://stackoverflow.com/questions/2790001/fixing-javascript-array-functions-in-internet-explorer-indexof-foreach-etc">polyfills</a>)</p>
+<li><p>Firefox, Chrome, Opera, IE 9 (IE8 requires Array.isArray, Array.map, Function.bind and String.trim <a href="http://stackoverflow.com/questions/2790001/fixing-javascript-array-functions-in-internet-explorer-indexof-foreach-etc">polyfills</a>)</p>
 </li>
 </ul>
 <h2>Downloads</h2>
@@ -171,7 +171,13 @@
     &lt;style&gt;
         h2, h3 {margin-top: 64px}
         body {padding: 1% 7%; color:#586e75}
-        .bound-class {color:red}
+        .bound-class {
+            color:red;
+            -webkit-transition:color 0.5s ease-in;  
+            -moz-transition:color 0.5s ease-in;  
+            -o-transition:color 0.5s ease-in;  
+            transition:color 0.5s ease-in;
+        }
     &lt;/style&gt;
     &lt;script src=&quot;js/qunit.js&quot;&gt;&lt;/script&gt;
 &lt;/head&gt;
@@ -218,7 +224,7 @@
 
         &lt;h3&gt;Data binding, toggle class&amp;mdash;&lt;code&gt;model.field&lt;/code&gt;&lt;/h3&gt;
         &lt;div&gt;
-            &lt;a href=# class=&quot;try2confuse-the_parser {{bound-class}}&quot;&gt;Toggle me&lt;/a&gt;
+            &lt;a href=# class=&quot;try2confuse-the_parser {{bound-class}}&quot; onclick=&quot;{{toggleClass}}&quot;&gt;Toggle me&lt;/a&gt;
         &lt;/div&gt;
 
         &lt;h3&gt;Checkboxes&amp;mdash;&lt;code&gt;model.checkboxes&lt;/code&gt;&lt;/h3&gt;
@@ -270,6 +276,11 @@
             field: &#39;&#39;,
 
             &#39;bound-class&#39;: true,
+
+            toggleClass: function(e) {
+                this[&#39;bound-class&#39;] = !this[&#39;bound-class&#39;];
+                e.preventDefault();
+            },
 
             innerHTML: &#39;&lt;p&gt;Hi, how are you?&lt;/p&gt;&#39;,
 

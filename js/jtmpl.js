@@ -4,7 +4,7 @@
   root = this;
 
   root.jtmpl = function(target, tpl, model, options) {
-    var bind, compile, escapeHTML, hre, html, matchHTMLTag, parseTag, quoteRE, re, reId, tagRe;
+    var addClass, addEvent, bind, compile, escapeHTML, hasClass, hre, html, matchHTMLTag, parseTag, quoteRE, re, reId, removeClass, tagRe;
     reId = /^\#[\w-]+$/;
     if (typeof target === 'string' && (tpl == null)) {
       if (typeof document === "undefined" || document === null) {
@@ -79,6 +79,28 @@
           }
         })(), tag[3], tag[0], (tag[2] || '') + tag[3]
       ];
+    };
+    addEvent = function(evnt, elem, func) {
+      if (elem.addEventListener) {
+        return elem.addEventListener(evnt, func, false);
+      } else if (elem.attachEvent) {
+        return elem.attachEvent('on' + evnt, func);
+      } else {
+        return elem[evnt] = func;
+      }
+    };
+    hasClass = function(el, name) {
+      return new RegExp("(\\s|^)" + name + "(\\s|$)").test(el.className);
+    };
+    addClass = function(el, name) {
+      if (!hasClass(el, name)) {
+        return el.className += (el.className && ' ' || '') + name;
+      }
+    };
+    removeClass = function(el, name) {
+      if (hasClass(el, name)) {
+        return el.className = el.className.replace(new RegExp("(\\s|^)" + name + "(\\s|$)"), '').replace(/^\s+|\s+$/g, '');
+      }
     };
     compile = function(tpl, context, position, openTagName) {
       var addSectionItem, collection, discardSection, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectOuterTag, item, lastSectionTag, out, pos, section, tag, tagName, tagType, val, _i, _len, _ref;
@@ -190,7 +212,7 @@
                 }
                 pos = re.lastIndex;
               }
-            } else {
+            } else if (tagType === 'inverted_section') {
               if (!val || Array.isArray(val) && !val.length) {
                 out += compile(tpl, context, pos, tagName);
                 pos = re.lastIndex;
@@ -198,6 +220,8 @@
                 discardSection(context);
                 pos = re.lastIndex;
               }
+            } else {
+              throw ':( internal error';
             }
             if (!htag && tagName !== lastSectionTag) {
               out += "</" + options.defaultSection + ">";
@@ -214,33 +238,101 @@
     }
     target.innerHTML = html;
     target.setAttribute('data-jt', '.');
-    bind = function(root, context, level) {
-      var attr, k, kv, node, observer, tmp, v, _i, _j, _len, _len1, _ref, _ref1, _ref2, _results;
-      level = level || '';
-      observer = function(changes) {};
+    bind = function(root, context) {
+      var addBinding, attr, contextVal, handler, itemIndex, k, kv, node, nodeChange, nodeContext, observeContext, observer, sectionName, tmp, v, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
+      itemIndex = 0;
+      contextVal = null;
+      observer = function(changes) {
+        var b, change, k, node, v, val, _i, _len, _ref, _results;
+        _ref = changes.filter(function(el, i, arr) {
+          return el.name.indexOf('_jt_') !== 0;
+        });
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          change = _ref[_i];
+          switch (change.type) {
+            case 'updated':
+              _results.push((function() {
+                var _j, _len1, _ref1, _results1;
+                _ref1 = change.object[-128128];
+                _results1 = [];
+                for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+                  b = _ref1[_j];
+                  k = b[0], v = b[1], node = b[2];
+                  if ((v && change.name === v) || (!v && change.name === k)) {
+                    val = change.object[v || k];
+                    if (!v) {
+                      _results1.push(node.innerHTML = val);
+                    } else if (k === 'class') {
+                      if (val) {
+                        _results1.push(addClass(node, v));
+                      } else {
+                        _results1.push(removeClass(node, v));
+                      }
+                    } else {
+                      _results1.push(node.setAttribute(k, val));
+                    }
+                  } else {
+                    _results1.push(void 0);
+                  }
+                }
+                return _results1;
+              })());
+              break;
+            case 'deleted':
+              break;
+            default:
+              _results.push(void 0);
+          }
+        }
+        return _results;
+      };
+      nodeChange = function(e) {};
+      observeContext = function(context) {
+        if (context && !context._jt_observer) {
+          context._jt_observer = observer;
+          return Object.observe(context, context._jt_observer);
+        }
+      };
+      addBinding = function(context, k, v, node) {
+        if (context) {
+          if (context[-128128] == null) {
+            context[-128128] = [];
+          }
+          return context[-128128].push([k, v, node]);
+        }
+      };
       _ref = root.childNodes;
-      _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         node = _ref[_i];
+        nodeContext = context;
         switch (node.nodeType) {
           case node.ELEMENT_NODE:
             if (attr = node.getAttribute('data-jt')) {
               _ref1 = attr.split(' ');
               for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
                 kv = _ref1[_j];
-                if (kv.slice(0, 1) === '#') {
-
-                } else if (kv.slice(0, 1) === '^') {
-
-                }
                 _ref2 = kv.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref2[0], k = _ref2[1], v = _ref2[2];
-                if (context._jt_model2dom == null) {
-                  context._jt_model2dom = [];
+                if (kv === '.') {
+                  nodeContext = context[itemIndex++];
+                } else if ((_ref3 = kv.slice(0, 1)) === '#' || _ref3 === '^') {
+                  sectionName = kv.slice(1);
+                  nodeContext = context[sectionName];
+                  addBinding(nodeContext, kv, null, node);
+                } else if (k && k.indexOf('on') === 0) {
+                  handler = context[v];
+                  if (typeof handler === 'function') {
+                    addEvent(k.slice(2), node, handler.bind(context));
+                  } else {
+                    throw ":( " + v + " is not a function, cannot attach event handler";
+                  }
+                } else {
+                  addBinding(nodeContext, k, v, node);
                 }
-                context._jt_model2dom.push([k, v]);
               }
             }
-            _results.push(bind(node, context, level + '    '));
+            observeContext(nodeContext);
+            bind(node, nodeContext);
             break;
           case node.TEXT_NODE:
             break;
@@ -250,7 +342,7 @@
             throw ":( unexpected nodeType " + node.nodeType;
         }
       }
-      return _results;
+      return observeContext(context);
     };
     return bind(target, model);
   };

@@ -18,14 +18,14 @@ root.jtmpl = (target, tpl, model, options) ->
 		return Array.prototype.slice.call(document.querySelectorAll(target))
 
 	# `jtmpl(tpl, model)`?
-	if typeof target is 'string' and typeof tpl is 'object' and model == undefined
+	if typeof target is 'string' and typeof tpl is 'object' and model is undefined
 		options = model
 		model = tpl
 		tpl = target
 		target = null		
 
 	# `jtmpl('#element-id', ...)`?
-	if typeof target == 'string' and target.match(reId)
+	if typeof target is 'string' and target.match(reId)
 		target = document.getElementById(target.substring(1))
 	
 	if not model or typeof model isnt 'object'
@@ -115,6 +115,20 @@ root.jtmpl = (target, tpl, model, options) ->
 			else throw ':( internal error, tag ' + tag[0]
 		, tag[3], tag[0], (tag[2] or '') + tag[3]]
 
+	# Cross-browser add event listener
+	addEvent = (evnt, elem, func) ->
+		if elem.addEventListener then elem.addEventListener(evnt, func, false)
+		else if elem.attachEvent then elem.attachEvent('on' + evnt, func)
+		else elem[evnt] = func
+
+	# HTML element class manipulation (IE does not support classList)
+	hasClass = (el, name) -> new RegExp("(\\s|^)#{ name }(\\s|$)").test(el.className)
+	addClass = (el, name) -> 
+		if not hasClass(el, name) then el.className += (el.className and ' ' or '') + name
+	removeClass = (el, name) ->
+		if hasClass(el, name) then el.className = el.className
+			.replace(new RegExp("(\\s|^)#{name}(\\s|$)"), '')
+			.replace(/^\s+|\s+$/g, '')
 
 
 	# Parse template, remove jtmpl tags, add data-jt attrs and structure as HTML comments
@@ -245,7 +259,7 @@ root.jtmpl = (target, tpl, model, options) ->
 						.replace(new RegExp(quoteRE(options.delimiters[1]), 'g'), options.compiledDelimiters[1])
 					out += "<!-- #{ tag[2] } #{ section } -->"
 
-					if tagType == 'section'
+					if tagType is 'section'
 						# falsy value or empty collection?
 						if not val or Array.isArray(val) and not val.length
 							discardSection()
@@ -259,7 +273,7 @@ root.jtmpl = (target, tpl, model, options) ->
 									re.lastIndex = pos
 							pos = re.lastIndex
 
-					else# tagType == 'inverted_section'
+					else if tagType is 'inverted_section'
 						# falsy value or empty collection?
 						if not val or Array.isArray(val) and not val.length
 							out += compile(tpl, context, pos, tagName)
@@ -267,6 +281,9 @@ root.jtmpl = (target, tpl, model, options) ->
 						else
 							discardSection(context)
 							pos = re.lastIndex
+
+					else
+						throw ':( internal error'
 
 					if not htag and tagName isnt lastSectionTag
 						out += "</#{ options.defaultSection }>"
@@ -294,47 +311,117 @@ root.jtmpl = (target, tpl, model, options) ->
 
 
 	# Bind event handlers
-	bind = (root, context, level) ->
-		level = level or ''
+	bind = (root, context) ->
+		itemIndex = 0
+		contextVal = null
 
 		# context observer
 		observer = (changes) ->
+			for change in changes.filter((el, i, arr) -> el.name.indexOf('_jt_') isnt 0)
+				switch change.type
+
+					when 'updated'
+						# iterate bindings
+						for b in change.object[-128128]
+							[k, v, node] = b
+							# model property changed?
+							if (v and change.name is v) or (not v and change.name is k)
+								val = change.object[v or k]
+								# node contents?
+								if not v
+									node.innerHTML = val
+								# class?
+								else if k is 'class'
+									if val then addClass(node, v) else removeClass(node, v)
+								# attribute
+								else
+									node.setAttribute(k, val)
+
+					when 'deleted'
+						;
+
+
+
+		# handle DOM element change events
+		nodeChange = (e) ->
 			;
 
+		observeContext = (context) ->
+			if context and not context._jt_observer
+				context._jt_observer = observer
+				Object.observe(context, context._jt_observer)
+
+		addBinding = (context, k, v, node) ->
+			# special index voodoo is because you can't:
+			# array._some_custom_prop = something and then use it
+			# array.pop() (or other destructive operation)
+			# => strange things happen to _some_custom_prop
+			if context
+				if not context[-128128]? then context[-128128] = []
+				context[-128128].push([k, v, node])
+
+
 		for node in root.childNodes
+			nodeContext = context
 			switch node.nodeType
 				# Tag
 				when node.ELEMENT_NODE
 					if attr = node.getAttribute('data-jt')
+
 						# iterate key[=value] pairs
 						for kv in attr.split(' ')
-							# section?
-							if kv.slice(0, 1) is '#'
-								;
-							# inverted section?
-							else if kv.slice(0, 1) is '^'
-								;
-							# remember binding
-							[tmp, k, v] = kv.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/)
-							if not context._jt_model2dom? then context._jt_model2dom = []
-							context._jt_model2dom.push([k, v])
 
-					bind(node, context, level + '    ')
+							# parse
+							[tmp, k, v] = kv.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/)
+
+							# section item?
+							if kv is '.'
+								nodeContext = context[itemIndex++]
+
+							# (inverted) section?
+							else if kv.slice(0, 1) in ['#', '^']
+								sectionName = kv.slice(1)
+								nodeContext = context[sectionName]
+								addBinding(nodeContext, kv, null, node)
+
+							# attach event?
+							else if k and k.indexOf('on') is 0
+								handler = context[v]
+								if typeof handler is 'function'
+									addEvent(k.slice(2), node, handler.bind(context))
+								else
+									throw ":( #{ v } is not a function, cannot attach event handler"
+
+							else
+								addBinding(nodeContext, k, v, node)							
+
+
+					observeContext(nodeContext)
+					bind(node, nodeContext)
+
 				# Text
 				when node.TEXT_NODE
 					;# console.log node.nodeValue;
+
 				# Comment
 				when node.COMMENT_NODE
-					;# console.log node.nodeValue
+					;
+					# # collection template?
+					# if section = node.nodeValue.trim().match(/^(#|\^)\s(.*)$/)
+					# 	# decompile delimiters
+					# 	section[2] = section[2]
+					# 		.replace(new RegExp(quoteRE(options.compiledDelimiters[0]), 'g'), options.delimiters[0])
+					# 		.replace(new RegExp(quoteRE(options.compiledDelimiters[1]), 'g'), options.delimiters[1])
+					# 	if section[1] is '#'
+					# 		context._jt_section = section[2]
+					# 	else
+					# 		context._jt_inverted_section = section[2]
+
 				else
 					throw ":( unexpected nodeType #{ node.nodeType }"
 
-		# if bindings.length
-		# 	console.log context
-		# 	Object.observe(context, (changes) ->
-		# 		for change in changes
-		# 			console.log(">>>" + change.name + " was " + change.type + " and is now " + change.object[change.name])
-		# 		)
+		observeContext(context)
+
 
 
 	bind(target, model)

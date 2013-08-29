@@ -103,7 +103,7 @@ Specifications
 
 * less than 4KB minified and gzipped
 
-* Firefox, Chrome, Opera, IE 9 (IE8 requires Array.isArray, Array.map and String.trim [polyfills](http://stackoverflow.com/questions/2790001/fixing-javascript-array-functions-in-internet-explorer-indexof-foreach-etc))
+* Firefox, Chrome, Opera, IE 9 (IE8 requires Array.isArray, Array.map, Function.bind and String.trim [polyfills](http://stackoverflow.com/questions/2790001/fixing-javascript-array-functions-in-internet-explorer-indexof-foreach-etc))
 
 
 
@@ -195,7 +195,13 @@ Showcase of all features, tests
 		<style>
 			h2, h3 {margin-top: 64px}
 			body {padding: 1% 7%; color:#586e75}
-			.bound-class {color:red}
+			.bound-class {
+				color:red;
+				-webkit-transition:color 0.5s ease-in;  
+				-moz-transition:color 0.5s ease-in;  
+				-o-transition:color 0.5s ease-in;  
+				transition:color 0.5s ease-in;
+			}
 		</style>
 		<script src="js/qunit.js"></script>
 	</head>
@@ -242,7 +248,7 @@ Showcase of all features, tests
 
 			<h3>Data binding, toggle class&mdash;<code>model.field</code></h3>
 			<div>
-				<a href=# class="try2confuse-the_parser {{bound-class}}">Toggle me</a>
+				<a href=# class="try2confuse-the_parser {{bound-class}}" onclick="{{toggleClass}}">Toggle me</a>
 			</div>
 
 			<h3>Checkboxes&mdash;<code>model.checkboxes</code></h3>
@@ -294,6 +300,11 @@ Showcase of all features, tests
 				field: '',
 
 				'bound-class': true,
+
+				toggleClass: function(e) {
+					this['bound-class'] = !this['bound-class'];
+					e.preventDefault();
+				},
 
 				innerHTML: '<p>Hi, how are you?</p>',
 
