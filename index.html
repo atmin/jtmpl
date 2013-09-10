@@ -286,11 +286,11 @@
 
             options: [
                 {
-                    checked: true,
+                    checked: false,
                     text: &#39;one&#39; 
                 },
                 {
-                    checked: false,
+                    checked: true,
                     text: &#39;two&#39;
                 },
                 {
@@ -315,6 +315,7 @@
                     type: &#39;float&#39;,
                     value: Math.random()
                 });
+                this.removeDisabled = false;
             },
             remove: function() {
                 this.collection.pop();

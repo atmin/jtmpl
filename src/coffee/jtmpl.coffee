@@ -311,97 +311,51 @@ root.jtmpl = (target, tpl, model, options) ->
 
 
 	# Bind event handlers
-	bind = (root, context) ->
+	bind = (root, context, depth) ->
 
+		initSlot = (ctx, prop) ->
+			if not ctx._jt_bind? then ctx._jt_bind = {}
+			if not ctx._jt_bind[prop]? then ctx._jt_bind[prop] = []
+			ctx._jt_bind[prop]
 
-
-
-
-
-
-		###
-		contextVal = null
-
-		# context observer
-		observer = (changes) ->
-			for change in changes.filter((el, i, arr) -> el.name.indexOf('_jt_') isnt 0)
-				switch change.type
-
-					when 'updated'
-						# iterate bindings
-						for b in change.object[-128128]
-							[k, v, node] = b
-							# model property changed?
-							if (v and change.name is v) or (not v and change.name is k)
-								val = change.object[v or k]
-								# node contents?
-								if not v
-									node.innerHTML = val
-								# class?
-								else if k is 'class'
-									if val then addClass(node, v) else removeClass(node, v)
-								# attribute
-								else
-									node.setAttribute(k, val)
-
-					when 'deleted'
-						;
-
-
-
-		# handle DOM element change events
-		nodeChange = (e) ->
-			;
-
-		observeContext = (context) ->
-			if context and not context._jt_observer
-				context._jt_observer = observer
-				Object.observe(context, context._jt_observer)
-
-		addBinding = (context, k, v, node) ->
-			# special index voodoo is because you can't:
-			# array._some_custom_prop = something and then use it
-			# array.pop() (or other destructive operation)
-			# => strange things happen to _some_custom_prop
-			if context
-				if not context[-128128]? then context[-128128] = []
-				context[-128128].push([k, v, node])
-		###
-
-
-
-
-
+		bindProps = (context) ->
+			if context._jt_bind?
+				if context._jt_bind['.']? and Object.keys(context._jt_bind).length == 1
+					Object.observe(context, sectionObserver)
+				else
+					Object.observe(context, contextObserver(context._jt_bind))
+				# delete context._jt_bind
+			for k, v of context 
+				if typeof v is 'object' then bindProps(v)
 
 		sectionObserver = (changes) ->
-			;
+			for change in changes
+				console.log(change.name + ' ' + change.type)
 
-		contextObserver = (changes) ->
-			;
-
-		innerHTMLObserver = (field) ->
+		contextObserver = (bindings) ->
 			(changes) ->
 				for change in changes
-					if change.name is field and change.type is 'updated'
-						this.innerHTML = change.object[field]
-			
-		classObserver = (field) ->
-			(changes) ->
-				for change in changes
-					if change.name is field and change.type is 'updated'
-						(change.object[field] and addClass or removeClass)(this, field)
+					if change.type is 'updated' and bindings[change.name]?
+						for b in bindings[change.name]
+							b(change)
 
-		attributeObserver = (attr, field) ->
-			(changes) ->
-				for change in changes
-					if change.name is field and change.type is 'updated'
-						this.setAttribute(attr, change.object[field])
+		innerHTMLReact = (change) -> this.innerHTML = change.object[change.name]
 
+		classReact = (change) -> (change.object[change.name] and addClass or removeClass)(this, change.name)
 
+		attributeReact = (attr) -> 
+			(change) -> 
+				newVal = change.object[change.name]
+				if (typeof newVal is 'boolean' and not newVal) or newVal is null
+					this.removeAttribute(attr)
+				else
+					this.setAttribute(attr, newVal)
 
 
 		itemIndex = 0
 		nodeContext = null
+		bindings = {}
+		depth = depth or 0
 
 		# iterate children
 		for node in root.childNodes
@@ -417,7 +371,8 @@ root.jtmpl = (target, tpl, model, options) ->
 							# (inverted) section?
 							if jt.slice(0, 1) in ['#', '^']
 								nodeContext = context[jt.slice(1)]
-								Object.observe(nodeContext or context, sectionObserver.bind(node))
+								initSlot(nodeContext or context, '.').push(sectionObserver.bind(node))
+								# Object.observe(nodeContext or context, sectionObserver.bind(node))
 
 							# section item?
 							else if jt is '.'
@@ -427,6 +382,8 @@ root.jtmpl = (target, tpl, model, options) ->
 							# var
 							else
 								[tmp, k, v] = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/)
+
+								propBindings = initSlot(context, v or k)
 
 								# attach event?
 								if k and k.indexOf('on') is 0
@@ -438,57 +395,22 @@ root.jtmpl = (target, tpl, model, options) ->
 
 								# node.innerHTML?
 								else if not v
-									Object.observe(context, innerHTMLObserver(k).bind(node))
+									propBindings.push(innerHTMLReact.bind(node))
 
 								# class?
 								else if k is 'class'
-									Object.observe(context, classObserver(v).bind(node))
+									propBindings.push(classReact.bind(node))
 
 								# attribute
 								else
-									Object.observe(context, attributeObserver(k, v).bind(node))
+									propBindings.push(attributeReact(k).bind(node))
 
-					bind(node, nodeContext or context)
+					bind(node, nodeContext or context, depth + 1)
 
-
-
-
-
-					###
-						# iterate key[=value] pairs
-						for kv in attr.split(' ')
-
-							# parse
-							[tmp, k, v] = kv.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/)
-
-							# section item?
-							if kv is '.'
-								nodeContext = context[itemIndex++]
-
-							# (inverted) section?
-							else if kv.slice(0, 1) in ['#', '^']
-								sectionName = kv.slice(1)
-								nodeContext = context[sectionName]
-								addBinding(nodeContext, kv, null, node)
-
-							# attach event?
-							else if k and k.indexOf('on') is 0
-								handler = context[v]
-								if typeof handler is 'function'
-									addEvent(k.slice(2), node, handler.bind(context))
-								else
-									throw ":( #{ v } is not a function, cannot attach event handler"
-
-							else
-								addBinding(nodeContext, k, v, node)							
-
-
-					observeContext(nodeContext)
-					bind(node, nodeContext)
-					###
 
 				when node.TEXT_NODE
 					;
+
 
 				when node.COMMENT_NODE
 					;
@@ -506,7 +428,10 @@ root.jtmpl = (target, tpl, model, options) ->
 				else
 					throw ":( unexpected nodeType #{ node.nodeType }"
 
-		# observeContext(context)
+		# end of all recursion?
+		if not depth
+			# bind gathered properties (context._jt_bind)
+			bindProps(context)
 
 
 

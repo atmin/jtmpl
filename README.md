@@ -310,11 +310,11 @@ Showcase of all features, tests
 
 				options: [
 					{
-						checked: true,
+						checked: false,
 						text: 'one' 
 					},
 					{
-						checked: false,
+						checked: true,
 						text: 'two'
 					},
 					{
@@ -339,6 +339,7 @@ Showcase of all features, tests
 						type: 'float',
 						value: Math.random()
 					});
+					this.removeDisabled = false;
 				},
 				remove: function() {
 					this.collection.pop();

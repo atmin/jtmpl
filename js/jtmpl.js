@@ -238,67 +238,63 @@
     }
     target.innerHTML = html;
     target.setAttribute('data-jt', '.');
-    bind = function(root, context) {
-
-      /*
-      		contextVal = null
-      
-      		# context observer
-      		observer = (changes) ->
-      			for change in changes.filter((el, i, arr) -> el.name.indexOf('_jt_') isnt 0)
-      				switch change.type
-      
-      					when 'updated'
-      						# iterate bindings
-      						for b in change.object[-128128]
-      							[k, v, node] = b
-      							# model property changed?
-      							if (v and change.name is v) or (not v and change.name is k)
-      								val = change.object[v or k]
-      								# node contents?
-      								if not v
-      									node.innerHTML = val
-      								# class?
-      								else if k is 'class'
-      									if val then addClass(node, v) else removeClass(node, v)
-      								# attribute
-      								else
-      									node.setAttribute(k, val)
-      
-      					when 'deleted'
-      						;
-      
-      
-      
-      		# handle DOM element change events
-      		nodeChange = (e) ->
-      			;
-      
-      		observeContext = (context) ->
-      			if context and not context._jt_observer
-      				context._jt_observer = observer
-      				Object.observe(context, context._jt_observer)
-      
-      		addBinding = (context, k, v, node) ->
-      			# special index voodoo is because you can't:
-      			# array._some_custom_prop = something and then use it
-      			# array.pop() (or other destructive operation)
-      			# => strange things happen to _some_custom_prop
-      			if context
-      				if not context[-128128]? then context[-128128] = []
-      				context[-128128].push([k, v, node])
-      */
-      var attr, attributeObserver, classObserver, contextObserver, handler, innerHTMLObserver, itemIndex, jt, k, node, nodeContext, sectionObserver, tmp, v, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3, _results;
-      sectionObserver = function(changes) {};
-      contextObserver = function(changes) {};
-      innerHTMLObserver = function(field) {
+    bind = function(root, context, depth) {
+      var attr, attributeReact, bindProps, bindings, classReact, contextObserver, handler, initSlot, innerHTMLReact, itemIndex, jt, k, node, nodeContext, propBindings, sectionObserver, tmp, v, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
+      initSlot = function(ctx, prop) {
+        if (ctx._jt_bind == null) {
+          ctx._jt_bind = {};
+        }
+        if (ctx._jt_bind[prop] == null) {
+          ctx._jt_bind[prop] = [];
+        }
+        return ctx._jt_bind[prop];
+      };
+      bindProps = function(context) {
+        var k, v, _results;
+        if (context._jt_bind != null) {
+          if ((context._jt_bind['.'] != null) && Object.keys(context._jt_bind).length === 1) {
+            Object.observe(context, sectionObserver);
+          } else {
+            Object.observe(context, contextObserver(context._jt_bind));
+          }
+        }
+        _results = [];
+        for (k in context) {
+          v = context[k];
+          if (typeof v === 'object') {
+            _results.push(bindProps(v));
+          } else {
+            _results.push(void 0);
+          }
+        }
+        return _results;
+      };
+      sectionObserver = function(changes) {
+        var change, _i, _len, _results;
+        _results = [];
+        for (_i = 0, _len = changes.length; _i < _len; _i++) {
+          change = changes[_i];
+          _results.push(console.log(change.name + ' ' + change.type));
+        }
+        return _results;
+      };
+      contextObserver = function(bindings) {
         return function(changes) {
-          var change, _i, _len, _results;
+          var b, change, _i, _len, _results;
           _results = [];
           for (_i = 0, _len = changes.length; _i < _len; _i++) {
             change = changes[_i];
-            if (change.name === field && change.type === 'updated') {
-              _results.push(this.innerHTML = change.object[field]);
+            if (change.type === 'updated' && (bindings[change.name] != null)) {
+              _results.push((function() {
+                var _j, _len1, _ref, _results1;
+                _ref = bindings[change.name];
+                _results1 = [];
+                for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+                  b = _ref[_j];
+                  _results1.push(b(change));
+                }
+                return _results1;
+              })());
             } else {
               _results.push(void 0);
             }
@@ -306,40 +302,28 @@
           return _results;
         };
       };
-      classObserver = function(field) {
-        return function(changes) {
-          var change, _i, _len, _results;
-          _results = [];
-          for (_i = 0, _len = changes.length; _i < _len; _i++) {
-            change = changes[_i];
-            if (change.name === field && change.type === 'updated') {
-              _results.push((change.object[field] && addClass || removeClass)(this, field));
-            } else {
-              _results.push(void 0);
-            }
-          }
-          return _results;
-        };
+      innerHTMLReact = function(change) {
+        return this.innerHTML = change.object[change.name];
       };
-      attributeObserver = function(attr, field) {
-        return function(changes) {
-          var change, _i, _len, _results;
-          _results = [];
-          for (_i = 0, _len = changes.length; _i < _len; _i++) {
-            change = changes[_i];
-            if (change.name === field && change.type === 'updated') {
-              _results.push(this.setAttribute(attr, change.object[field]));
-            } else {
-              _results.push(void 0);
-            }
+      classReact = function(change) {
+        return (change.object[change.name] && addClass || removeClass)(this, change.name);
+      };
+      attributeReact = function(attr) {
+        return function(change) {
+          var newVal;
+          newVal = change.object[change.name];
+          if ((typeof newVal === 'boolean' && !newVal) || newVal === null) {
+            return this.removeAttribute(attr);
+          } else {
+            return this.setAttribute(attr, newVal);
           }
-          return _results;
         };
       };
       itemIndex = 0;
       nodeContext = null;
+      bindings = {};
+      depth = depth || 0;
       _ref = root.childNodes;
-      _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         node = _ref[_i];
         switch (node.nodeType) {
@@ -350,7 +334,7 @@
                 jt = _ref1[_j];
                 if ((_ref2 = jt.slice(0, 1)) === '#' || _ref2 === '^') {
                   nodeContext = context[jt.slice(1)];
-                  Object.observe(nodeContext || context, sectionObserver.bind(node));
+                  initSlot(nodeContext || context, '.').push(sectionObserver.bind(node));
                 } else if (jt === '.') {
                   nodeContext = context[itemIndex++];
                   if (typeof nodeContext !== 'object') {
@@ -358,6 +342,7 @@
                   }
                 } else {
                   _ref3 = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref3[0], k = _ref3[1], v = _ref3[2];
+                  propBindings = initSlot(context, v || k);
                   if (k && k.indexOf('on') === 0) {
                     handler = context[v];
                     if (typeof handler === 'function') {
@@ -366,49 +351,16 @@
                       throw ":( " + v + " is not a function, cannot attach event handler";
                     }
                   } else if (!v) {
-                    Object.observe(context, innerHTMLObserver(k).bind(node));
+                    propBindings.push(innerHTMLReact.bind(node));
                   } else if (k === 'class') {
-                    Object.observe(context, classObserver(v).bind(node));
+                    propBindings.push(classReact.bind(node));
                   } else {
-                    Object.observe(context, attributeObserver(k, v).bind(node));
+                    propBindings.push(attributeReact(k).bind(node));
                   }
                 }
               }
             }
-            _results.push(bind(node, nodeContext || context));
-
-            /*
-            						# iterate key[=value] pairs
-            						for kv in attr.split(' ')
-            
-            							# parse
-            							[tmp, k, v] = kv.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/)
-            
-            							# section item?
-            							if kv is '.'
-            								nodeContext = context[itemIndex++]
-            
-            							# (inverted) section?
-            							else if kv.slice(0, 1) in ['#', '^']
-            								sectionName = kv.slice(1)
-            								nodeContext = context[sectionName]
-            								addBinding(nodeContext, kv, null, node)
-            
-            							# attach event?
-            							else if k and k.indexOf('on') is 0
-            								handler = context[v]
-            								if typeof handler is 'function'
-            									addEvent(k.slice(2), node, handler.bind(context))
-            								else
-            									throw ":( #{ v } is not a function, cannot attach event handler"
-            
-            							else
-            								addBinding(nodeContext, k, v, node)							
-            
-            
-            					observeContext(nodeContext)
-            					bind(node, nodeContext)
-            */
+            bind(node, nodeContext || context, depth + 1);
             break;
           case node.TEXT_NODE:
             break;
@@ -418,7 +370,9 @@
             throw ":( unexpected nodeType " + node.nodeType;
         }
       }
-      return _results;
+      if (!depth) {
+        return bindProps(context);
+      }
     };
     return bind(target, model);
   };
