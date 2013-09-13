@@ -1,7 +1,4 @@
-# jtmpl
-# @author Atanas Minev
-# MIT license
-
+### jtmpl, @author Atanas Minev, MIT license ###
 
 root = this
 root.jtmpl = (target, tpl, model, options) ->
@@ -320,17 +317,16 @@ root.jtmpl = (target, tpl, model, options) ->
 
 		bindProps = (context) ->
 			if context._jt_bind?
-				if context._jt_bind['.']? and Object.keys(context._jt_bind).length == 1
-					Object.observe(context, sectionObserver)
+				# sectionHandler = 
+					# (context._jt_bind['#'] and context._jt_bind['#'].length and context._jt_bind['#'][0]) or 
+					# (context._jt_bind['^'] and context._jt_bind['^'].length and context._jt_bind['^'][0])
+				if context._jt_bind['.'] and context._jt_bind['.'].length
+					Object.observe(context, context._jt_bind['.'][0])
 				else
 					Object.observe(context, contextObserver(context._jt_bind))
 				# delete context._jt_bind
 			for k, v of context 
 				if typeof v is 'object' then bindProps(v)
-
-		sectionObserver = (changes) ->
-			for change in changes
-				console.log(change.name + ' ' + change.type)
 
 		contextObserver = (bindings) ->
 			(changes) ->
@@ -351,6 +347,16 @@ root.jtmpl = (target, tpl, model, options) ->
 				else
 					this.setAttribute(attr, newVal)
 
+		sectionReact = (oldVal) -> 
+			(changes) ->
+				if Array.isArray(oldVal)
+					for change in changes
+						console.log("#{ change.name } was #{ change.type } oldValue=#{ change.oldValue } newValue=#{ change.object[change.name] }")
+				else
+					val = changes.object[changes.name]
+					jtmpl(this, this.getAttribute("data-jt-#{ val and 1 or 0 }") or '', changes.object)
+					oldVal = val
+
 
 		itemIndex = 0
 		nodeContext = null
@@ -370,9 +376,14 @@ root.jtmpl = (target, tpl, model, options) ->
 
 							# (inverted) section?
 							if jt.slice(0, 1) in ['#', '^']
-								nodeContext = context[jt.slice(1)]
-								initSlot(nodeContext or context, '.').push(sectionObserver.bind(node))
-								# Object.observe(nodeContext or context, sectionObserver.bind(node))
+								val = jt.slice(1)
+								nodeContext = context[val]
+
+								if Array.isArray(nodeContext)
+									initSlot(nodeContext, '.')
+										.push(sectionReact(nodeContext).bind(node))
+
+								initSlot(context, val).push(sectionReact(nodeContext).bind(node))
 
 							# section item?
 							else if jt is '.'
@@ -409,21 +420,22 @@ root.jtmpl = (target, tpl, model, options) ->
 
 
 				when node.TEXT_NODE
-					;
+					;#)
 
 
 				when node.COMMENT_NODE
-					;
-					# # collection template?
-					# if section = node.nodeValue.trim().match(/^(#|\^)\s(.*)$/)
-					# 	# decompile delimiters
-					# 	section[2] = section[2]
-					# 		.replace(new RegExp(quoteRE(options.compiledDelimiters[0]), 'g'), options.delimiters[0])
-					# 		.replace(new RegExp(quoteRE(options.compiledDelimiters[1]), 'g'), options.delimiters[1])
-					# 	if section[1] is '#'
-					# 		context._jt_section = section[2]
-					# 	else
-					# 		context._jt_inverted_section = section[2]
+					# collection template?
+					if section = node.nodeValue.trim().match(/^(#|\^)\s(.*)$/)
+						# decompile delimiters
+						section[2] = section[2]
+							.replace(new RegExp(quoteRE(options.compiledDelimiters[0]), 'g'), options.delimiters[0])
+							.replace(new RegExp(quoteRE(options.compiledDelimiters[1]), 'g'), options.delimiters[1])
+						if section[1] is '#'
+							# section
+							root.setAttribute('data-jt-1', section[2])
+						else
+							# inverted section
+							root.setAttribute('data-jt-0', section[2])
 
 				else
 					throw ":( unexpected nodeType #{ node.nodeType }"

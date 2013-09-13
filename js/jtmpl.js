@@ -1,3 +1,6 @@
+
+/* jtmpl, @author Atanas Minev, MIT license*/
+
 (function() {
   var root;
 
@@ -239,7 +242,7 @@
     target.innerHTML = html;
     target.setAttribute('data-jt', '.');
     bind = function(root, context, depth) {
-      var attr, attributeReact, bindProps, bindings, classReact, contextObserver, handler, initSlot, innerHTMLReact, itemIndex, jt, k, node, nodeContext, propBindings, sectionObserver, tmp, v, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
+      var attr, attributeReact, bindProps, bindings, classReact, contextObserver, handler, initSlot, innerHTMLReact, itemIndex, jt, k, node, nodeContext, propBindings, section, sectionReact, tmp, v, val, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
       initSlot = function(ctx, prop) {
         if (ctx._jt_bind == null) {
           ctx._jt_bind = {};
@@ -252,8 +255,8 @@
       bindProps = function(context) {
         var k, v, _results;
         if (context._jt_bind != null) {
-          if ((context._jt_bind['.'] != null) && Object.keys(context._jt_bind).length === 1) {
-            Object.observe(context, sectionObserver);
+          if (context._jt_bind['.'] && context._jt_bind['.'].length) {
+            Object.observe(context, context._jt_bind['.'][0]);
           } else {
             Object.observe(context, contextObserver(context._jt_bind));
           }
@@ -266,15 +269,6 @@
           } else {
             _results.push(void 0);
           }
-        }
-        return _results;
-      };
-      sectionObserver = function(changes) {
-        var change, _i, _len, _results;
-        _results = [];
-        for (_i = 0, _len = changes.length; _i < _len; _i++) {
-          change = changes[_i];
-          _results.push(console.log(change.name + ' ' + change.type));
         }
         return _results;
       };
@@ -319,6 +313,23 @@
           }
         };
       };
+      sectionReact = function(oldVal) {
+        return function(changes) {
+          var change, val, _i, _len, _results;
+          if (Array.isArray(oldVal)) {
+            _results = [];
+            for (_i = 0, _len = changes.length; _i < _len; _i++) {
+              change = changes[_i];
+              _results.push(console.log("" + change.name + " was " + change.type + " oldValue=" + change.oldValue + " newValue=" + change.object[change.name]));
+            }
+            return _results;
+          } else {
+            val = changes.object[changes.name];
+            jtmpl(this, this.getAttribute("data-jt-" + (val && 1 || 0)) || '', changes.object);
+            return oldVal = val;
+          }
+        };
+      };
       itemIndex = 0;
       nodeContext = null;
       bindings = {};
@@ -333,8 +344,12 @@
               for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
                 jt = _ref1[_j];
                 if ((_ref2 = jt.slice(0, 1)) === '#' || _ref2 === '^') {
-                  nodeContext = context[jt.slice(1)];
-                  initSlot(nodeContext || context, '.').push(sectionObserver.bind(node));
+                  val = jt.slice(1);
+                  nodeContext = context[val];
+                  if (Array.isArray(nodeContext)) {
+                    initSlot(nodeContext, '.').push(sectionReact(nodeContext).bind(node));
+                  }
+                  initSlot(context, val).push(sectionReact(nodeContext).bind(node));
                 } else if (jt === '.') {
                   nodeContext = context[itemIndex++];
                   if (typeof nodeContext !== 'object') {
@@ -365,6 +380,14 @@
           case node.TEXT_NODE:
             break;
           case node.COMMENT_NODE:
+            if (section = node.nodeValue.trim().match(/^(#|\^)\s(.*)$/)) {
+              section[2] = section[2].replace(new RegExp(quoteRE(options.compiledDelimiters[0]), 'g'), options.delimiters[0]).replace(new RegExp(quoteRE(options.compiledDelimiters[1]), 'g'), options.delimiters[1]);
+              if (section[1] === '#') {
+                root.setAttribute('data-jt-1', section[2]);
+              } else {
+                root.setAttribute('data-jt-0', section[2]);
+              }
+            }
             break;
           default:
             throw ":( unexpected nodeType " + node.nodeType;

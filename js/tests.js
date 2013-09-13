@@ -81,9 +81,15 @@
   });
 
   test('bind', function() {
-    return equal(jtmpl('tpl{{a}}xyz', {
-      a: 'A'
-    }), 'tpl<span data-jt="a">A</span>xyz', 'var');
+    model.collection[3].value = 'false';
+    model.field = 'qunit';
+    stop();
+    return setTimeout(function() {
+      equal(jtmpl('ul li:nth-of-type(4) code:nth-of-type(2)')[0].innerHTML, 'false', 'innerHTML binding');
+      equal(jtmpl('ul li').length, model.collection.length, 'collection.length equals li.length');
+      equal(jtmpl('p')[3].innerHTML, 'You entered "<span data-jt="field">qunit</span>". Delete it and this message will disappear', 'positive if section');
+      return start();
+    }, 1000);
   });
 
 }).call(this);

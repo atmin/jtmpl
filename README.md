@@ -6,7 +6,7 @@ _`{{`_ `jtmpl` _`}}`_
 
 
 <br>
- _Code is work in progress (`Stage1` (the harder part) is finished), feel free to explore concept_
+ _Code is work in progress (working version scheduled before the end of September), feel free to explore concept_
 
 
 What
