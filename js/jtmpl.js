@@ -242,7 +242,7 @@
     target.innerHTML = html;
     target.setAttribute('data-jt', '.');
     bind = function(root, context, depth) {
-      var attr, attributeReact, bindProps, bindings, classReact, contextObserver, handler, initSlot, innerHTMLReact, itemIndex, jt, k, node, nodeContext, propBindings, section, sectionReact, tmp, v, val, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
+      var attr, attributeReact, bindProps, bindings, changeHandler, classReact, contextObserver, handler, initSlot, innerHTMLReact, itemIndex, jt, k, node, nodeContext, propBindings, section, sectionReact, tmp, v, val, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
       initSlot = function(ctx, prop) {
         if (ctx._jt_bind == null) {
           ctx._jt_bind = {};
@@ -306,10 +306,14 @@
         return function(change) {
           var newVal;
           newVal = change.object[change.name];
-          if ((typeof newVal === 'boolean' && !newVal) || newVal === null) {
-            return this.removeAttribute(attr);
+          if (attr === 'value' || attr === 'checked') {
+            return this[attr] = newVal;
           } else {
-            return this.setAttribute(attr, newVal);
+            if ((typeof newVal === 'boolean' && !newVal) || newVal === null) {
+              return this.removeAttribute(attr);
+            } else {
+              return this.setAttribute(attr, newVal);
+            }
           }
         };
       };
@@ -328,6 +332,13 @@
             jtmpl(this, this.getAttribute("data-jt-" + (val && 1 || 0)) || '', changes.object);
             return oldVal = val;
           }
+        };
+      };
+      changeHandler = function(context, k, v) {
+        var changing;
+        changing = false;
+        return function() {
+          return context[v] = this[k];
         };
       };
       itemIndex = 0;
@@ -371,6 +382,9 @@
                     propBindings.push(classReact.bind(node));
                   } else {
                     propBindings.push(attributeReact(k).bind(node));
+                    if (k === 'value' || k === 'checked') {
+                      addEvent('change', node, changeHandler(context, k, v).bind(node));
+                    }
                   }
                 }
               }

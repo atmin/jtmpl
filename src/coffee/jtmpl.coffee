@@ -342,10 +342,13 @@ root.jtmpl = (target, tpl, model, options) ->
 		attributeReact = (attr) -> 
 			(change) -> 
 				newVal = change.object[change.name]
-				if (typeof newVal is 'boolean' and not newVal) or newVal is null
-					this.removeAttribute(attr)
+				if attr in ['value', 'checked']
+					this[attr] = newVal
 				else
-					this.setAttribute(attr, newVal)
+					if (typeof newVal is 'boolean' and not newVal) or newVal is null
+						this.removeAttribute(attr)
+					else
+						this.setAttribute(attr, newVal)
 
 		sectionReact = (oldVal) -> 
 			(changes) ->
@@ -356,6 +359,15 @@ root.jtmpl = (target, tpl, model, options) ->
 					val = changes.object[changes.name]
 					jtmpl(this, this.getAttribute("data-jt-#{ val and 1 or 0 }") or '', changes.object)
 					oldVal = val
+
+		changeHandler = (context, k, v) ->
+			changing = false
+			->
+				# if changing 
+				# 	changing = false
+				# else
+				# 	changing = true
+					context[v] = this[k]
 
 
 		itemIndex = 0
@@ -415,6 +427,10 @@ root.jtmpl = (target, tpl, model, options) ->
 								# attribute
 								else
 									propBindings.push(attributeReact(k).bind(node))
+
+									# monitor DOM onchange event?
+									if k in ['value', 'checked']
+										addEvent('change', node, changeHandler(context, k, v).bind(node))
 
 					bind(node, nodeContext or context, depth + 1)
 
