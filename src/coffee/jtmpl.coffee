@@ -75,7 +75,7 @@ root.jtmpl = (target, tpl, model, options) ->
 					[^\s>]+            # or unquoted \4
 				)
 			)?
-		)*
+		)*?
 		\s* (>)?          # capture if tag closed \5
 		\s* $             # whitespace, end of slice
 	///
@@ -118,6 +118,18 @@ root.jtmpl = (target, tpl, model, options) ->
 		else if elem.attachEvent then elem.attachEvent('on' + evnt, func)
 		else elem[evnt] = func
 
+	# Cross-browser trigger event on node
+	triggerEvent = (evnt, elem) ->
+		if Event?
+			elem.dispatchEvent(new Event(evnt))
+		else if document.createEvent
+			event = document.createEvent('Event')
+			event.initEvent(evnt, true, true)
+			elem.dispatchEvent(event)
+		else
+			event = document.createEventObject()
+			elem.fireEvent('on' + evnt, event)
+
 	# HTML element class manipulation (IE does not support classList)
 	hasClass = (el, name) -> new RegExp("(\\s|^)#{ name }(\\s|$)").test(el.className)
 	addClass = (el, name) -> 
@@ -131,7 +143,7 @@ root.jtmpl = (target, tpl, model, options) ->
 	# Parse template, remove jtmpl tags, add data-jt attrs and structure as HTML comments
 	compile = (tpl, context, position, openTagName) ->
 		pos = position or 0
-		out = ''
+		out = outpart = ''
 		tag = htag = lastSectionTag = null
 
 		## Template preprocessing
@@ -161,7 +173,7 @@ root.jtmpl = (target, tpl, model, options) ->
 
 		# inject data-jt attribute on section
 		injectOuterTag = () ->
-			p = htag.index + htag[1].length
+			p = htag.index + htag[1].length + (outpart isnt out and out.length - outpart.length or 0)
 			t = "#{ getPropString(fullTagNoDelim) }"
 			# attribute exists?
 			# regex [\s\S]{N} matches N characters
@@ -188,8 +200,12 @@ root.jtmpl = (target, tpl, model, options) ->
 
 			[tagType, tagName, fullTag, fullTagNoDelim] = parseTag(tag)
 
+			console.log("#{ tagName }   #{ fullTag }")
+
 			flush()
-			htag = out.match(hre)
+			# Firefox sometimes doesn't match when it should, if input is too long
+			outpart = out.length > 300 and out.slice(-300) or out
+			htag = outpart.match(hre)
 
 			switch tagType
 				when 'end'
@@ -317,9 +333,6 @@ root.jtmpl = (target, tpl, model, options) ->
 
 		bindProps = (context) ->
 			if context._jt_bind?
-				# sectionHandler = 
-					# (context._jt_bind['#'] and context._jt_bind['#'].length and context._jt_bind['#'][0]) or 
-					# (context._jt_bind['^'] and context._jt_bind['^'].length and context._jt_bind['^'][0])
 				if context._jt_bind['.'] and context._jt_bind['.'].length
 					Object.observe(context, context._jt_bind['.'][0])
 				else
@@ -342,8 +355,9 @@ root.jtmpl = (target, tpl, model, options) ->
 		attributeReact = (attr) -> 
 			(change) -> 
 				newVal = change.object[change.name]
-				if attr in ['value', 'checked']
+				if attr in ['value', 'checked', 'selected']
 					this[attr] = newVal
+					# this._changing = (this._changing + 1) or 1
 				else
 					if (typeof newVal is 'boolean' and not newVal) or newVal is null
 						this.removeAttribute(attr)
@@ -353,22 +367,37 @@ root.jtmpl = (target, tpl, model, options) ->
 		sectionReact = (oldVal) -> 
 			(changes) ->
 				if Array.isArray(oldVal)
-					for change in changes
-						console.log("#{ change.name } was #{ change.type } oldValue=#{ change.oldValue } newValue=#{ change.object[change.name] }")
+					val = changes[0].object
+					console.log("old: #{ oldVal }\nnew: #{ val }")
+					oldVal = val.slice() or oldVal
+					# for change in changes
+					# 	console.log("#{ change.name } was #{ change.type } oldValue=#{ change.oldValue } newValue=#{ change.object[change.name] }")
 				else
 					val = changes.object[changes.name]
 					jtmpl(this, this.getAttribute("data-jt-#{ val and 1 or 0 }") or '', changes.object)
 					oldVal = val
 
-		changeHandler = (context, k, v) ->
+		changeHandler = (context, k, v) -> -> context[v] = this[k]
+
+		radioHandler = (context, k, v) -> ->
+			if this[k]
+				for input in jtmpl("input[type=radio][name=#{ this.name }]")
+					if input isnt this
+						triggerEvent('change', input)
+			context[v] = this[k]
+
+		optionHandler = (context, k, v) -> 
 			changing = false
 			->
-				# if changing 
-				# 	changing = false
-				# else
-				# 	changing = true
-					context[v] = this[k]
+				if changing then return
 
+				changing = true
+				idx = 0
+				for option in this.children
+					if option.nodeName is 'OPTION'
+						context[idx][v] = option.selected
+						idx++
+				changing = false
 
 		itemIndex = 0
 		nodeContext = null
@@ -383,8 +412,11 @@ root.jtmpl = (target, tpl, model, options) ->
 				when node.ELEMENT_NODE
 					if attr = node.getAttribute('data-jt')
 
+						# we want the dot first
+						jtProps = attr.trim().split(' ').sort()
+
 						# iterate bound template tags
-						for jt in attr.trim().split(' ')
+						for jt in jtProps
 
 							# (inverted) section?
 							if jt.slice(0, 1) in ['#', '^']
@@ -399,14 +431,15 @@ root.jtmpl = (target, tpl, model, options) ->
 
 							# section item?
 							else if jt is '.'
-								nodeContext = context[itemIndex++]
+								nodeContext = context[itemIndex++] or context
 								if typeof nodeContext isnt 'object' then nodeContext = null
 
 							# var
 							else
 								[tmp, k, v] = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/)
 
-								propBindings = initSlot(context, v or k)
+								propBindings = initSlot(
+									(typeof nodeContext is 'object' and not Array.isArray(nodeContext)) and nodeContext or context, v or k)
 
 								# attach event?
 								if k and k.indexOf('on') is 0
@@ -429,15 +462,21 @@ root.jtmpl = (target, tpl, model, options) ->
 									propBindings.push(attributeReact(k).bind(node))
 
 									# monitor DOM onchange event?
-									if k in ['value', 'checked']
-										addEvent('change', node, changeHandler(context, k, v).bind(node))
+									if k in ['value', 'checked', 'selected']
+										# first select option?
+										if node.nodeName is 'OPTION' and node.parentNode.querySelectorAll('option')[0] is node
+											addEvent('change', node.parentNode, optionHandler(context, k, v).bind(node.parentNode))
+										# radio group?
+										if node.type is 'radio' and node.name
+											addEvent('change', node, radioHandler(context, k, v).bind(node))
+										# other inputs
+										else
+											addEvent('change', node, changeHandler(context, k, v).bind(node))
 
 					bind(node, nodeContext or context, depth + 1)
 
-
 				when node.TEXT_NODE
 					;#)
-
 
 				when node.COMMENT_NODE
 					# collection template?

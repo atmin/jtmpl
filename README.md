@@ -111,7 +111,7 @@ Specifications
 Downloads
 ---------
 
-* [jtmpl.coffee](https://github.com/atmin/jtmpl/blob/dev/src/coffee/jtmpl.coffee)
+* browse [jtmpl.coffee](https://github.com/atmin/jtmpl/blob/dev/src/coffee/jtmpl.coffee)
 
 * [jtmpl.js](js/jtmpl.js)
 
@@ -122,15 +122,17 @@ Downloads
 
 
 Details
---------
+-------
 
 ### API
 
 * `jtmpl(selector)`&mdash;returns an array, just a handy wrapper around `document.querySelectorAll`
 
-* `jtmpl('template or #element-id', model)`&mdash;compiles template string (or #element-id innerHTML) using `model`
+* `jtmpl('template or "#element-id"', model)`&mdash;compiles template string (or #element-id innerHTML) using `model`
 
 * `jtmpl('#target-id' or domElement, 'template contents or "#template-id"', model)`&mdash;compiles a template using `model`, injects it into target and binds it to `model`. Template contents can be already prerendered by server to save the client some processing and help for SEO
+
+* `jtmpl(null, 'template or "#element-id"', model)`&mdash;when target is `null`, return `DocumentFragment` instead of injecting it. Used internally to manage sections.
 
 * if jtmpl script is loaded in browser context and an element with id=`jtmpl` and `data-model` attribute is found, then:
 	1. Element's contents is rendered using `data-model`
@@ -170,7 +172,7 @@ Details
 
 * `<tag><!-- {{var}} --></tag>`&mdash;HTML comment is stripped when it contains one Mustache tag. This allows you to build easily templates that are valid HTML
 
-* `<tag onevent="{{handler}}">`&mdash;`on`-prefixed properties are event handlers. `handler` is expected to be a function, `this` is the `model`. No need to add `onchange` handlers, they are already handled
+* `<tag onevent="{{handler}}">`&mdash;`on`-prefixed properties are event handlers. `handler` is expected to be a function, `this` is the `model`. No need to add `onchange` handlers, DOM element values and `model` are already synced.
 
 * `<tag> {{#section}}...{{/section}} </tag>`&mdash;Whenever `section[i]` changes corresponding HTML element changes (you can insert or delete items via `Array.splice()` and only affected DOM elements are updated). There are no restrictions on the nesting level.
 
@@ -246,9 +248,9 @@ Showcase of all features, tests
 				{{/field}}
 			</p>
 
-			<h3>Data binding, toggle class&mdash;<code>model.field</code></h3>
+			<h3>Data binding, toggle class&mdash;<code>model['bound-class']</code></h3>
 			<div>
-				<a href=# class="try2confuse-the_parser {{bound-class}}" onclick="{{toggleClass}}">Toggle me</a>
+				<a href=# class="try2confuse-the_parser {{bound-class}}" onclick="{{toggleClass}}">Toggle .bound-class on me</a>
 			</div>
 
 			<h3>Checkboxes&mdash;<code>model.checkboxes</code></h3>
@@ -330,9 +332,10 @@ Showcase of all features, tests
 
 
 				// event handlers
-				toggle: function() {
+				toggle: function(e) {
 					this.text = this.text == 'lowercase' ?
 						'UPPERCASE': 'lowercase';
+					e.preventDefault();
 				},
 				add: function() {
 					this.collection.push({

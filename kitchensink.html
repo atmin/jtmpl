@@ -58,9 +58,9 @@
 			{{/field}}
 		</p>
 
-		<h3>Data binding, toggle class&mdash;<code>model.field</code></h3>
+		<h3>Data binding, toggle class&mdash;<code>model['bound-class']</code></h3>
 		<div>
-			<a href=# class="try2confuse-the_parser {{bound-class}}" onclick="{{toggleClass}}">Toggle me</a>
+			<a href=# class="try2confuse-the_parser {{bound-class}}" onclick="{{toggleClass}}">Toggle .bound-class on me</a>
 		</div>
 
 		<h3>Checkboxes&mdash;<code>model.checkboxes</code></h3>
@@ -142,9 +142,10 @@
 
 
 			// event handlers
-			toggle: function() {
+			toggle: function(e) {
 				this.text = this.text == 'lowercase' ?
 					'UPPERCASE': 'lowercase';
+				e.preventDefault();
 			},
 			add: function() {
 				this.collection.push({

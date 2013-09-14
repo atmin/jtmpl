@@ -99,7 +99,7 @@
 </ul>
 <h2>Downloads</h2>
 <ul>
-<li><p><a href="https://github.com/atmin/jtmpl/blob/dev/src/coffee/jtmpl.coffee">jtmpl.coffee</a></p>
+<li><p>browse <a href="https://github.com/atmin/jtmpl/blob/dev/src/coffee/jtmpl.coffee">jtmpl.coffee</a></p>
 </li>
 <li><p><a href="js/jtmpl.js">jtmpl.js</a></p>
 </li>
@@ -111,9 +111,11 @@
 <ul>
 <li><p><code>jtmpl(selector)</code>&mdash;returns an array, just a handy wrapper around <code>document.querySelectorAll</code></p>
 </li>
-<li><p><code>jtmpl(&#39;template or #element-id&#39;, model)</code>&mdash;compiles template string (or #element-id innerHTML) using <code>model</code></p>
+<li><p><code>jtmpl(&#39;template or &quot;#element-id&quot;&#39;, model)</code>&mdash;compiles template string (or #element-id innerHTML) using <code>model</code></p>
 </li>
 <li><p><code>jtmpl(&#39;#target-id&#39; or domElement, &#39;template contents or &quot;#template-id&quot;&#39;, model)</code>&mdash;compiles a template using <code>model</code>, injects it into target and binds it to <code>model</code>. Template contents can be already prerendered by server to save the client some processing and help for SEO</p>
+</li>
+<li><p><code>jtmpl(null, &#39;template or &quot;#element-id&quot;&#39;, model)</code>&mdash;when target is <code>null</code>, return <code>DocumentFragment</code> instead of injecting it. Used internally to manage sections.</p>
 </li>
 <li><p>if jtmpl script is loaded in browser context and an element with id=<code>jtmpl</code> and <code>data-model</code> attribute is found, then:</p>
 <ol>
@@ -153,7 +155,7 @@
 </li>
 <li><p><code>&lt;tag&gt;&lt;!-- {{var}} --&gt;&lt;/tag&gt;</code>&mdash;HTML comment is stripped when it contains one Mustache tag. This allows you to build easily templates that are valid HTML</p>
 </li>
-<li><p><code>&lt;tag onevent=&quot;{{handler}}&quot;&gt;</code>&mdash;<code>on</code>-prefixed properties are event handlers. <code>handler</code> is expected to be a function, <code>this</code> is the <code>model</code>. No need to add <code>onchange</code> handlers, they are already handled</p>
+<li><p><code>&lt;tag onevent=&quot;{{handler}}&quot;&gt;</code>&mdash;<code>on</code>-prefixed properties are event handlers. <code>handler</code> is expected to be a function, <code>this</code> is the <code>model</code>. No need to add <code>onchange</code> handlers, DOM element values and <code>model</code> are already synced.</p>
 </li>
 <li><p><code>&lt;tag&gt; {{#section}}...{{/section}} &lt;/tag&gt;</code>&mdash;Whenever <code>section[i]</code> changes corresponding HTML element changes (you can insert or delete items via <code>Array.splice()</code> and only affected DOM elements are updated). There are no restrictions on the nesting level.</p>
 </li>
@@ -222,9 +224,9 @@
             {{/field}}
         &lt;/p&gt;
 
-        &lt;h3&gt;Data binding, toggle class&amp;mdash;&lt;code&gt;model.field&lt;/code&gt;&lt;/h3&gt;
+        &lt;h3&gt;Data binding, toggle class&amp;mdash;&lt;code&gt;model[&#39;bound-class&#39;]&lt;/code&gt;&lt;/h3&gt;
         &lt;div&gt;
-            &lt;a href=# class=&quot;try2confuse-the_parser {{bound-class}}&quot; onclick=&quot;{{toggleClass}}&quot;&gt;Toggle me&lt;/a&gt;
+            &lt;a href=# class=&quot;try2confuse-the_parser {{bound-class}}&quot; onclick=&quot;{{toggleClass}}&quot;&gt;Toggle .bound-class on me&lt;/a&gt;
         &lt;/div&gt;
 
         &lt;h3&gt;Checkboxes&amp;mdash;&lt;code&gt;model.checkboxes&lt;/code&gt;&lt;/h3&gt;
@@ -306,9 +308,10 @@
 
 
             // event handlers
-            toggle: function() {
+            toggle: function(e) {
                 this.text = this.text == &#39;lowercase&#39; ?
                     &#39;UPPERCASE&#39;: &#39;lowercase&#39;;
+                e.preventDefault();
             },
             add: function() {
                 this.collection.push({

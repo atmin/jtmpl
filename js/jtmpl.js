@@ -7,7 +7,7 @@
   root = this;
 
   root.jtmpl = function(target, tpl, model, options) {
-    var addClass, addEvent, bind, compile, escapeHTML, hasClass, hre, html, matchHTMLTag, parseTag, quoteRE, re, reId, removeClass, tagRe;
+    var addClass, addEvent, bind, compile, escapeHTML, hasClass, hre, html, matchHTMLTag, parseTag, quoteRE, re, reId, removeClass, tagRe, triggerEvent;
     reId = /^\#[\w-]+$/;
     if (typeof target === 'string' && (tpl == null)) {
       if (typeof document === "undefined" || document === null) {
@@ -41,7 +41,7 @@
     options.defaultVar = options.defaultVar || 'span';
     tagRe = /(\{)?(\#|\^|\/)?([\w\.\-_]+)(\})?/;
     re = new RegExp(quoteRE(options.delimiters[0]) + tagRe.source + quoteRE(options.delimiters[1]), 'g');
-    hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?(?:((?:"[^">]*"?)|(?:'[^'>]*'?)|[^\s>]+))?)*\s*(>)?\s*$/;
+    hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?(?:((?:"[^">]*"?)|(?:'[^'>]*'?)|[^\s>]+))?)*?\s*(>)?\s*$/;
     matchHTMLTag = /^(\s*<([\w-_]+))(?:(\s*data-jt="[^"]*)")?[^>]*>.*?<\/\2>\s*$/;
     escapeHTML = function(val) {
       return ((val != null) && val || '').toString().replace(/[&\"<>\\]/g, function(s) {
@@ -92,6 +92,19 @@
         return elem[evnt] = func;
       }
     };
+    triggerEvent = function(evnt, elem) {
+      var event;
+      if (typeof Event !== "undefined" && Event !== null) {
+        return elem.dispatchEvent(new Event(evnt));
+      } else if (document.createEvent) {
+        event = document.createEvent('Event');
+        event.initEvent(evnt, true, true);
+        return elem.dispatchEvent(event);
+      } else {
+        event = document.createEventObject();
+        return elem.fireEvent('on' + evnt, event);
+      }
+    };
     hasClass = function(el, name) {
       return new RegExp("(\\s|^)" + name + "(\\s|$)").test(el.className);
     };
@@ -106,9 +119,9 @@
       }
     };
     compile = function(tpl, context, position, openTagName) {
-      var addSectionItem, collection, discardSection, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectOuterTag, item, lastSectionTag, out, pos, section, tag, tagName, tagType, val, _i, _len, _ref;
+      var addSectionItem, collection, discardSection, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectOuterTag, item, lastSectionTag, out, outpart, pos, section, tag, tagName, tagType, val, _i, _len, _ref;
       pos = position || 0;
-      out = '';
+      out = outpart = '';
       tag = htag = lastSectionTag = null;
       tpl = tpl.replace(new RegExp("<!--\\s*(" + re.source + ")\\s*-->"), '$1');
       tpl = tpl.replace(new RegExp("([\\w-_]+)=\"(" + re.source + ")\"", 'g'), '$1=$2');
@@ -126,7 +139,7 @@
       };
       injectOuterTag = function() {
         var m, p, t;
-        p = htag.index + htag[1].length;
+        p = htag.index + htag[1].length + (outpart !== out && out.length - outpart.length || 0);
         t = "" + (getPropString(fullTagNoDelim));
         if (m = out.match(new RegExp("[\\s\\S]{" + p + "}(\\sdata-jt=\"([^\"]*))\""))) {
           p = p + m[1].length;
@@ -144,8 +157,10 @@
       };
       while (tag = re.exec(tpl)) {
         _ref = parseTag(tag), tagType = _ref[0], tagName = _ref[1], fullTag = _ref[2], fullTagNoDelim = _ref[3];
+        console.log("" + tagName + "   " + fullTag);
         flush();
-        htag = out.match(hre);
+        outpart = out.length > 300 && out.slice(-300) || out;
+        htag = outpart.match(hre);
         switch (tagType) {
           case 'end':
             if (tagName !== openTagName) {
@@ -242,7 +257,7 @@
     target.innerHTML = html;
     target.setAttribute('data-jt', '.');
     bind = function(root, context, depth) {
-      var attr, attributeReact, bindProps, bindings, changeHandler, classReact, contextObserver, handler, initSlot, innerHTMLReact, itemIndex, jt, k, node, nodeContext, propBindings, section, sectionReact, tmp, v, val, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
+      var attr, attributeReact, bindProps, bindings, changeHandler, classReact, contextObserver, handler, initSlot, innerHTMLReact, itemIndex, jt, jtProps, k, node, nodeContext, optionHandler, propBindings, radioHandler, section, sectionReact, tmp, v, val, _i, _j, _len, _len1, _ref, _ref1, _ref2;
       initSlot = function(ctx, prop) {
         if (ctx._jt_bind == null) {
           ctx._jt_bind = {};
@@ -306,7 +321,7 @@
         return function(change) {
           var newVal;
           newVal = change.object[change.name];
-          if (attr === 'value' || attr === 'checked') {
+          if (attr === 'value' || attr === 'checked' || attr === 'selected') {
             return this[attr] = newVal;
           } else {
             if ((typeof newVal === 'boolean' && !newVal) || newVal === null) {
@@ -319,14 +334,11 @@
       };
       sectionReact = function(oldVal) {
         return function(changes) {
-          var change, val, _i, _len, _results;
+          var val;
           if (Array.isArray(oldVal)) {
-            _results = [];
-            for (_i = 0, _len = changes.length; _i < _len; _i++) {
-              change = changes[_i];
-              _results.push(console.log("" + change.name + " was " + change.type + " oldValue=" + change.oldValue + " newValue=" + change.object[change.name]));
-            }
-            return _results;
+            val = changes[0].object;
+            console.log("old: " + oldVal + "\nnew: " + val);
+            return oldVal = val.slice() || oldVal;
           } else {
             val = changes.object[changes.name];
             jtmpl(this, this.getAttribute("data-jt-" + (val && 1 || 0)) || '', changes.object);
@@ -335,10 +347,44 @@
         };
       };
       changeHandler = function(context, k, v) {
+        return function() {
+          return context[v] = this[k];
+        };
+      };
+      radioHandler = function(context, k, v) {
+        return function() {
+          var input, _i, _len, _ref;
+          if (this[k]) {
+            _ref = jtmpl("input[type=radio][name=" + this.name + "]");
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              input = _ref[_i];
+              if (input !== this) {
+                triggerEvent('change', input);
+              }
+            }
+          }
+          return context[v] = this[k];
+        };
+      };
+      optionHandler = function(context, k, v) {
         var changing;
         changing = false;
         return function() {
-          return context[v] = this[k];
+          var idx, option, _i, _len, _ref;
+          if (changing) {
+            return;
+          }
+          changing = true;
+          idx = 0;
+          _ref = this.children;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            option = _ref[_i];
+            if (option.nodeName === 'OPTION') {
+              context[idx][v] = option.selected;
+              idx++;
+            }
+          }
+          return changing = false;
         };
       };
       itemIndex = 0;
@@ -351,10 +397,10 @@
         switch (node.nodeType) {
           case node.ELEMENT_NODE:
             if (attr = node.getAttribute('data-jt')) {
-              _ref1 = attr.trim().split(' ');
-              for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-                jt = _ref1[_j];
-                if ((_ref2 = jt.slice(0, 1)) === '#' || _ref2 === '^') {
+              jtProps = attr.trim().split(' ').sort();
+              for (_j = 0, _len1 = jtProps.length; _j < _len1; _j++) {
+                jt = jtProps[_j];
+                if ((_ref1 = jt.slice(0, 1)) === '#' || _ref1 === '^') {
                   val = jt.slice(1);
                   nodeContext = context[val];
                   if (Array.isArray(nodeContext)) {
@@ -362,13 +408,13 @@
                   }
                   initSlot(context, val).push(sectionReact(nodeContext).bind(node));
                 } else if (jt === '.') {
-                  nodeContext = context[itemIndex++];
+                  nodeContext = context[itemIndex++] || context;
                   if (typeof nodeContext !== 'object') {
                     nodeContext = null;
                   }
                 } else {
-                  _ref3 = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref3[0], k = _ref3[1], v = _ref3[2];
-                  propBindings = initSlot(context, v || k);
+                  _ref2 = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref2[0], k = _ref2[1], v = _ref2[2];
+                  propBindings = initSlot((typeof nodeContext === 'object' && !Array.isArray(nodeContext)) && nodeContext || context, v || k);
                   if (k && k.indexOf('on') === 0) {
                     handler = context[v];
                     if (typeof handler === 'function') {
@@ -382,8 +428,15 @@
                     propBindings.push(classReact.bind(node));
                   } else {
                     propBindings.push(attributeReact(k).bind(node));
-                    if (k === 'value' || k === 'checked') {
-                      addEvent('change', node, changeHandler(context, k, v).bind(node));
+                    if (k === 'value' || k === 'checked' || k === 'selected') {
+                      if (node.nodeName === 'OPTION' && node.parentNode.querySelectorAll('option')[0] === node) {
+                        addEvent('change', node.parentNode, optionHandler(context, k, v).bind(node.parentNode));
+                      }
+                      if (node.type === 'radio' && node.name) {
+                        addEvent('change', node, radioHandler(context, k, v).bind(node));
+                      } else {
+                        addEvent('change', node, changeHandler(context, k, v).bind(node));
+                      }
                     }
                   }
                 }
