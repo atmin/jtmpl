@@ -352,9 +352,6 @@
                 inserted.push(i);
               }
             }
-            if (deleted.length || inserted.length) {
-              console.log("old: " + oldVal + "\nnew: " + val + "\ndeleted: " + deleted + "\ninserted: " + inserted);
-            }
             for (_k = 0, _len2 = deleted.length; _k < _len2; _k++) {
               idx = deleted[_k];
               element = this.children[idx];

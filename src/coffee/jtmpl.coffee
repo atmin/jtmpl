@@ -377,8 +377,8 @@ root.jtmpl = (target, tpl, model, options) ->
 					for item, i in val 
 						if oldVal.indexOf(item) < 0 then inserted.push(i)
 
-					if deleted.length or inserted.length
-						console.log("old: #{ oldVal }\nnew: #{ val }\ndeleted: #{ deleted }\ninserted: #{ inserted }")
+					# if deleted.length or inserted.length
+					# 	console.log("old: #{ oldVal }\nnew: #{ val }\ndeleted: #{ deleted }\ninserted: #{ inserted }")
 
 					for idx in deleted
 						element = this.children[idx]
