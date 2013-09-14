@@ -7,7 +7,7 @@
   root = this;
 
   root.jtmpl = function(target, tpl, model, options) {
-    var addClass, addEvent, bind, compile, escapeHTML, hasClass, hre, html, matchHTMLTag, parseTag, quoteRE, re, reId, removeClass, tagRe, triggerEvent;
+    var addClass, addEvent, bind, compile, escapeHTML, hasClass, hre, html, matchHTMLTag, parseTag, quoteRE, re, reId, removeClass, tagRe, triggerEvent, _ref;
     reId = /^\#[\w-]+$/;
     if ((target === null || typeof target === 'string') && (tpl == null)) {
       if (typeof document === "undefined" || document === null) {
@@ -15,7 +15,7 @@
       }
       return Array.prototype.slice.call(document.querySelectorAll(target));
     }
-    if (typeof target === 'string' && typeof tpl === 'object' && model === void 0) {
+    if (typeof target === 'string' && ((_ref = typeof tpl) === 'number' || _ref === 'string' || _ref === 'boolean' || _ref === 'object') && model === void 0) {
       options = model;
       model = tpl;
       tpl = target;
@@ -24,8 +24,8 @@
     if (typeof target === 'string' && target.match(reId)) {
       target = document.getElementById(target.substring(1));
     }
-    if (!model || typeof model !== 'object') {
-      throw ':( model should be object';
+    if (model == null) {
+      throw ':( no model';
     }
     if (tpl.match && tpl.match(reId)) {
       tpl = document.getElementById(tpl.substring(1)).innerHTML;
@@ -119,7 +119,7 @@
       }
     };
     compile = function(tpl, context, position, openTagName) {
-      var addSectionItem, collection, discardSection, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectOuterTag, item, lastSectionTag, out, outpart, pos, section, tag, tagName, tagType, val, _i, _len, _ref;
+      var addSectionItem, collection, discardSection, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectOuterTag, item, lastSectionTag, out, outpart, pos, section, tag, tagName, tagType, val, _i, _len, _ref1;
       pos = position || 0;
       out = outpart = '';
       tag = htag = lastSectionTag = null;
@@ -156,7 +156,7 @@
         return out += !m ? "<" + options.defaultSectionItem + " data-jt=\".\">" + s + "</" + options.defaultSectionItem + ">" : (p = m[1].length + (m[3] && m[3].length || 0), "" + (s.slice(0, p)) + (!m[3] && ' data-jt="."' || ' .') + (s.slice(p)));
       };
       while (tag = re.exec(tpl)) {
-        _ref = parseTag(tag), tagType = _ref[0], tagName = _ref[1], fullTag = _ref[2], fullTagNoDelim = _ref[3];
+        _ref1 = parseTag(tag), tagType = _ref1[0], tagName = _ref1[1], fullTag = _ref1[2], fullTagNoDelim = _ref1[3];
         flush();
         outpart = out.length > 300 && out.slice(-300) || out;
         htag = outpart.match(hre);
@@ -257,7 +257,7 @@
     target.innerHTML = html;
     target.setAttribute('data-jt', '.');
     bind = function(root, context, depth) {
-      var attr, attributeReact, bindProps, bindings, changeHandler, classReact, contextObserver, handler, initSlot, innerHTMLReact, itemIndex, jt, jtProps, k, node, nodeContext, optionHandler, propBindings, radioHandler, section, sectionReact, tmp, v, val, _i, _j, _len, _len1, _ref, _ref1, _ref2;
+      var attr, attributeReact, bindProps, bindings, changeHandler, classReact, contextObserver, handler, initSlot, innerHTMLReact, itemIndex, jt, jtProps, k, node, nodeContext, optionHandler, propBindings, radioHandler, section, sectionReact, tmp, v, val, _i, _j, _len, _len1, _ref1, _ref2, _ref3;
       initSlot = function(ctx, prop) {
         if (ctx._jt_bind == null) {
           ctx._jt_bind = {};
@@ -296,11 +296,11 @@
             change = changes[_i];
             if (change.type === 'updated' && (bindings[change.name] != null)) {
               _results.push((function() {
-                var _j, _len1, _ref, _results1;
-                _ref = bindings[change.name];
+                var _j, _len1, _ref1, _results1;
+                _ref1 = bindings[change.name];
                 _results1 = [];
-                for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
-                  b = _ref[_j];
+                for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+                  b = _ref1[_j];
                   _results1.push(b(change));
                 }
                 return _results1;
@@ -335,10 +335,41 @@
       };
       sectionReact = function(oldVal) {
         return function(changes) {
-          var val;
+          var deleted, element, i, idx, inserted, item, tmp, val, _i, _j, _k, _l, _len, _len1, _len2, _len3;
           if (Array.isArray(oldVal)) {
             val = changes[0].object;
-            console.log("old: " + oldVal + "\nnew: " + val);
+            deleted = [];
+            for (i = _i = 0, _len = oldVal.length; _i < _len; i = ++_i) {
+              item = oldVal[i];
+              if (val.indexOf(item) < 0) {
+                deleted.push(i);
+              }
+            }
+            inserted = [];
+            for (i = _j = 0, _len1 = val.length; _j < _len1; i = ++_j) {
+              item = val[i];
+              if (oldVal.indexOf(item) < 0) {
+                inserted.push(i);
+              }
+            }
+            if (deleted.length || inserted.length) {
+              console.log("old: " + oldVal + "\nnew: " + val + "\ndeleted: " + deleted + "\ninserted: " + inserted);
+            }
+            for (_k = 0, _len2 = deleted.length; _k < _len2; _k++) {
+              idx = deleted[_k];
+              element = this.children[idx];
+              this.removeChild(element);
+            }
+            for (_l = 0, _len3 = inserted.length; _l < _len3; _l++) {
+              idx = inserted[_l];
+              tmp = document.createElement('div');
+              tmp.innerHTML = jtmpl(this.getAttribute('data-jt-1'), val[idx]);
+              element = tmp.children[0];
+              jtmpl(element, element.innerHTML, val[idx], {
+                rootModel: model
+              });
+              this.insertBefore(element, this.children[idx]);
+            }
             return oldVal = val.slice() || oldVal;
           } else {
             val = changes.object[changes.name];
@@ -354,11 +385,11 @@
       };
       radioHandler = function(context, k, v) {
         return function() {
-          var input, _i, _len, _ref;
+          var input, _i, _len, _ref1;
           if (this[k]) {
-            _ref = jtmpl("input[type=radio][name=" + this.name + "]");
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              input = _ref[_i];
+            _ref1 = jtmpl("input[type=radio][name=" + this.name + "]");
+            for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+              input = _ref1[_i];
               if (input !== this) {
                 triggerEvent('change', input);
               }
@@ -371,15 +402,15 @@
         var changing;
         changing = false;
         return function() {
-          var idx, option, _i, _len, _ref;
+          var idx, option, _i, _len, _ref1;
           if (changing) {
             return;
           }
           changing = true;
           idx = 0;
-          _ref = this.children;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            option = _ref[_i];
+          _ref1 = this.children;
+          for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+            option = _ref1[_i];
             if (option.nodeName === 'OPTION') {
               context[idx][v] = option.selected;
               idx++;
@@ -392,16 +423,16 @@
       nodeContext = null;
       bindings = {};
       depth = depth || 0;
-      _ref = root.childNodes;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        node = _ref[_i];
+      _ref1 = root.childNodes;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        node = _ref1[_i];
         switch (node.nodeType) {
           case node.ELEMENT_NODE:
             if (attr = node.getAttribute('data-jt')) {
               jtProps = attr.trim().split(' ').sort();
               for (_j = 0, _len1 = jtProps.length; _j < _len1; _j++) {
                 jt = jtProps[_j];
-                if ((_ref1 = jt.slice(0, 1)) === '#' || _ref1 === '^') {
+                if ((_ref2 = jt.slice(0, 1)) === '#' || _ref2 === '^') {
                   val = jt.slice(1);
                   nodeContext = context[val];
                   if (Array.isArray(nodeContext)) {
@@ -414,10 +445,10 @@
                     nodeContext = null;
                   }
                 } else {
-                  _ref2 = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref2[0], k = _ref2[1], v = _ref2[2];
+                  _ref3 = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref3[0], k = _ref3[1], v = _ref3[2];
                   propBindings = initSlot((typeof nodeContext === 'object' && !Array.isArray(nodeContext)) && nodeContext || context, v || k);
                   if (k && k.indexOf('on') === 0) {
-                    handler = model[v];
+                    handler = (options.rootModel != null) && options.rootModel[v] || model[v];
                     if (typeof handler === 'function') {
                       addEvent(k.slice(2), node, handler.bind(context));
                     } else {
@@ -448,7 +479,7 @@
           case node.TEXT_NODE:
             break;
           case node.COMMENT_NODE:
-            if (section = node.nodeValue.trim().match(/^(#|\^)\s(.*)$/)) {
+            if (section = node.nodeValue.trim().match(/^(#|\^)\s([\s\S]*)$/)) {
               section[2] = section[2].replace(new RegExp(quoteRE(options.compiledDelimiters[0]), 'g'), options.delimiters[0]).replace(new RegExp(quoteRE(options.compiledDelimiters[1]), 'g'), options.delimiters[1]);
               if (section[1] === '#') {
                 root.setAttribute('data-jt-1', section[2]);

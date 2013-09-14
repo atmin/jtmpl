@@ -79,7 +79,7 @@ test 'compile', ->
 
 
 test 'bind', ->
-	model.collection[0].inner[0].v = 42
+	model.collection[0].inner[0] = 42
 	model.field = 'qunit'
 
 	stop()

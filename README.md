@@ -6,7 +6,7 @@ _`{{`_ `jtmpl` _`}}`_
 
 
 <br>
- _Code is work in progress (working version scheduled before the end of September), feel free to explore concept_
+ _Kitchensink seems working. First release coming very soon_
 
 
 What
@@ -223,7 +223,7 @@ Showcase of all features, tests
 				{{#collection}}
 				<li>
 					<h4><code>model.collection[i].inner</code></h4>
-					<ul>{{#inner}}<li>{{v}}</li>{{/inner}}</ul>
+					<ul>{{#inner}}<li>{{.}}</li>{{/inner}}</ul>
 					&nbsp;
 					<button onclick={{innerPush}}>push</button>
 					<button onclick="{{innerPop}}" disabled={{popDisabled}}>pop</button>
@@ -286,9 +286,9 @@ Showcase of all features, tests
 				text: 'lowercase',
 
 				collection: [
-					{ popDisabled: false, inner: [{v: 1}, {v: 2}, {v: 3}] },
-					{ popDisabled: false, inner: [{v: 6}, {v: 7}] },
-					{ popDisabled: false, inner: [{v: 8}, {v: 9}, {v: 10}, {v: 11}] }
+					{ popDisabled: false, inner: [1, 2, 3] },
+					{ popDisabled: false, inner: [6, 7] },
+					{ popDisabled: false, inner: [8, 9, 10, 11] }
 				],
 
 				popDisabled: false,
@@ -343,7 +343,7 @@ Showcase of all features, tests
 					this.popDisabled = this.collection.length == 0;
 				},
 				innerPush: function() {
-					this.inner.push({v: parseInt(Math.random() * 100)});
+					this.inner.push(parseInt(Math.random() * 100));
 					this.popDisabled = false;
 				},
 				innerPop: function() {

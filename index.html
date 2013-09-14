@@ -199,7 +199,7 @@
             {{#collection}}
             &lt;li&gt;
                 &lt;h4&gt;&lt;code&gt;model.collection[i].inner&lt;/code&gt;&lt;/h4&gt;
-                &lt;ul&gt;{{#inner}}&lt;li&gt;{{v}}&lt;/li&gt;{{/inner}}&lt;/ul&gt;
+                &lt;ul&gt;{{#inner}}&lt;li&gt;{{.}}&lt;/li&gt;{{/inner}}&lt;/ul&gt;
                 &amp;nbsp;
                 &lt;button onclick={{innerPush}}&gt;push&lt;/button&gt;
                 &lt;button onclick=&quot;{{innerPop}}&quot; disabled={{popDisabled}}&gt;pop&lt;/button&gt;
@@ -262,9 +262,9 @@
             text: &#39;lowercase&#39;,
 
             collection: [
-                { popDisabled: false, inner: [{v: 1}, {v: 2}, {v: 3}] },
-                { popDisabled: false, inner: [{v: 6}, {v: 7}] },
-                { popDisabled: false, inner: [{v: 8}, {v: 9}, {v: 10}, {v: 11}] }
+                { popDisabled: false, inner: [1, 2, 3] },
+                { popDisabled: false, inner: [6, 7] },
+                { popDisabled: false, inner: [8, 9, 10, 11] }
             ],
 
             popDisabled: false,
@@ -319,7 +319,7 @@
                 this.popDisabled = this.collection.length == 0;
             },
             innerPush: function() {
-                this.inner.push({v: parseInt(Math.random() * 100)});
+                this.inner.push(parseInt(Math.random() * 100));
                 this.popDisabled = false;
             },
             innerPop: function() {

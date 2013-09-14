@@ -15,7 +15,7 @@ root.jtmpl = (target, tpl, model, options) ->
 		return Array.prototype.slice.call(document.querySelectorAll(target))
 
 	# `jtmpl(tpl, model)`?
-	if typeof target is 'string' and typeof tpl is 'object' and model is undefined
+	if typeof target is 'string' and typeof tpl in ['number', 'string', 'boolean', 'object'] and model is undefined
 		options = model
 		model = tpl
 		tpl = target
@@ -25,8 +25,8 @@ root.jtmpl = (target, tpl, model, options) ->
 	if typeof target is 'string' and target.match(reId)
 		target = document.getElementById(target.substring(1))
 	
-	if not model or typeof model isnt 'object'
-		throw ':( model should be object'
+	if not model? # or typeof model isnt 'object'
+		throw ':( no model'
 
 	# `jtmpl('#template-id', ...)` or `jtmpl(element, '#template-id', ...)`
 	tpl = document.getElementById(tpl.substring(1)).innerHTML if tpl.match and tpl.match(reId)
@@ -368,10 +368,31 @@ root.jtmpl = (target, tpl, model, options) ->
 			(changes) ->
 				if Array.isArray(oldVal)
 					val = changes[0].object
-					console.log("old: #{ oldVal }\nnew: #{ val }")
+
+					deleted = []
+					for item, i in oldVal 
+						if val.indexOf(item) < 0 then deleted.push(i)
+
+					inserted = []
+					for item, i in val 
+						if oldVal.indexOf(item) < 0 then inserted.push(i)
+
+					if deleted.length or inserted.length
+						console.log("old: #{ oldVal }\nnew: #{ val }\ndeleted: #{ deleted }\ninserted: #{ inserted }")
+
+					for idx in deleted
+						element = this.children[idx]
+						this.removeChild(element)
+
+					for idx in inserted
+						tmp = document.createElement('div')
+						tmp.innerHTML = jtmpl(this.getAttribute('data-jt-1'), val[idx])
+						element = tmp.children[0]
+						jtmpl(element, element.innerHTML, val[idx], { rootModel: model })
+						this.insertBefore(element, this.children[idx])
+
 					oldVal = val.slice() or oldVal
-					# for change in changes
-					# 	console.log("#{ change.name } was #{ change.type } oldValue=#{ change.oldValue } newValue=#{ change.object[change.name] }")
+
 				else
 					val = changes.object[changes.name]
 					jtmpl(this, this.getAttribute("data-jt-#{ val and 1 or 0 }") or '', changes.object)
@@ -443,7 +464,7 @@ root.jtmpl = (target, tpl, model, options) ->
 
 								# attach event?
 								if k and k.indexOf('on') is 0
-									handler = model[v]
+									handler = options.rootModel? and options.rootModel[v] or model[v]
 									if typeof handler is 'function'
 										addEvent(k.slice(2), node, handler.bind(context))
 									else
@@ -480,7 +501,7 @@ root.jtmpl = (target, tpl, model, options) ->
 
 				when node.COMMENT_NODE
 					# collection template?
-					if section = node.nodeValue.trim().match(/^(#|\^)\s(.*)$/)
+					if section = node.nodeValue.trim().match(/^(#|\^)\s([\s\S]*)$/)
 						# decompile delimiters
 						section[2] = section[2]
 							.replace(new RegExp(quoteRE(options.compiledDelimiters[0]), 'g'), options.delimiters[0])
