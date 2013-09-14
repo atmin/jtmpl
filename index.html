@@ -194,17 +194,22 @@
             Feel free to modify &lt;code&gt;model&lt;/code&gt; from JS console and observe changes.
         &lt;/p&gt;
 
-        &lt;h3&gt;Collection&amp;mdash;&lt;code&gt;model.collection&lt;/code&gt;&lt;/h3&gt;
+        &lt;h3&gt;Nested collections&amp;mdash;&lt;code&gt;model.collection&lt;/code&gt;&lt;/h3&gt;
         &lt;ul class=&quot;dummy-class just for the_test&quot;&gt;
             {{#collection}}
-            &lt;li&gt;type: &lt;code&gt;{{type}}&lt;/code&gt;, value: &lt;code&gt;{{value}}&lt;/code&gt;&lt;/li&gt;
+            &lt;li&gt;
+                &lt;ul&gt;{{#inner}}&lt;li&gt;{{v}}&lt;/li&gt;{{/inner}}&lt;/ul&gt;
+                &amp;nbsp;
+                &lt;button onclick={{innerPush}}&gt;push&lt;/button&gt;
+                &lt;button onclick=&quot;{{innerPop}}&quot; disabled={{popDisabled}}&gt;pop&lt;/button&gt;
+            &lt;/li&gt;
             {{/collection}}
             {{^collection}}
             &lt;li&gt;&amp;lt; empty &amp;gt;&lt;/li&gt;
             {{/collection}}
         &lt;/ul&gt;
-        &lt;button onclick={{add}}&gt;Add random&lt;/button&gt;
-        &lt;button onclick=&quot;{{remove}}&quot; disabled={{removeDisabled}}&gt;Remove last&lt;/button&gt;
+        &lt;button onclick={{push}}&gt;push&lt;/button&gt;
+        &lt;button onclick=&quot;{{pop}}&quot; disabled={{popDisabled}}&gt;pop&lt;/button&gt;
 
         &lt;h3&gt;Toggle text&amp;mdash;&lt;code&gt;model.text&lt;/code&gt;&lt;/h3&gt;
         &lt;a href=&quot;#&quot; onclick=&#39;{{toggle}}&#39;&gt;Toggle&lt;/a&gt;
@@ -255,25 +260,12 @@
             text: &#39;lowercase&#39;,
 
             collection: [
-                {
-                    type: &#39;string&#39;,
-                    value: &#39;foobar&#39;
-                },
-                {
-                    type: &#39;int&#39;,
-                    value: 1
-                },
-                {
-                    type: &#39;float&#39;,
-                    value: 0.42
-                },
-                {
-                    type: &#39;boolean&#39;,
-                    value: true
-                }
+                { popDisabled: false, inner: [{v: 1}, {v: 2}, {v: 3}] },
+                { popDisabled: false, inner: [{v: 6}, {v: 7}] },
+                { popDisabled: false, inner: [{v: 8}, {v: 9}, {v: 10}, {v: 11}] }
             ],
 
-            removeDisabled: false,
+            popDisabled: false,
 
             field: &#39;&#39;,
 
@@ -313,16 +305,24 @@
                     &#39;UPPERCASE&#39;: &#39;lowercase&#39;;
                 e.preventDefault();
             },
-            add: function() {
+            push: function() {
                 this.collection.push({
-                    type: &#39;float&#39;,
-                    value: Math.random()
+                    popDisabled: true,
+                    inner: []
                 });
-                this.removeDisabled = false;
+                this.popDisabled = false;
             },
-            remove: function() {
+            pop: function() {
                 this.collection.pop();
-                this.removeDisabled = this.collection.length == 0;
+                this.popDisabled = this.collection.length == 0;
+            },
+            innerPush: function() {
+                this.inner.push({v: parseInt(Math.random() * 100)});
+                this.popDisabled = false;
+            },
+            innerPop: function() {
+                this.inner.pop();
+                this.popDisabled = this.inner.length == 0;
             }
         };
     &lt;/script&gt;

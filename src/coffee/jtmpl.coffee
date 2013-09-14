@@ -9,7 +9,7 @@ root.jtmpl = (target, tpl, model, options) ->
 	## Interface
 
 	# `jtmpl(selector)`?
-	if typeof target is 'string' and not tpl?
+	if (target is null or typeof target is 'string') and not tpl?
 		if not document?
 			throw ':( this API is only available in a browser'
 		return Array.prototype.slice.call(document.querySelectorAll(target))
@@ -77,7 +77,7 @@ root.jtmpl = (target, tpl, model, options) ->
 			)?
 		)*?
 		\s* (>)?          # capture if tag closed \5
-		\s* $             # whitespace, end of slice
+		\s* (?: <!--.*?-->\s*)* $      # whitespace, possibly HTML comments, end of slice
 	///
 
 	# Matches "<tag>....</tag>"?
@@ -85,8 +85,8 @@ root.jtmpl = (target, tpl, model, options) ->
 		^( \s* <([\w-_]+) )              # begin string; opening tag; capture data-jt position \1, tag name \2
 			(?: (\s* data-jt="[^"]*)")?  # existing data-jt attribute? capture inject property position \3
 			[^>]* >  
-		.*?                              # anything
-		</ \2 > \s* $                    # closing tag, end string
+		[\s\S]*?                         # anything
+		</ \2 > \s* $                    # closing tag, html comments, end string
 	///
 
 
@@ -202,6 +202,7 @@ root.jtmpl = (target, tpl, model, options) ->
 
 			flush()
 			# Firefox sometimes doesn't match when it should, if input is too long
+			# Matching should be faster on shorter input, too (if regexp engine does not count $ as a signal to match backwards)
 			outpart = out.length > 300 and out.slice(-300) or out
 			htag = outpart.match(hre)
 
@@ -279,6 +280,7 @@ root.jtmpl = (target, tpl, model, options) ->
 							# output section
 							collection = Array.isArray(val) and val or [val]
 							for item, i in collection
+								flush()
 								addSectionItem(compile(tpl, (if val and typeof val is 'object' then item else context), pos, tagName))
 								if i < collection.length - 1
 									re.lastIndex = pos
@@ -335,7 +337,7 @@ root.jtmpl = (target, tpl, model, options) ->
 					Object.observe(context, context._jt_bind['.'][0])
 				else
 					Object.observe(context, contextObserver(context._jt_bind))
-				# delete context._jt_bind
+				delete context._jt_bind
 			for k, v of context 
 				if typeof v is 'object' then bindProps(v)
 
@@ -423,7 +425,7 @@ root.jtmpl = (target, tpl, model, options) ->
 
 								if Array.isArray(nodeContext)
 									initSlot(nodeContext, '.')
-										.push(sectionReact(nodeContext).bind(node))
+										.push(sectionReact(nodeContext.slice()).bind(node))
 
 								initSlot(context, val).push(sectionReact(nodeContext).bind(node))
 
@@ -441,7 +443,7 @@ root.jtmpl = (target, tpl, model, options) ->
 
 								# attach event?
 								if k and k.indexOf('on') is 0
-									handler = context[v]
+									handler = model[v]
 									if typeof handler is 'function'
 										addEvent(k.slice(2), node, handler.bind(context))
 									else

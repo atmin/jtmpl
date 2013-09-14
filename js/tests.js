@@ -81,12 +81,12 @@
   });
 
   test('bind', function() {
-    model.collection[3].value = 'false';
+    model.collection[0].inner[0].v = 42;
     model.field = 'qunit';
     stop();
     return setTimeout(function() {
-      equal(jtmpl('ul li:nth-of-type(4) code:nth-of-type(2)')[0].innerHTML, 'false', 'innerHTML binding');
-      equal(jtmpl('ul li').length, model.collection.length, 'collection.length equals li.length');
+      equal(jtmpl('ul li ul li')[0].innerHTML, '42', 'innerHTML binding');
+      equal(jtmpl('ul')[0].children.length, model.collection.length, 'collection.length equals li.length');
       equal(jtmpl('p')[3].innerHTML, 'You entered "<span data-jt="field">qunit</span>". Delete it and this message will disappear', 'positive if section');
       return start();
     }, 1000);

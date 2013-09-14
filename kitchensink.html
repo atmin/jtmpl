@@ -28,17 +28,22 @@
 			Feel free to modify <code>model</code> from JS console and observe changes.
 		</p>
 
-		<h3>Collection&mdash;<code>model.collection</code></h3>
+		<h3>Nested collections&mdash;<code>model.collection</code></h3>
 		<ul class="dummy-class just for the_test">
 			{{#collection}}
-			<li>type: <code>{{type}}</code>, value: <code>{{value}}</code></li>
+			<li>
+				<ul>{{#inner}}<li>{{v}}</li>{{/inner}}</ul>
+				&nbsp;
+				<button onclick={{innerPush}}>push</button>
+				<button onclick="{{innerPop}}" disabled={{popDisabled}}>pop</button>
+			</li>
 			{{/collection}}
 			{{^collection}}
 			<li>&lt; empty &gt;</li>
 			{{/collection}}
 		</ul>
-		<button onclick={{add}}>Add random</button>
-		<button onclick="{{remove}}" disabled={{removeDisabled}}>Remove last</button>
+		<button onclick={{push}}>push</button>
+		<button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
 
 		<h3>Toggle text&mdash;<code>model.text</code></h3>
 		<a href="#" onclick='{{toggle}}'>Toggle</a>
@@ -89,25 +94,12 @@
 			text: 'lowercase',
 
 			collection: [
-				{
-					type: 'string',
-					value: 'foobar'
-				},
-				{
-					type: 'int',
-					value: 1
-				},
-				{
-					type: 'float',
-					value: 0.42
-				},
-				{
-					type: 'boolean',
-					value: true
-				}
+				{ popDisabled: false, inner: [{v: 1}, {v: 2}, {v: 3}] },
+				{ popDisabled: false, inner: [{v: 6}, {v: 7}] },
+				{ popDisabled: false, inner: [{v: 8}, {v: 9}, {v: 10}, {v: 11}] }
 			],
 
-			removeDisabled: false,
+			popDisabled: false,
 
 			field: '',
 
@@ -147,16 +139,24 @@
 					'UPPERCASE': 'lowercase';
 				e.preventDefault();
 			},
-			add: function() {
+			push: function() {
 				this.collection.push({
-					type: 'float',
-					value: Math.random()
+					popDisabled: true,
+					inner: []
 				});
-				this.removeDisabled = false;
+				this.popDisabled = false;
 			},
-			remove: function() {
+			pop: function() {
 				this.collection.pop();
-				this.removeDisabled = this.collection.length == 0;
+				this.popDisabled = this.collection.length == 0;
+			},
+			innerPush: function() {
+				this.inner.push({v: parseInt(Math.random() * 100)});
+				this.popDisabled = false;
+			},
+			innerPop: function() {
+				this.inner.pop();
+				this.popDisabled = this.inner.length == 0;
 			}
 		};
 	</script>

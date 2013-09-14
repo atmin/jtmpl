@@ -9,7 +9,7 @@
   root.jtmpl = function(target, tpl, model, options) {
     var addClass, addEvent, bind, compile, escapeHTML, hasClass, hre, html, matchHTMLTag, parseTag, quoteRE, re, reId, removeClass, tagRe, triggerEvent;
     reId = /^\#[\w-]+$/;
-    if (typeof target === 'string' && (tpl == null)) {
+    if ((target === null || typeof target === 'string') && (tpl == null)) {
       if (typeof document === "undefined" || document === null) {
         throw ':( this API is only available in a browser';
       }
@@ -41,8 +41,8 @@
     options.defaultVar = options.defaultVar || 'span';
     tagRe = /(\{)?(\#|\^|\/)?([\w\.\-_]+)(\})?/;
     re = new RegExp(quoteRE(options.delimiters[0]) + tagRe.source + quoteRE(options.delimiters[1]), 'g');
-    hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?(?:((?:"[^">]*"?)|(?:'[^'>]*'?)|[^\s>]+))?)*?\s*(>)?\s*$/;
-    matchHTMLTag = /^(\s*<([\w-_]+))(?:(\s*data-jt="[^"]*)")?[^>]*>.*?<\/\2>\s*$/;
+    hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?(?:((?:"[^">]*"?)|(?:'[^'>]*'?)|[^\s>]+))?)*?\s*(>)?\s*(?:<!--.*?-->\s*)*$/;
+    matchHTMLTag = /^(\s*<([\w-_]+))(?:(\s*data-jt="[^"]*)")?[^>]*>[\s\S]*?<\/\2>\s*$/;
     escapeHTML = function(val) {
       return ((val != null) && val || '').toString().replace(/[&\"<>\\]/g, function(s) {
         switch (s) {
@@ -222,6 +222,7 @@
                 collection = Array.isArray(val) && val || [val];
                 for (i = _i = 0, _len = collection.length; _i < _len; i = ++_i) {
                   item = collection[i];
+                  flush();
                   addSectionItem(compile(tpl, (val && typeof val === 'object' ? item : context), pos, tagName));
                   if (i < collection.length - 1) {
                     re.lastIndex = pos;
@@ -274,6 +275,7 @@
           } else {
             Object.observe(context, contextObserver(context._jt_bind));
           }
+          delete context._jt_bind;
         }
         _results = [];
         for (k in context) {
@@ -403,7 +405,7 @@
                   val = jt.slice(1);
                   nodeContext = context[val];
                   if (Array.isArray(nodeContext)) {
-                    initSlot(nodeContext, '.').push(sectionReact(nodeContext).bind(node));
+                    initSlot(nodeContext, '.').push(sectionReact(nodeContext.slice()).bind(node));
                   }
                   initSlot(context, val).push(sectionReact(nodeContext).bind(node));
                 } else if (jt === '.') {
@@ -415,7 +417,7 @@
                   _ref2 = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref2[0], k = _ref2[1], v = _ref2[2];
                   propBindings = initSlot((typeof nodeContext === 'object' && !Array.isArray(nodeContext)) && nodeContext || context, v || k);
                   if (k && k.indexOf('on') === 0) {
-                    handler = context[v];
+                    handler = model[v];
                     if (typeof handler === 'function') {
                       addEvent(k.slice(2), node, handler.bind(context));
                     } else {
