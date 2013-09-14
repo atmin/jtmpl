@@ -222,6 +222,7 @@ Showcase of all features, tests
 			<ul class="dummy-class just for the_test">
 				{{#collection}}
 				<li>
+					<h4><code>model.collection[i].inner</code></h4>
 					<ul>{{#inner}}<li>{{v}}</li>{{/inner}}</ul>
 					&nbsp;
 					<button onclick={{innerPush}}>push</button>
@@ -232,6 +233,7 @@ Showcase of all features, tests
 				<li>&lt; empty &gt;</li>
 				{{/collection}}
 			</ul>
+			<br>
 			<button onclick={{push}}>push</button>
 			<button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
 

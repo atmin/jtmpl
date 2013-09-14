@@ -198,6 +198,7 @@
         &lt;ul class=&quot;dummy-class just for the_test&quot;&gt;
             {{#collection}}
             &lt;li&gt;
+                &lt;h4&gt;&lt;code&gt;model.collection[i].inner&lt;/code&gt;&lt;/h4&gt;
                 &lt;ul&gt;{{#inner}}&lt;li&gt;{{v}}&lt;/li&gt;{{/inner}}&lt;/ul&gt;
                 &amp;nbsp;
                 &lt;button onclick={{innerPush}}&gt;push&lt;/button&gt;
@@ -208,6 +209,7 @@
             &lt;li&gt;&amp;lt; empty &amp;gt;&lt;/li&gt;
             {{/collection}}
         &lt;/ul&gt;
+        &lt;br&gt;
         &lt;button onclick={{push}}&gt;push&lt;/button&gt;
         &lt;button onclick=&quot;{{pop}}&quot; disabled={{popDisabled}}&gt;pop&lt;/button&gt;
 
