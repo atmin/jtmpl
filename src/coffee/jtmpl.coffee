@@ -19,7 +19,7 @@ root.jtmpl = (target, tpl, model, options) ->
 		options = model
 		model = tpl
 		tpl = target
-		target = null		
+		target = undefined		
 
 	# `jtmpl('#element-id', ...)`?
 	if typeof target is 'string' and target.match(reId)
@@ -200,8 +200,6 @@ root.jtmpl = (target, tpl, model, options) ->
 
 			[tagType, tagName, fullTag, fullTagNoDelim] = parseTag(tag)
 
-			console.log("#{ tagName }   #{ fullTag }")
-
 			flush()
 			# Firefox sometimes doesn't match when it should, if input is too long
 			outpart = out.length > 300 and out.slice(-300) or out
@@ -314,7 +312,7 @@ root.jtmpl = (target, tpl, model, options) ->
 	html = compile(tpl, model)
 
 	# Done?
-	if not target
+	if not target?
 		return html
 
 	# Construct DOM

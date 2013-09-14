@@ -19,7 +19,7 @@
       options = model;
       model = tpl;
       tpl = target;
-      target = null;
+      target = void 0;
     }
     if (typeof target === 'string' && target.match(reId)) {
       target = document.getElementById(target.substring(1));
@@ -157,7 +157,6 @@
       };
       while (tag = re.exec(tpl)) {
         _ref = parseTag(tag), tagType = _ref[0], tagName = _ref[1], fullTag = _ref[2], fullTagNoDelim = _ref[3];
-        console.log("" + tagName + "   " + fullTag);
         flush();
         outpart = out.length > 300 && out.slice(-300) || out;
         htag = outpart.match(hre);
@@ -251,7 +250,7 @@
       return out = out.replace(/data-jt="\.(\s\.)+"/g, 'data-jt="."');
     };
     html = compile(tpl, model);
-    if (!target) {
+    if (target == null) {
       return html;
     }
     target.innerHTML = html;

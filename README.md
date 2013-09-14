@@ -101,7 +101,7 @@ Specifications
 
 * no dependencies, [polyfill](https://github.com/jdarling/Object.observe) built-in
 
-* less than 4KB minified and gzipped
+* less than 5KB minified and gzipped
 
 * Firefox, Chrome, Opera, IE 9 (IE8 requires Array.isArray, Array.map, Function.bind and String.trim [polyfills](http://stackoverflow.com/questions/2790001/fixing-javascript-array-functions-in-internet-explorer-indexof-foreach-etc))
 
