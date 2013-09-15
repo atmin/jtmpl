@@ -16,10 +16,11 @@
 		}
 	</style>
 	<script src="js/qunit.js"></script>
+	<script src="js/jtmpl.js"></script>
 </head>
 
 <body>
-	<div id="jtmpl" data-model="model">
+	<script id="kitchensink" type="text/jtmpl">
 
 		<h1>Kitchen Sink</h1>
 		<h2>Feature explorer</h2>
@@ -33,7 +34,10 @@
 			{{#collection}}
 			<li>
 				<h4><code>model.collection[i].inner</code></h4>
-				<ul>{{#inner}}<li>{{.}}</li>{{/inner}}</ul>
+				<ul>
+					{{#inner}}<li>{{.}}</li>{{/inner}}
+					{{^inner}}<li>&lt; empty &gt;</li>{{/inner}}
+				</ul>
 				&nbsp;
 				<button onclick={{innerPush}}>push</button>
 				<button onclick="{{innerPop}}" disabled={{popDisabled}}>pop</button>
@@ -89,7 +93,7 @@
 			<label><input type="radio" name="radio-group" checked={{checked}}>{{text}}</label>
 			{{/options}}
 		</div>
-	</div>
+	</script>
 
 	<script>
 		model = {
@@ -161,10 +165,9 @@
 				this.popDisabled = this.inner.length == 0;
 			}
 		};
+
+		jtmpl('#kitchensink', '#kitchensink', model);
 	</script>
-	<script src="js/jtmpl.js"></script>
-	<!-- hey, this next line is temporarily here, it's work in progress, remember? :) -->
-	<script>jtmpl('#jtmpl', '#jtmpl', model)</script>
 
 	<h2>QUnit Blackbox Tests</h2>
 	<div id="qunit"></div>

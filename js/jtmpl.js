@@ -7,7 +7,7 @@
   root = this;
 
   root.jtmpl = function(target, tpl, model, options) {
-    var addClass, addEvent, bind, compile, escapeHTML, hasClass, hre, html, matchHTMLTag, parseTag, quoteRE, re, reId, removeClass, tagRe, triggerEvent, _ref;
+    var addClass, addEvent, bind, compile, escapeHTML, hasClass, hre, html, matchHTMLTag, newTarget, parseTag, quoteRE, re, reId, removeClass, tagRe, triggerEvent, _ref;
     reId = /^\#[\w-]+$/;
     if ((target === null || typeof target === 'string') && (tpl == null)) {
       if (typeof document === "undefined" || document === null) {
@@ -39,6 +39,7 @@
     options.defaultSection = options.defaultSectionTag || 'div';
     options.defaultSectionItem = options.defaultSectionItem || 'div';
     options.defaultVar = options.defaultVar || 'span';
+    options.defaultTargetTag = options.defaultTargetTag || 'div';
     tagRe = /(\{)?(\#|\^|\/)?([\w\.\-_]+)(\})?/;
     re = new RegExp(quoteRE(options.delimiters[0]) + tagRe.source + quoteRE(options.delimiters[1]), 'g');
     hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?(?:((?:"[^">]*"?)|(?:'[^'>]*'?)|[^\s>]+))?)*?\s*(>)?\s*(?:<!--.*?-->\s*)*$/;
@@ -254,6 +255,11 @@
     if (target == null) {
       return html;
     }
+    if (target.nodeName === 'SCRIPT') {
+      newTarget = document.createElement(options.defaultTargetTag);
+      target.parentNode.replaceChild(newTarget, target);
+      target = newTarget;
+    }
     target.innerHTML = html;
     target.setAttribute('data-jt', '.');
     bind = function(root, context, depth) {
@@ -357,6 +363,9 @@
               element = this.children[idx];
               this.removeChild(element);
             }
+            if (!oldVal.length) {
+              this.innerHTML = '';
+            }
             for (_l = 0, _len3 = inserted.length; _l < _len3; _l++) {
               idx = inserted[_l];
               tmp = document.createElement('div');
@@ -366,6 +375,11 @@
                 rootModel: model
               });
               this.insertBefore(element, this.children[idx]);
+            }
+            if (!val.length) {
+              this.innerHTML = jtmpl(this.getAttribute('data-jt-0') || '', {
+                a: 1
+              });
             }
             return oldVal = val.slice() || oldVal;
           } else {

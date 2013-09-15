@@ -53,6 +53,9 @@ root.jtmpl = (target, tpl, model, options) ->
 	# default for section items
 	options.defaultVar = options.defaultVar or 'span'
 
+	# default target tag
+	options.defaultTargetTag = options.defaultTargetTag or 'div'
+
 
 	# Match jtmpl tag
 	tagRe = ///
@@ -317,6 +320,11 @@ root.jtmpl = (target, tpl, model, options) ->
 	if not target?
 		return html
 
+	if target.nodeName is 'SCRIPT'
+		newTarget = document.createElement(options.defaultTargetTag)
+		target.parentNode.replaceChild(newTarget, target)
+		target = newTarget
+
 	# Construct DOM
 	target.innerHTML = html
 	target.setAttribute('data-jt', '.')
@@ -367,6 +375,7 @@ root.jtmpl = (target, tpl, model, options) ->
 		sectionReact = (oldVal) -> 
 			(changes) ->
 				if Array.isArray(oldVal)
+
 					val = changes[0].object
 
 					deleted = []
@@ -384,12 +393,18 @@ root.jtmpl = (target, tpl, model, options) ->
 						element = this.children[idx]
 						this.removeChild(element)
 
+					if not oldVal.length
+						this.innerHTML = ''
+
 					for idx in inserted
 						tmp = document.createElement('div')
 						tmp.innerHTML = jtmpl(this.getAttribute('data-jt-1'), val[idx])
 						element = tmp.children[0]
 						jtmpl(element, element.innerHTML, val[idx], { rootModel: model })
 						this.insertBefore(element, this.children[idx])
+
+					if not val.length
+						this.innerHTML = jtmpl(this.getAttribute('data-jt-0') or '', { a:1 })
 
 					oldVal = val.slice() or oldVal
 

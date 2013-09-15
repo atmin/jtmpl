@@ -54,16 +54,28 @@ Hello, world
 
 * `Stage1` is a template compiler
 	
-		> jtmpl('Hello, {{who}}', { who: 'server' })
 
-		Hello, <span data-jt="who">server</span>
+	$ jtmpl('Hello, {{who}}', { who: 'server' })
+
+	Hello, <span data-jt="who">server</span>
 
 
 
 * `Stage2` is a [MV(C)](http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) framework for the browser
 
+<!-- [Link to example](hello.html) -->
+
+
+	$ hello.html
+
+	<!doctype html>
+	<html>
+	<head>
+		<script src="js/jtmpl.min.js"></script>
+	</head>
+	<body>
 		<!-- View -->
-		<script id="jtmpl" data-model="model" type="text/html">
+		<script id="view" type="text/html">
 			Hello, {{who}}
 			<button onclick={{click}}>{{buttonText}}</button>
 		</script>
@@ -86,10 +98,14 @@ Hello, world
 					}
 				}
 			}
-		</script>
 
-		<!-- that's all -->
-		<script src="js/jtmpl.min.js"></script>
+			jtmpl("#view", "#view", model)
+		</script>
+	</body>
+	</html>
+
+<iframe src="hello.html"></iframe>
+
 
 
 
@@ -130,13 +146,10 @@ Details
 
 * `jtmpl('template or "#element-id"', model)`&mdash;compiles template string (or #element-id innerHTML) using `model`
 
-* `jtmpl('#target-id' or domElement, 'template contents or "#template-id"', model)`&mdash;compiles a template using `model`, injects it into target and binds it to `model`. Template contents can be already prerendered by server to save the client some processing and help for SEO
+* `jtmpl('#target-id' or domElement, 'template contents or "#template-id"', model)`&mdash;compiles a template using `model`, injects it into target and binds it to `model`. 
+	* template contents can be already prerendered by server to save the client some processing and help for SEO
+	* if target is a script tag (of type="text/html" or similar), then it is replaced with a div.
 
-* `jtmpl(null, 'template or "#element-id"', model)`&mdash;when target is `null`, return `DocumentFragment` instead of injecting it. Used internally to manage sections.
-
-* if jtmpl script is loaded in browser context and an element with id=`jtmpl` and `data-model` attribute is found, then:
-	1. Element's contents is rendered using `data-model`
-	2. If element is a script tag (type="text/html", good way to put template contents in an HTML file), then it is replaced with a div. Otherwise, the tag stays intact.
 
 
 
@@ -206,10 +219,11 @@ Showcase of all features, tests
 			}
 		</style>
 		<script src="js/qunit.js"></script>
+		<script src="js/jtmpl.js"></script>
 	</head>
 
 	<body>
-		<div id="jtmpl" data-model="model">
+		<script id="kitchensink" type="text/jtmpl">
 
 			<h1>Kitchen Sink</h1>
 			<h2>Feature explorer</h2>
@@ -223,7 +237,10 @@ Showcase of all features, tests
 				{{#collection}}
 				<li>
 					<h4><code>model.collection[i].inner</code></h4>
-					<ul>{{#inner}}<li>{{.}}</li>{{/inner}}</ul>
+					<ul>
+						{{#inner}}<li>{{.}}</li>{{/inner}}
+						{{^inner}}<li>&lt; empty &gt;</li>{{/inner}}
+					</ul>
 					&nbsp;
 					<button onclick={{innerPush}}>push</button>
 					<button onclick="{{innerPop}}" disabled={{popDisabled}}>pop</button>
@@ -279,7 +296,7 @@ Showcase of all features, tests
 				<label><input type="radio" name="radio-group" checked={{checked}}>{{text}}</label>
 				{{/options}}
 			</div>
-		</div>
+		</script>
 
 		<script>
 			model = {
@@ -351,10 +368,9 @@ Showcase of all features, tests
 					this.popDisabled = this.inner.length == 0;
 				}
 			};
+
+			jtmpl('#kitchensink', '#kitchensink', model);
 		</script>
-		<script src="js/jtmpl.js"></script>
-		<!-- hey, this next line is temporarily here, it's work in progress, remember? :) -->
-		<script>jtmpl('#jtmpl', '#jtmpl', model)</script>
 
 		<h2>QUnit Blackbox Tests</h2>
 		<div id="qunit"></div>
