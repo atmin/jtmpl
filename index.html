@@ -125,8 +125,6 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
 <h2>Details</h2>
 <h3>API</h3>
 <ul>
-<li><p><code>jtmpl(selector)</code>&mdash;returns an array, just a handy wrapper around <code>document.querySelectorAll</code></p>
-</li>
 <li><p><code>jtmpl(&#39;template or &quot;#element-id&quot;&#39;, model)</code>&mdash;compiles template string (or #element-id innerHTML) using <code>model</code></p>
 </li>
 <li><p><code>jtmpl(&#39;#target-id&#39; or domElement, &#39;template contents or &quot;#template-id&quot;&#39;, model)</code>&mdash;compiles a template using <code>model</code>, injects it into target and binds it to <code>model</code>. </p>
@@ -134,6 +132,8 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
 <li>template contents can be already prerendered by server to save the client some processing and help for SEO</li>
 <li>if target is a script tag (of type=&quot;text/html&quot; or similar), then it is replaced with a div.</li>
 </ul>
+</li>
+<li><p><em>Deprecated</em> <code>jtmpl(selector)</code>&mdash;returns an array, just a handy wrapper around <code>document.querySelectorAll</code>. Will remove this feature, as <code>jtmpl(string)</code> syntax will probably be used for something more consistent</p>
 </li>
 </ul>
 <h3>Template specifics</h3>

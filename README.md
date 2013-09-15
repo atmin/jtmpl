@@ -142,13 +142,14 @@ Details
 
 ### API
 
-* `jtmpl(selector)`&mdash;returns an array, just a handy wrapper around `document.querySelectorAll`
-
 * `jtmpl('template or "#element-id"', model)`&mdash;compiles template string (or #element-id innerHTML) using `model`
 
 * `jtmpl('#target-id' or domElement, 'template contents or "#template-id"', model)`&mdash;compiles a template using `model`, injects it into target and binds it to `model`. 
 	* template contents can be already prerendered by server to save the client some processing and help for SEO
 	* if target is a script tag (of type="text/html" or similar), then it is replaced with a div.
+
+* _Deprecated_ `jtmpl(selector)`&mdash;returns an array, just a handy wrapper around `document.querySelectorAll`. Will remove this feature, as `jtmpl(string)` syntax will probably be used for something more consistent
+
 
 
 
