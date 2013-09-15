@@ -263,7 +263,17 @@
     target.innerHTML = html;
     target.setAttribute('data-jt', '.');
     bind = function(root, context, depth) {
-      var attr, attributeReact, bindProps, bindings, changeHandler, classReact, contextObserver, handler, initSlot, innerHTMLReact, itemIndex, jt, jtProps, k, node, nodeContext, optionHandler, propBindings, radioHandler, section, sectionReact, tmp, v, val, _i, _j, _len, _len1, _ref1, _ref2, _ref3;
+      var attr, attributeReact, bindProps, bindings, changeHandler, classReact, contextObserver, createBoundElement, handler, initSlot, innerHTMLReact, itemIndex, jt, jtProps, k, node, nodeContext, optionHandler, propBindings, radioHandler, section, sectionReact, tmp, v, val, _i, _j, _len, _len1, _ref1, _ref2, _ref3;
+      createBoundElement = function(tpl, context) {
+        var element, tmp;
+        tmp = document.createElement('div');
+        tmp.innerHTML = jtmpl(tpl, context);
+        element = tmp.children[0];
+        jtmpl(element, element.innerHTML, context, {
+          rootModel: model
+        });
+        return element;
+      };
       initSlot = function(ctx, prop) {
         if (ctx._jt_bind == null) {
           ctx._jt_bind = {};
@@ -341,45 +351,29 @@
       };
       sectionReact = function(oldVal) {
         return function(changes) {
-          var deleted, element, i, idx, inserted, item, tmp, val, _i, _j, _k, _l, _len, _len1, _len2, _len3;
+          var change, element, idx, val, _i, _len;
           if (Array.isArray(oldVal)) {
             val = changes[0].object;
-            deleted = [];
-            for (i = _i = 0, _len = oldVal.length; _i < _len; i = ++_i) {
-              item = oldVal[i];
-              if (val.indexOf(item) < 0) {
-                deleted.push(i);
+            for (_i = 0, _len = changes.length; _i < _len; _i++) {
+              change = changes[_i];
+              console.log("" + change.name + " was " + change.type + " and is now " + change.object[change.name]);
+              idx = change.name;
+              if ('' + parseInt(idx) === idx) {
+                switch (change.type) {
+                  case 'new':
+                    this.appendChild(createBoundElement(this.getAttribute('data-jt-1'), val[idx]));
+                    break;
+                  case 'deleted':
+                    element = this.children[idx];
+                    this.removeChild(element);
+                    break;
+                  case 'updated':
+                    this.replaceChild(createBoundElement(this.getAttribute('data-jt-1'), val[idx]), this.children[idx]);
+                }
               }
-            }
-            inserted = [];
-            for (i = _j = 0, _len1 = val.length; _j < _len1; i = ++_j) {
-              item = val[i];
-              if (oldVal.indexOf(item) < 0) {
-                inserted.push(i);
-              }
-            }
-            for (_k = 0, _len2 = deleted.length; _k < _len2; _k++) {
-              idx = deleted[_k];
-              element = this.children[idx];
-              this.removeChild(element);
-            }
-            if (!oldVal.length) {
-              this.innerHTML = '';
-            }
-            for (_l = 0, _len3 = inserted.length; _l < _len3; _l++) {
-              idx = inserted[_l];
-              tmp = document.createElement('div');
-              tmp.innerHTML = jtmpl(this.getAttribute('data-jt-1'), val[idx]);
-              element = tmp.children[0];
-              jtmpl(element, element.innerHTML, val[idx], {
-                rootModel: model
-              });
-              this.insertBefore(element, this.children[idx]);
             }
             if (!val.length) {
-              this.innerHTML = jtmpl(this.getAttribute('data-jt-0') || '', {
-                a: 1
-              });
+              this.innerHTML = jtmpl(this.getAttribute('data-jt-0') || '', {});
             }
             return oldVal = val.slice() || oldVal;
           } else {

@@ -334,6 +334,13 @@ root.jtmpl = (target, tpl, model, options) ->
 	# Bind event handlers
 	bind = (root, context, depth) ->
 
+		createBoundElement = (tpl, context) ->
+			tmp = document.createElement('div')
+			tmp.innerHTML = jtmpl(tpl, context)
+			element = tmp.children[0]
+			jtmpl(element, element.innerHTML, context, { rootModel: model })
+			element
+
 		initSlot = (ctx, prop) ->
 			if not ctx._jt_bind? then ctx._jt_bind = {}
 			if not ctx._jt_bind[prop]? then ctx._jt_bind[prop] = []
@@ -378,33 +385,28 @@ root.jtmpl = (target, tpl, model, options) ->
 
 					val = changes[0].object
 
-					deleted = []
-					for item, i in oldVal 
-						if val.indexOf(item) < 0 then deleted.push(i)
+					for change in changes
+						console.log("#{ change.name } was #{ change.type } and is now #{ change.object[change.name] }")
 
-					inserted = []
-					for item, i in val 
-						if oldVal.indexOf(item) < 0 then inserted.push(i)
+						idx = change.name
+						if '' + parseInt(idx) is idx
+							switch change.type
 
-					# if deleted.length or inserted.length
-					# 	console.log("old: #{ oldVal }\nnew: #{ val }\ndeleted: #{ deleted }\ninserted: #{ inserted }")
+								when 'new'
+									this.appendChild(
+										createBoundElement(this.getAttribute('data-jt-1'), val[idx]))
 
-					for idx in deleted
-						element = this.children[idx]
-						this.removeChild(element)
+								when 'deleted'
+									element = this.children[idx]
+									this.removeChild(element)
 
-					if not oldVal.length
-						this.innerHTML = ''
+								when 'updated'
+									this.replaceChild(
+										createBoundElement(this.getAttribute('data-jt-1'), val[idx]), this.children[idx])
 
-					for idx in inserted
-						tmp = document.createElement('div')
-						tmp.innerHTML = jtmpl(this.getAttribute('data-jt-1'), val[idx])
-						element = tmp.children[0]
-						jtmpl(element, element.innerHTML, val[idx], { rootModel: model })
-						this.insertBefore(element, this.children[idx])
-
+					# render inverted section?
 					if not val.length
-						this.innerHTML = jtmpl(this.getAttribute('data-jt-0') or '', { a:1 })
+						this.innerHTML = jtmpl(this.getAttribute('data-jt-0') or '', {})
 
 					oldVal = val.slice() or oldVal
 
