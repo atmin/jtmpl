@@ -7,7 +7,7 @@
   root = this;
 
   root.jtmpl = function(target, tpl, model, options) {
-    var addClass, addEvent, bind, compile, escapeHTML, hasClass, hre, html, matchHTMLTag, newTarget, parseTag, quoteRE, re, reId, removeClass, tagRe, triggerEvent, _ref;
+    var addClass, addEvent, bind, clone, compile, escapeHTML, hasClass, hre, html, matchHTMLTag, newTarget, parseTag, quoteRE, re, reId, removeClass, tagRe, triggerEvent, _ref;
     reId = /^\#[\w-]+$/;
     if ((target === null || typeof target === 'string') && (tpl == null)) {
       if (typeof document === "undefined" || document === null) {
@@ -44,6 +44,17 @@
     re = new RegExp(quoteRE(options.delimiters[0]) + tagRe.source + quoteRE(options.delimiters[1]), 'g');
     hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?(?:((?:"[^">]*"?)|(?:'[^'>]*'?)|[^\s>]+))?)*?\s*(>)?\s*(?:<!--.*?-->\s*)*$/;
     matchHTMLTag = /^(\s*<([\w-_]+))(?:(\s*data-jt="[^"]*)")?[^>]*>[\s\S]*?<\/\2>\s*$/;
+    clone = function(obj) {
+      var key, temp;
+      if (obj === null || typeof obj !== 'object') {
+        return obj;
+      }
+      temp = obj.constructor();
+      for (key in obj) {
+        temp[key] = clone(obj[key]);
+      }
+      return temp;
+    };
     escapeHTML = function(val) {
       return ((val != null) && val || '').toString().replace(/[&\"<>\\]/g, function(s) {
         switch (s) {
@@ -263,17 +274,7 @@
     target.innerHTML = html;
     target.setAttribute('data-jt', '.');
     bind = function(root, context, depth) {
-      var attr, attributeReact, bindProps, bindings, changeHandler, classReact, contextObserver, createBoundElement, handler, initSlot, innerHTMLReact, itemIndex, jt, jtProps, k, node, nodeContext, optionHandler, propBindings, radioHandler, section, sectionReact, tmp, v, val, _i, _j, _len, _len1, _ref1, _ref2, _ref3;
-      createBoundElement = function(tpl, context) {
-        var element, tmp;
-        tmp = document.createElement('div');
-        tmp.innerHTML = jtmpl(tpl, context);
-        element = tmp.children[0];
-        jtmpl(element, element.innerHTML, context, {
-          rootModel: model
-        });
-        return element;
-      };
+      var attr, attributeReact, bindProps, bindings, changeHandler, classReact, contextObserver, handler, initSlot, innerHTMLReact, itemIndex, jt, jtProps, k, node, nodeContext, optionHandler, propBindings, radioHandler, section, sectionReact, tmp, v, val, _i, _j, _len, _len1, _ref1, _ref2, _ref3;
       initSlot = function(ctx, prop) {
         if (ctx._jt_bind == null) {
           ctx._jt_bind = {};
@@ -284,12 +285,13 @@
         return ctx._jt_bind[prop];
       };
       bindProps = function(context) {
-        var k, v, _results;
+        var k, observer, v, _results;
         if (context._jt_bind != null) {
           if (context._jt_bind['.'] && context._jt_bind['.'].length) {
             Object.observe(context, context._jt_bind['.'][0]);
           } else {
-            Object.observe(context, contextObserver(context._jt_bind));
+            observer = contextObserver(context._jt_bind);
+            Object.observe(context, observer);
           }
           delete context._jt_bind;
         }
@@ -351,34 +353,121 @@
       };
       sectionReact = function(oldVal) {
         return function(changes) {
-          var change, element, idx, val, _i, _len;
+          var change, ctx, deleted, element, idx, inserted, processSteps, steps, that, updated, val, _i, _j, _k, _l, _len, _len1, _len2, _len3;
           if (Array.isArray(oldVal)) {
             val = changes[0].object;
+            steps = [];
             if (!oldVal.length) {
               this.innerHTML = '';
             }
+            changes = (function() {
+              var _i, _len, _results;
+              _results = [];
+              for (_i = 0, _len = changes.length; _i < _len; _i++) {
+                change = changes[_i];
+                if ('' + parseInt(change.name) === change.name) {
+                  _results.push(change);
+                }
+              }
+              return _results;
+            })();
             for (_i = 0, _len = changes.length; _i < _len; _i++) {
               change = changes[_i];
               console.log("" + change.name + " was " + change.type + " and is now " + change.object[change.name]);
-              idx = change.name;
-              if ('' + parseInt(idx) === idx) {
-                switch (change.type) {
-                  case 'new':
-                    this.appendChild(createBoundElement(this.getAttribute('data-jt-1'), val[idx]));
-                    break;
-                  case 'deleted':
-                    element = this.children[idx];
-                    this.removeChild(element);
-                    break;
-                  case 'updated':
-                    this.replaceChild(createBoundElement(this.getAttribute('data-jt-1'), val[idx]), this.children[idx]);
+            }
+            inserted = (function() {
+              var _j, _len1, _results;
+              _results = [];
+              for (_j = 0, _len1 = changes.length; _j < _len1; _j++) {
+                change = changes[_j];
+                if (change.type === 'new') {
+                  _results.push(change.name);
                 }
               }
+              return _results;
+            })();
+            deleted = (function() {
+              var _j, _len1, _results;
+              _results = [];
+              for (_j = 0, _len1 = changes.length; _j < _len1; _j++) {
+                change = changes[_j];
+                if (change.type === 'deleted') {
+                  _results.push(change.name);
+                }
+              }
+              return _results;
+            })();
+            deleted.reverse();
+            updated = (function() {
+              var _j, _len1, _results;
+              _results = [];
+              for (_j = 0, _len1 = changes.length; _j < _len1; _j++) {
+                change = changes[_j];
+                if (change.type === 'updated') {
+                  _results.push(change.name);
+                }
+              }
+              return _results;
+            })();
+            that = this;
+            for (_j = 0, _len1 = inserted.length; _j < _len1; _j++) {
+              idx = inserted[_j];
+              element = document.createElement('div');
+              element.innerHTML = jtmpl(this.getAttribute('data-jt-1'), val[idx]);
+              element = element.children[0];
+              jtmpl(element, element.innerHTML, val[idx], {
+                rootModel: model
+              });
+              this.appendChild(element);
+            }
+            for (_k = 0, _len2 = deleted.length; _k < _len2; _k++) {
+              idx = deleted[_k];
+              steps.push((function(idx, that) {
+                return function() {
+                  element = that.children[idx];
+                  return that.removeChild(element);
+                };
+              })(idx, this));
+            }
+            for (_l = 0, _len3 = updated.length; _l < _len3; _l++) {
+              idx = updated[_l];
+              ctx = val[idx];
+              steps.push((function(idx) {
+                return function() {
+                  return that.removeChild(that.children[idx]);
+                };
+              })(idx));
+              steps.push((function(idx) {
+                return function() {
+                  element = document.createElement('div');
+                  element.innerHTML = jtmpl(that.getAttribute('data-jt-1'), val[idx]);
+                  element = element.children[0];
+                  jtmpl(element, element.innerHTML, val[idx], {
+                    rootModel: model
+                  });
+                  if (idx >= that.children.length) {
+                    return that.appendChild(element);
+                  } else {
+                    return that.insertBefore(element, that.children[idx]);
+                  }
+                };
+              })(idx));
             }
             if (!val.length) {
-              this.innerHTML = jtmpl(this.getAttribute('data-jt-0') || '', {});
+              steps.push(function() {
+                return that.innerHTML = jtmpl(that.getAttribute('data-jt-0') || '', {});
+              });
             }
-            return oldVal = val.slice() || oldVal;
+            oldVal = val.slice() || oldVal;
+            processSteps = function() {
+              steps.shift()();
+              if (steps.length) {
+                return setTimeout(processSteps, 1000);
+              }
+            };
+            if (steps.length) {
+              return setTimeout(processSteps, 1000);
+            }
           } else {
             val = changes.object[changes.name];
             jtmpl(this, this.getAttribute("data-jt-" + (val && 1 || 0)) || '', changes.object);
@@ -444,7 +533,7 @@
                   val = jt.slice(1);
                   nodeContext = context[val];
                   if (Array.isArray(nodeContext)) {
-                    initSlot(nodeContext, '.').push(sectionReact(nodeContext.slice()).bind(node));
+                    initSlot(nodeContext, '.').push(sectionReact(nodeContext).bind(node));
                   }
                   initSlot(context, val).push(sectionReact(nodeContext).bind(node));
                 } else if (jt === '.') {

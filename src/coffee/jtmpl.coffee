@@ -94,12 +94,12 @@ root.jtmpl = (target, tpl, model, options) ->
 
 
 
-	# clone = (obj) ->
-	# 	if obj is null or typeof obj isnt 'object' then return obj
-	# 	temp = obj.constructor()
-	# 	for key of obj
-	# 		temp[key] = clone(obj[key])
-	# 	temp
+	clone = (obj) ->
+		if obj is null or typeof obj isnt 'object' then return obj
+		temp = obj.constructor()
+		for key of obj
+			temp[key] = clone(obj[key])
+		temp
 
 	escapeHTML = (val) ->
 		(val? and val or '')
@@ -342,13 +342,6 @@ root.jtmpl = (target, tpl, model, options) ->
 	# Bind event handlers
 	bind = (root, context, depth) ->
 
-		createBoundElement = (tpl, context) ->
-			tmp = document.createElement('div')
-			tmp.innerHTML = jtmpl(tpl, context)
-			element = tmp.children[0]
-			jtmpl(element, element.innerHTML, context, { rootModel: model })
-			element
-
 		initSlot = (ctx, prop) ->
 			if not ctx._jt_bind? then ctx._jt_bind = {}
 			if not ctx._jt_bind[prop]? then ctx._jt_bind[prop] = []
@@ -359,7 +352,11 @@ root.jtmpl = (target, tpl, model, options) ->
 				if context._jt_bind['.'] and context._jt_bind['.'].length
 					Object.observe(context, context._jt_bind['.'][0])
 				else
-					Object.observe(context, contextObserver(context._jt_bind))
+					observer = contextObserver(context._jt_bind)
+					Object.observe(context, observer)
+					# if model isnt context
+					# 	model._jt_observers = model._jt_observers or []
+					# 	model._jt_observers.push(observer)
 				delete context._jt_bind
 			for k, v of context 
 				if typeof v is 'object' then bindProps(v)
@@ -392,33 +389,71 @@ root.jtmpl = (target, tpl, model, options) ->
 
 					val = changes[0].object
 
+					steps = []
+
 					if not oldVal.length
 						this.innerHTML = ''
 
+					# filter non-array indexes
+					changes = (change for change in changes when '' + parseInt(change.name) is change.name)
 					for change in changes
-						console.log("#{ change.name } was #{ change.type } and is now #{ change.object[change.name] }")
+						console.log("#{ change.name } was #{ change.type } and is now #{ change.object[change.name] }")						
+					inserted = (change.name for change in changes when change.type is 'new')
+					deleted = (change.name for change in changes when change.type is 'deleted')
+					# deletion should be done backwards to resolve mismatching indices
+					deleted.reverse()
+					# same for update, as update=delete+insert
+					updated = (change.name for change in changes when change.type is 'updated')
+					# updated.reverse()
+					that = this
 
-						idx = change.name
-						if '' + parseInt(idx) is idx
-							switch change.type
+					for idx in inserted
+						element = document.createElement('div')
+						element.innerHTML = jtmpl(this.getAttribute('data-jt-1'), val[idx])
+						element = element.children[0]
+						jtmpl(element, element.innerHTML, val[idx], { rootModel: model })
+						this.appendChild(element)
 
-								when 'new'
-									this.appendChild(
-										createBoundElement(this.getAttribute('data-jt-1'), val[idx]))
+					for idx in deleted
+						steps.push(
+							((idx, that) -> ->
+								element = that.children[idx]
+								that.removeChild(element)
+							)(idx, this)
+						)
 
-								when 'deleted'
-									element = this.children[idx]
-									this.removeChild(element)
-
-								when 'updated'
-									this.replaceChild(
-										createBoundElement(this.getAttribute('data-jt-1'), val[idx]), this.children[idx])
+					for idx in updated
+						ctx = val[idx]
+						steps.push(
+							((idx) -> ->
+								that.removeChild(that.children[idx])
+							)(idx)
+						)
+						steps.push(
+							((idx) -> ->
+								element = document.createElement('div')
+								element.innerHTML = jtmpl(that.getAttribute('data-jt-1'), val[idx])
+								element = element.children[0]
+								jtmpl(element, element.innerHTML, val[idx], { rootModel: model })
+								if idx >= that.children.length
+									that.appendChild(element)
+								else
+									that.insertBefore(element, that.children[idx])
+							)(idx)
+						)
 
 					# render inverted section?
 					if not val.length
-						this.innerHTML = jtmpl(this.getAttribute('data-jt-0') or '', {})
+						steps.push(
+							-> that.innerHTML = jtmpl(that.getAttribute('data-jt-0') or '', {})
+						)
 
 					oldVal = val.slice() or oldVal
+
+					processSteps = ->
+						steps.shift()()
+						if steps.length then setTimeout(processSteps, 1000)
+					if steps.length then setTimeout(processSteps, 1000)
 
 				else
 					val = changes.object[changes.name]
@@ -473,7 +508,7 @@ root.jtmpl = (target, tpl, model, options) ->
 
 								if Array.isArray(nodeContext)
 									initSlot(nodeContext, '.')
-										.push(sectionReact(nodeContext.slice()).bind(node))
+										.push(sectionReact(nodeContext).bind(node))
 
 								initSlot(context, val).push(sectionReact(nodeContext).bind(node))
 
