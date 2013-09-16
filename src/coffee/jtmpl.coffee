@@ -93,6 +93,14 @@ root.jtmpl = (target, tpl, model, options) ->
 	///
 
 
+
+	# clone = (obj) ->
+	# 	if obj is null or typeof obj isnt 'object' then return obj
+	# 	temp = obj.constructor()
+	# 	for key of obj
+	# 		temp[key] = clone(obj[key])
+	# 	temp
+
 	escapeHTML = (val) ->
 		(val? and val or '')
 			.toString()
@@ -237,7 +245,7 @@ root.jtmpl = (target, tpl, model, options) ->
 							# output HTML attr?
 							else if htag[3] and not htag[5]
 								# null value?
-								if val is null
+								if not val? or val is null
 									# erase "attr=" part
 									out = out.replace(/[\w-_]+=$/, '')
 								# output boolean HTML attr?
@@ -372,7 +380,6 @@ root.jtmpl = (target, tpl, model, options) ->
 				newVal = change.object[change.name]
 				if attr in ['value', 'checked', 'selected']
 					this[attr] = newVal
-					# this._changing = (this._changing + 1) or 1
 				else
 					if (typeof newVal is 'boolean' and not newVal) or newVal is null
 						this.removeAttribute(attr)
