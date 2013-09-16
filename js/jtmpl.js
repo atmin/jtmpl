@@ -7,7 +7,7 @@
   root = this;
 
   root.jtmpl = function(target, tpl, model, options) {
-    var addClass, addEvent, bind, clone, compile, escapeHTML, hasClass, hre, html, matchHTMLTag, newTarget, parseTag, quoteRE, re, reId, removeClass, tagRe, triggerEvent, _ref;
+    var addClass, addEvent, bind, compile, escapeHTML, hasClass, hre, html, matchHTMLTag, newTarget, parseTag, quoteRE, re, reId, removeClass, tagRe, triggerEvent, _ref;
     reId = /^\#[\w-]+$/;
     if ((target === null || typeof target === 'string') && (tpl == null)) {
       if (typeof document === "undefined" || document === null) {
@@ -44,17 +44,6 @@
     re = new RegExp(quoteRE(options.delimiters[0]) + tagRe.source + quoteRE(options.delimiters[1]), 'g');
     hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?(?:((?:"[^">]*"?)|(?:'[^'>]*'?)|[^\s>]+))?)*?\s*(>)?\s*(?:<!--.*?-->\s*)*$/;
     matchHTMLTag = /^(\s*<([\w-_]+))(?:(\s*data-jt="[^"]*)")?[^>]*>[\s\S]*?<\/\2>\s*$/;
-    clone = function(obj) {
-      var key, temp;
-      if (obj === null || typeof obj !== 'object') {
-        return obj;
-      }
-      temp = obj.constructor();
-      for (key in obj) {
-        temp[key] = clone(obj[key]);
-      }
-      return temp;
-    };
     escapeHTML = function(val) {
       return ((val != null) && val || '').toString().replace(/[&\"<>\\]/g, function(s) {
         switch (s) {
@@ -274,7 +263,20 @@
     target.innerHTML = html;
     target.setAttribute('data-jt', '.');
     bind = function(root, context, depth) {
-      var attr, attributeReact, bindProps, bindings, changeHandler, classReact, contextObserver, handler, initSlot, innerHTMLReact, itemIndex, jt, jtProps, k, node, nodeContext, optionHandler, propBindings, radioHandler, section, sectionReact, tmp, v, val, _i, _j, _len, _len1, _ref1, _ref2, _ref3;
+      var attr, attributeReact, bindProps, bindings, changeHandler, classReact, contextObserver, handler, initSlot, innerHTMLReact, itemIndex, jt, jtProps, k, node, nodeContext, optionHandler, propBindings, radioHandler, section, sectionReact, tmp, unobserve, v, val, _i, _j, _len, _len1, _ref1, _ref2, _ref3;
+      unobserve = function(el) {
+        var child, _i, _len, _ref1;
+        _ref1 = el.children;
+        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+          child = _ref1[_i];
+          unobserve(child);
+        }
+        if (typeof el._jt_context === 'object' && typeof el._jt_observer === 'function') {
+          Object.unobserve(el._jt_context, el._jt_observer);
+          delete el._jt_context;
+          return delete el._jt_observer;
+        }
+      };
       initSlot = function(ctx, prop) {
         if (ctx._jt_bind == null) {
           ctx._jt_bind = {};
@@ -285,13 +287,12 @@
         return ctx._jt_bind[prop];
       };
       bindProps = function(context) {
-        var k, observer, v, _results;
+        var k, v, _results;
         if (context._jt_bind != null) {
           if (context._jt_bind['.'] && context._jt_bind['.'].length) {
             Object.observe(context, context._jt_bind['.'][0]);
           } else {
-            observer = contextObserver(context._jt_bind);
-            Object.observe(context, observer);
+            Object.observe(context, contextObserver(context._jt_bind));
           }
           delete context._jt_bind;
         }
@@ -353,10 +354,9 @@
       };
       sectionReact = function(oldVal) {
         return function(changes) {
-          var change, ctx, deleted, element, idx, inserted, processSteps, steps, that, updated, val, _i, _j, _k, _l, _len, _len1, _len2, _len3;
+          var change, ctx, deleted, element, idx, inserted, oldChild, that, updated, val, _i, _j, _k, _l, _len, _len1, _len2, _len3;
           if (Array.isArray(oldVal)) {
             val = changes[0].object;
-            steps = [];
             if (!oldVal.length) {
               this.innerHTML = '';
             }
@@ -420,54 +420,29 @@
               });
               this.appendChild(element);
             }
-            for (_k = 0, _len2 = deleted.length; _k < _len2; _k++) {
-              idx = deleted[_k];
-              steps.push((function(idx, that) {
-                return function() {
-                  element = that.children[idx];
-                  return that.removeChild(element);
-                };
-              })(idx, this));
-            }
-            for (_l = 0, _len3 = updated.length; _l < _len3; _l++) {
-              idx = updated[_l];
+            for (_k = 0, _len2 = updated.length; _k < _len2; _k++) {
+              idx = updated[_k];
               ctx = val[idx];
-              steps.push((function(idx) {
-                return function() {
-                  return that.removeChild(that.children[idx]);
-                };
-              })(idx));
-              steps.push((function(idx) {
-                return function() {
-                  element = document.createElement('div');
-                  element.innerHTML = jtmpl(that.getAttribute('data-jt-1'), val[idx]);
-                  element = element.children[0];
-                  jtmpl(element, element.innerHTML, val[idx], {
-                    rootModel: model
-                  });
-                  if (idx >= that.children.length) {
-                    return that.appendChild(element);
-                  } else {
-                    return that.insertBefore(element, that.children[idx]);
-                  }
-                };
-              })(idx));
+              oldChild = that.children[idx];
+              unobserve(oldChild);
+              element = document.createElement('div');
+              element.innerHTML = jtmpl(that.getAttribute('data-jt-1'), val[idx]);
+              element = element.children[0];
+              jtmpl(element, element.innerHTML, val[idx], {
+                rootModel: model
+              });
+              that.replaceChild(element, oldChild);
+            }
+            for (_l = 0, _len3 = deleted.length; _l < _len3; _l++) {
+              idx = deleted[_l];
+              element = that.children[idx];
+              unobserve(element);
+              that.removeChild(element);
             }
             if (!val.length) {
-              steps.push(function() {
-                return that.innerHTML = jtmpl(that.getAttribute('data-jt-0') || '', {});
-              });
+              that.innerHTML = jtmpl(that.getAttribute('data-jt-0') || '', {});
             }
-            oldVal = val.slice() || oldVal;
-            processSteps = function() {
-              steps.shift()();
-              if (steps.length) {
-                return setTimeout(processSteps, 1000);
-              }
-            };
-            if (steps.length) {
-              return setTimeout(processSteps, 1000);
-            }
+            return oldVal = val.slice() || oldVal;
           } else {
             val = changes.object[changes.name];
             jtmpl(this, this.getAttribute("data-jt-" + (val && 1 || 0)) || '', changes.object);
@@ -532,10 +507,14 @@
                 if ((_ref2 = jt.slice(0, 1)) === '#' || _ref2 === '^') {
                   val = jt.slice(1);
                   nodeContext = context[val];
+                  node._jt_observer = sectionReact(nodeContext).bind(node);
                   if (Array.isArray(nodeContext)) {
-                    initSlot(nodeContext, '.').push(sectionReact(nodeContext).bind(node));
+                    initSlot(nodeContext, '.').push(node._jt_observer);
+                    node._jt_context = nodeContext;
+                  } else {
+                    initSlot(context, val).push(node._jt_observer);
+                    node._jt_context = context;
                   }
-                  initSlot(context, val).push(sectionReact(nodeContext).bind(node));
                 } else if (jt === '.') {
                   nodeContext = context[itemIndex++] || context;
                   if (typeof nodeContext !== 'object') {
