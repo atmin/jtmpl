@@ -392,6 +392,9 @@ root.jtmpl = (target, tpl, model, options) ->
 
 					val = changes[0].object
 
+					if not oldVal.length
+						this.innerHTML = ''
+
 					for change in changes
 						console.log("#{ change.name } was #{ change.type } and is now #{ change.object[change.name] }")
 

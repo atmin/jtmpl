@@ -186,7 +186,7 @@
                     out += tagName;
                   }
                 } else if (htag[3] && !htag[5]) {
-                  if (val === null) {
+                  if ((val == null) || val === null) {
                     out = out.replace(/[\w-_]+=$/, '');
                   } else if (typeof val === 'boolean') {
                     out = out.replace(/[\w-_]+=$/, '') + (val && htag[2] || '');
@@ -354,6 +354,9 @@
           var change, element, idx, val, _i, _len;
           if (Array.isArray(oldVal)) {
             val = changes[0].object;
+            if (!oldVal.length) {
+              this.innerHTML = '';
+            }
             for (_i = 0, _len = changes.length; _i < _len; _i++) {
               change = changes[_i];
               console.log("" + change.name + " was " + change.type + " and is now " + change.object[change.name]);
