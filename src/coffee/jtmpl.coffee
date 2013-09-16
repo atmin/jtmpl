@@ -338,7 +338,7 @@ root.jtmpl = (target, tpl, model, options) ->
 		unobserve = (el) ->
 			for child in el.children
 				unobserve(child)
-			if typeof el._jt_context is 'object' and typeof el._jt_observer is 'function'
+			if el._jt_observer
 				Object.unobserve(el._jt_context, el._jt_observer)
 				delete el._jt_context
 				delete el._jt_observer
@@ -392,20 +392,31 @@ root.jtmpl = (target, tpl, model, options) ->
 					# filter non-array indexes
 					changes = (change for change in changes when '' + parseInt(change.name) is change.name)
 					for change in changes
-						console.log("#{ change.name } was #{ change.type } and is now #{ change.object[change.name] }")						
+						console.log("#{ change.name } was #{ change.type } and is now #{ change.object[change.name] }")
+
+					# flatten splice operation
+
 					inserted = (change.name for change in changes when change.type is 'new')
+
 					deleted = (change.name for change in changes when change.type is 'deleted')
 					# deletion should be done backwards to resolve mismatching indices
 					deleted.reverse()
+
 					updated = (change.name for change in changes when change.type is 'updated')
+					# updated.reverse()
 					that = this
+
+					for idx in deleted
+						element = that.children[idx]
+						unobserve(element)
+						that.removeChild(element)
 
 					for idx in inserted
 						element = document.createElement('div')
 						element.innerHTML = jtmpl(this.getAttribute('data-jt-1'), val[idx])
 						element = element.children[0]
-						jtmpl(element, element.innerHTML, val[idx], { rootModel: model })
 						this.appendChild(element)
+						jtmpl(element, element.innerHTML, val[idx], { rootModel: model })
 
 					for idx in updated
 						ctx = val[idx]
@@ -414,13 +425,8 @@ root.jtmpl = (target, tpl, model, options) ->
 						element = document.createElement('div')
 						element.innerHTML = jtmpl(that.getAttribute('data-jt-1'), val[idx])
 						element = element.children[0]
-						jtmpl(element, element.innerHTML, val[idx], { rootModel: model })
 						that.replaceChild(element, oldChild)
-
-					for idx in deleted
-						element = that.children[idx]
-						unobserve(element)
-						that.removeChild(element)
+						jtmpl(element, element.innerHTML, val[idx], { rootModel: model })
 
 					# render inverted section?
 					if not val.length

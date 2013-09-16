@@ -87,7 +87,7 @@
     return setTimeout(function() {
       equal(jtmpl('ul li ul li')[0].innerHTML, '42', 'innerHTML binding');
       equal(jtmpl('ul')[0].children.length, model.collection.length, 'collection.length equals li.length');
-      equal(jtmpl('p')[3].innerHTML, 'You entered "<span data-jt="field">qunit</span>". Delete it and this message will disappear', 'positive if section');
+      equal(jtmpl('p')[3].innerHTML, 'Value entered "<span data-jt="field">qunit</span>"', 'positive if section');
       return start();
     }, 1000);
   });

@@ -95,7 +95,7 @@ test 'bind', ->
 				'collection.length equals li.length'
 
 			equal jtmpl('p')[3].innerHTML, 
-				'You entered "<span data-jt="field">qunit</span>". Delete it and this message will disappear',
+				'Value entered "<span data-jt="field">qunit</span>"',
 				'positive if section'
 
 			start()

@@ -271,7 +271,7 @@
           child = _ref1[_i];
           unobserve(child);
         }
-        if (typeof el._jt_context === 'object' && typeof el._jt_observer === 'function') {
+        if (el._jt_observer) {
           Object.unobserve(el._jt_context, el._jt_observer);
           delete el._jt_context;
           return delete el._jt_observer;
@@ -410,34 +410,34 @@
               return _results;
             })();
             that = this;
-            for (_j = 0, _len1 = inserted.length; _j < _len1; _j++) {
-              idx = inserted[_j];
+            for (_j = 0, _len1 = deleted.length; _j < _len1; _j++) {
+              idx = deleted[_j];
+              element = that.children[idx];
+              unobserve(element);
+              that.removeChild(element);
+            }
+            for (_k = 0, _len2 = inserted.length; _k < _len2; _k++) {
+              idx = inserted[_k];
               element = document.createElement('div');
               element.innerHTML = jtmpl(this.getAttribute('data-jt-1'), val[idx]);
               element = element.children[0];
+              this.appendChild(element);
               jtmpl(element, element.innerHTML, val[idx], {
                 rootModel: model
               });
-              this.appendChild(element);
             }
-            for (_k = 0, _len2 = updated.length; _k < _len2; _k++) {
-              idx = updated[_k];
+            for (_l = 0, _len3 = updated.length; _l < _len3; _l++) {
+              idx = updated[_l];
               ctx = val[idx];
               oldChild = that.children[idx];
               unobserve(oldChild);
               element = document.createElement('div');
               element.innerHTML = jtmpl(that.getAttribute('data-jt-1'), val[idx]);
               element = element.children[0];
+              that.replaceChild(element, oldChild);
               jtmpl(element, element.innerHTML, val[idx], {
                 rootModel: model
               });
-              that.replaceChild(element, oldChild);
-            }
-            for (_l = 0, _len3 = deleted.length; _l < _len3; _l++) {
-              idx = deleted[_l];
-              element = that.children[idx];
-              unobserve(element);
-              that.removeChild(element);
             }
             if (!val.length) {
               that.innerHTML = jtmpl(that.getAttribute('data-jt-0') || '', {});

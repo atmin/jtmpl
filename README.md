@@ -269,7 +269,10 @@ Showcase of all features, tests
 			<label for="field">Enter something</label> <input id="field" value={{field}}>
 			<p>
 				{{#field}}
-				You entered "{{field}}". Delete it and this message will disappear
+				Value entered "{{field}}"
+				{{/field}}
+				{{^field}}
+				Nothing entered
 				{{/field}}
 			</p>
 
