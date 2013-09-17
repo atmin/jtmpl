@@ -352,14 +352,12 @@
           }
         };
       };
-      sectionReact = function(oldVal) {
+      sectionReact = function(val) {
         return function(changes) {
-          var change, ctx, deleted, element, idx, inserted, oldChild, that, updated, val, _i, _j, _k, _l, _len, _len1, _len2, _len3;
-          if (Array.isArray(oldVal)) {
+          var change, deleted, idx, inserted, processNextStep, steps, updated, _i, _j, _k, _l, _len, _len1, _len2, _len3;
+          if (Array.isArray(val)) {
             val = changes[0].object;
-            if (!oldVal.length) {
-              this.innerHTML = '';
-            }
+            steps = [];
             changes = (function() {
               var _i, _len, _results;
               _results = [];
@@ -409,44 +407,74 @@
               }
               return _results;
             })();
-            that = this;
-            for (_j = 0, _len1 = deleted.length; _j < _len1; _j++) {
-              idx = deleted[_j];
-              element = that.children[idx];
-              unobserve(element);
-              that.removeChild(element);
+            for (_j = 0, _len1 = inserted.length; _j < _len1; _j++) {
+              idx = inserted[_j];
+              steps.push((function(that, idx, val) {
+                return function() {
+                  var element;
+                  element = document.createElement('div');
+                  element.innerHTML = jtmpl(that.getAttribute('data-jt-1'), val[idx]);
+                  element = element.children[0];
+                  that.appendChild(element);
+                  return jtmpl(element, element.innerHTML, val[idx], {
+                    rootModel: model
+                  });
+                };
+              })(this, idx, val));
             }
-            for (_k = 0, _len2 = inserted.length; _k < _len2; _k++) {
-              idx = inserted[_k];
-              element = document.createElement('div');
-              element.innerHTML = jtmpl(this.getAttribute('data-jt-1'), val[idx]);
-              element = element.children[0];
-              this.appendChild(element);
-              jtmpl(element, element.innerHTML, val[idx], {
-                rootModel: model
-              });
+            for (_k = 0, _len2 = updated.length; _k < _len2; _k++) {
+              idx = updated[_k];
+              steps.push((function(that, idx) {
+                return function() {
+                  var oldChild;
+                  oldChild = that.children[idx];
+                  unobserve(oldChild);
+                  return that.removeChild(oldChild);
+                };
+              })(this, idx));
+              steps.push((function(that, idx, val) {
+                return function() {
+                  var element;
+                  element = document.createElement('div');
+                  element.innerHTML = jtmpl(that.getAttribute('data-jt-1'), val[idx]);
+                  element = element.children[0];
+                  if (idx >= that.children.length) {
+                    that.appendChild(element);
+                  } else {
+                    that.insertBefore(element, that.children[idx]);
+                  }
+                  return jtmpl(element, element.innerHTML, val[idx], {
+                    rootModel: model
+                  });
+                };
+              })(this, idx, val));
             }
-            for (_l = 0, _len3 = updated.length; _l < _len3; _l++) {
-              idx = updated[_l];
-              ctx = val[idx];
-              oldChild = that.children[idx];
-              unobserve(oldChild);
-              element = document.createElement('div');
-              element.innerHTML = jtmpl(that.getAttribute('data-jt-1'), val[idx]);
-              element = element.children[0];
-              that.replaceChild(element, oldChild);
-              jtmpl(element, element.innerHTML, val[idx], {
-                rootModel: model
-              });
+            for (_l = 0, _len3 = deleted.length; _l < _len3; _l++) {
+              idx = deleted[_l];
+              steps.push((function(that, idx) {
+                return function() {
+                  var element;
+                  element = that.children[idx];
+                  unobserve(element);
+                  return that.removeChild(element);
+                };
+              })(this, idx));
+            }
+            processNextStep = function() {
+              steps.shift()();
+              if (steps.length) {
+                return setTimeout(processNextStep, 0);
+              }
+            };
+            if (steps.length) {
+              setTimeout(processNextStep, 0);
             }
             if (!val.length) {
-              that.innerHTML = jtmpl(that.getAttribute('data-jt-0') || '', {});
+              return this.innerHTML = jtmpl(this.getAttribute('data-jt-0') || '', {});
             }
-            return oldVal = val.slice() || oldVal;
           } else {
             val = changes.object[changes.name];
-            jtmpl(this, this.getAttribute("data-jt-" + (val && 1 || 0)) || '', changes.object);
-            return oldVal = val;
+            return jtmpl(this, this.getAttribute("data-jt-" + (val && 1 || 0)) || '', changes.object);
           }
         };
       };

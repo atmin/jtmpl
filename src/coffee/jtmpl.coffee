@@ -380,21 +380,17 @@ root.jtmpl = (target, tpl, model, options) ->
 					else
 						this.setAttribute(attr, newVal)
 
-		sectionReact = (oldVal) -> 
+		sectionReact = (val) -> 
 			(changes) ->
-				if Array.isArray(oldVal)
+				if Array.isArray(val)
 
 					val = changes[0].object
-
-					if not oldVal.length
-						this.innerHTML = ''
+					steps = []
 
 					# filter non-array indexes
 					changes = (change for change in changes when '' + parseInt(change.name) is change.name)
 					for change in changes
 						console.log("#{ change.name } was #{ change.type } and is now #{ change.object[change.name] }")
-
-					# flatten splice operation
 
 					inserted = (change.name for change in changes when change.type is 'new')
 
@@ -404,40 +400,56 @@ root.jtmpl = (target, tpl, model, options) ->
 
 					updated = (change.name for change in changes when change.type is 'updated')
 					# updated.reverse()
-					that = this
-
-					for idx in deleted
-						element = that.children[idx]
-						unobserve(element)
-						that.removeChild(element)
 
 					for idx in inserted
-						element = document.createElement('div')
-						element.innerHTML = jtmpl(this.getAttribute('data-jt-1'), val[idx])
-						element = element.children[0]
-						this.appendChild(element)
-						jtmpl(element, element.innerHTML, val[idx], { rootModel: model })
+						steps.push(
+							((that, idx, val) -> ->
+								element = document.createElement('div')
+								element.innerHTML = jtmpl(that.getAttribute('data-jt-1'), val[idx])
+								element = element.children[0]
+								that.appendChild(element)
+								jtmpl(element, element.innerHTML, val[idx], { rootModel: model })
+							)(this, idx, val))
 
 					for idx in updated
-						ctx = val[idx]
-						oldChild = that.children[idx]
-						unobserve(oldChild)
-						element = document.createElement('div')
-						element.innerHTML = jtmpl(that.getAttribute('data-jt-1'), val[idx])
-						element = element.children[0]
-						that.replaceChild(element, oldChild)
-						jtmpl(element, element.innerHTML, val[idx], { rootModel: model })
+						steps.push(
+							((that, idx) -> ->
+								oldChild = that.children[idx]
+								unobserve(oldChild)
+								that.removeChild(oldChild)
+							)(this, idx))
+						steps.push(
+							((that, idx, val) -> ->
+								element = document.createElement('div')
+								element.innerHTML = jtmpl(that.getAttribute('data-jt-1'), val[idx])
+								element = element.children[0]
+								if idx >= that.children.length
+									that.appendChild(element)
+								else
+									that.insertBefore(element, that.children[idx])
+								jtmpl(element, element.innerHTML, val[idx], { rootModel: model })
+							)(this, idx, val))
+
+					for idx in deleted
+						steps.push(
+							((that, idx) -> ->
+								element = that.children[idx]
+								unobserve(element)
+								that.removeChild(element)
+							)(this, idx))
+
+					processNextStep = ->
+						steps.shift()()
+						if steps.length then setTimeout(processNextStep, 0)
+					if steps.length then setTimeout(processNextStep, 0)
 
 					# render inverted section?
 					if not val.length
-						that.innerHTML = jtmpl(that.getAttribute('data-jt-0') or '', {})
-
-					oldVal = val.slice() or oldVal
+						this.innerHTML = jtmpl(this.getAttribute('data-jt-0') or '', {})
 
 				else
 					val = changes.object[changes.name]
 					jtmpl(this, this.getAttribute("data-jt-#{ val and 1 or 0 }") or '', changes.object)
-					oldVal = val
 
 		changeHandler = (context, k, v) -> -> context[v] = this[k]
 

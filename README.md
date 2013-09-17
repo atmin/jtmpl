@@ -1,12 +1,12 @@
 _`{{`_ `jtmpl` _`}}`_
 =====================
 
-#### Humanistic JavaScript MV framework
+#### Humanistic JavaScript MVC framework
 
 
 
 <br>
- _Kitchensink seems working. First release coming very soon_
+ _[Kitchensink](kitchensink.html) demo is working. First release coming very soon, after resolving a couple of bugs_
 
 
 What
@@ -61,7 +61,7 @@ Hello, world
 
 
 
-* `Stage2` is a [MV(C)](http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) framework for the browser
+* `Stage2` renders live DOM structure (think automatic [MVC](http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller)):
 
 <!-- [Link to example](hello.html) -->
 
@@ -226,7 +226,7 @@ Showcase of all features, tests
 	<body>
 		<script id="kitchensink" type="text/jtmpl">
 
-			<h1>Kitchen Sink</h1>
+			<h1>Kitchen Sync</h1>
 			<h2>Feature explorer</h2>
 			<a href=#qunit>Tests</a>
 			<p>
