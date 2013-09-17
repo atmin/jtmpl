@@ -8,7 +8,7 @@ root.jtmpl = (target, tpl, model, options) ->
 
 	## Interface
 
-	# `jtmpl(selector)`?
+	# Deprecated. `jtmpl(selector)`?
 	if (target is null or typeof target is 'string') and not tpl?
 		if not document?
 			throw ':( this API is only available in a browser'
@@ -25,7 +25,7 @@ root.jtmpl = (target, tpl, model, options) ->
 	if typeof target is 'string' and target.match(reId)
 		target = document.getElementById(target.substring(1))
 	
-	if not model? # or typeof model isnt 'object'
+	if not model?
 		throw ':( no model'
 
 	# `jtmpl('#template-id', ...)` or `jtmpl(element, '#template-id', ...)`

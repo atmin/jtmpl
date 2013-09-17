@@ -94,8 +94,8 @@ test 'bind', ->
 				model.collection.length,
 				'collection.length equals li.length'
 
-			equal jtmpl('p')[3].innerHTML, 
-				'Value entered "<span data-jt="field">qunit</span>"',
+			equal jtmpl('p')[2].innerHTML, 
+				'<code>model.field</code> = "<span data-jt="field">qunit</span>"',
 				'positive if section'
 
 			start()

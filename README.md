@@ -234,7 +234,60 @@ Showcase of all features, tests
 				Feel free to modify <code>model</code> from JS console and observe changes.
 			</p>
 
-			<h3>Nested collections&mdash;<code>model.collection</code></h3>
+			<h3>Toggle text</h3>
+			<a href="#" onclick='{{toggle}}'>Toggle <code>model.text</code></a>
+			<p>
+				{{text}}
+			</p>
+
+			<h3>Data binding</h3>
+			<label for="field">Enter something</label> <input id="field" value={{field}}>
+			<p>
+				{{#field}}
+				<code>model.field</code> = "{{field}}"
+				{{/field}}
+				{{^field}}
+				<code>model.field</code> is empty
+				{{/field}}
+			</p>
+
+			<h3>Data binding, toggle class</h3>
+			<div>
+				<label><input type="checkbox" checked="{{bound-class}}"> <code>model['bound-class']</code></label>
+				<p class="{{bound-class}}">Lorem ipsum ...</p>
+			</div>
+
+			<h3>Checkboxes toggling "if" sections</h3>
+			{{#checkboxes}}
+				<label><input type="checkbox" checked={{fooCheck}}> check foo</label>
+				<label><input type="checkbox" checked={{barCheck}}> check bar</label>
+				{{#fooCheck}}
+				<p><code>model.checkboxes.fooCheck</code> is checked<p>
+				{{/fooCheck}}
+				{{#barCheck}}
+				<p><code>model.checkboxes.barCheck</code> is checked<p>
+				{{/barCheck}}
+			{{/checkboxes}}
+
+			<h3>Select and radiogroup</h3>
+			<h5><code>model.options</code></h5>
+			<select>
+				{{#options}}
+				<option selected={{checked}}>{{text}}</option>
+				{{/options}}
+			</select>
+			<h5><code>model.options</code> again</h5>
+			<p>
+				{{#options}}
+				<label><input type="radio" name="radio-group" checked={{checked}}>{{text}}</label>
+				{{/options}}
+			</p>
+
+			<h3><code>model.innerHTML</code></h3>
+			<div><!-- {{{innerHTML}}} --></div>
+			<!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
+
+			<h3>Nested collections</h3>
 			<ul class="dummy-class just for the_test">
 				{{#collection}}
 				<li>
@@ -256,51 +309,6 @@ Showcase of all features, tests
 			<button onclick={{push}}>push</button>
 			<button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
 
-			<h3>Toggle text&mdash;<code>model.text</code></h3>
-			<a href="#" onclick='{{toggle}}'>Toggle</a>
-			<p>
-				{{text}}
-			</p>
-
-			<h3>innerHTML&mdash;<code>model.innerHTML</code></h3>
-			<div><!-- {{{innerHTML}}} --></div>
-			<!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
-
-			<h3>Data binding&mdash;<code>model.field</code></h3>
-			<label for="field">Enter something</label> <input id="field" value={{field}}>
-			<p>
-				{{#field}}
-				Value entered "{{field}}"
-				{{/field}}
-				{{^field}}
-				Nothing entered
-				{{/field}}
-			</p>
-
-			<h3>Data binding, toggle class&mdash;<code>model['bound-class']</code></h3>
-			<div>
-				<a href=# class="try2confuse-the_parser {{bound-class}}" onclick="{{toggleClass}}">Toggle .bound-class on me</a>
-			</div>
-
-			<h3>Checkboxes&mdash;<code>model.checkboxes</code></h3>
-			{{#checkboxes}}
-				<label><input type="checkbox" checked={{fooCheck}}> check foo</label>
-				<label><input type="checkbox" checked={{barCheck}}> check bar</label>
-			{{/checkboxes}}
-
-			<h3>Select&mdash;<code>model.options</code></h3>
-			<select>
-				{{#options}}
-				<option selected={{checked}}>{{text}}</option>
-				{{/options}}
-			</select>
-
-			<h3>Radio group&mdash;<code>model.options</code></h3>
-			<div>
-				{{#options}}
-				<label><input type="radio" name="radio-group" checked={{checked}}>{{text}}</label>
-				{{/options}}
-			</div>
 		</script>
 
 		<script>
@@ -319,26 +327,12 @@ Showcase of all features, tests
 
 				'bound-class': true,
 
-				toggleClass: function(e) {
-					this['bound-class'] = !this['bound-class'];
-					e.preventDefault();
-				},
-
-				innerHTML: '<p>Hi, how are you?</p>',
+				innerHTML: '<p>I am a paragraph, change me: <code><pre>model.innerHTML = "new HTML content"</pre></code></p>',
 
 				options: [
-					{
-						checked: false,
-						text: 'one' 
-					},
-					{
-						checked: true,
-						text: 'two'
-					},
-					{
-						checked: false,
-						text: 'three'
-					}
+					{ checked: true, text: 'one' },
+					{ checked: false, text: 'two' },
+					{ checked: false, text: 'three' }
 				],
 
 				checkboxes: {

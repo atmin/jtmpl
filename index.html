@@ -208,7 +208,60 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
             Feel free to modify &lt;code&gt;model&lt;/code&gt; from JS console and observe changes.
         &lt;/p&gt;
 
-        &lt;h3&gt;Nested collections&amp;mdash;&lt;code&gt;model.collection&lt;/code&gt;&lt;/h3&gt;
+        &lt;h3&gt;Toggle text&lt;/h3&gt;
+        &lt;a href=&quot;#&quot; onclick=&#39;{{toggle}}&#39;&gt;Toggle &lt;code&gt;model.text&lt;/code&gt;&lt;/a&gt;
+        &lt;p&gt;
+            {{text}}
+        &lt;/p&gt;
+
+        &lt;h3&gt;Data binding&lt;/h3&gt;
+        &lt;label for=&quot;field&quot;&gt;Enter something&lt;/label&gt; &lt;input id=&quot;field&quot; value={{field}}&gt;
+        &lt;p&gt;
+            {{#field}}
+            &lt;code&gt;model.field&lt;/code&gt; = &quot;{{field}}&quot;
+            {{/field}}
+            {{^field}}
+            &lt;code&gt;model.field&lt;/code&gt; is empty
+            {{/field}}
+        &lt;/p&gt;
+
+        &lt;h3&gt;Data binding, toggle class&lt;/h3&gt;
+        &lt;div&gt;
+            &lt;label&gt;&lt;input type=&quot;checkbox&quot; checked=&quot;{{bound-class}}&quot;&gt; &lt;code&gt;model[&#39;bound-class&#39;]&lt;/code&gt;&lt;/label&gt;
+            &lt;p class=&quot;{{bound-class}}&quot;&gt;Lorem ipsum ...&lt;/p&gt;
+        &lt;/div&gt;
+
+        &lt;h3&gt;Checkboxes toggling &quot;if&quot; sections&lt;/h3&gt;
+        {{#checkboxes}}
+            &lt;label&gt;&lt;input type=&quot;checkbox&quot; checked={{fooCheck}}&gt; check foo&lt;/label&gt;
+            &lt;label&gt;&lt;input type=&quot;checkbox&quot; checked={{barCheck}}&gt; check bar&lt;/label&gt;
+            {{#fooCheck}}
+            &lt;p&gt;&lt;code&gt;model.checkboxes.fooCheck&lt;/code&gt; is checked&lt;p&gt;
+            {{/fooCheck}}
+            {{#barCheck}}
+            &lt;p&gt;&lt;code&gt;model.checkboxes.barCheck&lt;/code&gt; is checked&lt;p&gt;
+            {{/barCheck}}
+        {{/checkboxes}}
+
+        &lt;h3&gt;Select and radiogroup&lt;/h3&gt;
+        &lt;h5&gt;&lt;code&gt;model.options&lt;/code&gt;&lt;/h5&gt;
+        &lt;select&gt;
+            {{#options}}
+            &lt;option selected={{checked}}&gt;{{text}}&lt;/option&gt;
+            {{/options}}
+        &lt;/select&gt;
+        &lt;h5&gt;&lt;code&gt;model.options&lt;/code&gt; again&lt;/h5&gt;
+        &lt;p&gt;
+            {{#options}}
+            &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; checked={{checked}}&gt;{{text}}&lt;/label&gt;
+            {{/options}}
+        &lt;/p&gt;
+
+        &lt;h3&gt;&lt;code&gt;model.innerHTML&lt;/code&gt;&lt;/h3&gt;
+        &lt;div&gt;&lt;!-- {{{innerHTML}}} --&gt;&lt;/div&gt;
+        &lt;!-- `jtmpl` accepts tags in HTML comments and automatically strips them --&gt;
+
+        &lt;h3&gt;Nested collections&lt;/h3&gt;
         &lt;ul class=&quot;dummy-class just for the_test&quot;&gt;
             {{#collection}}
             &lt;li&gt;
@@ -230,51 +283,6 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
         &lt;button onclick={{push}}&gt;push&lt;/button&gt;
         &lt;button onclick=&quot;{{pop}}&quot; disabled={{popDisabled}}&gt;pop&lt;/button&gt;
 
-        &lt;h3&gt;Toggle text&amp;mdash;&lt;code&gt;model.text&lt;/code&gt;&lt;/h3&gt;
-        &lt;a href=&quot;#&quot; onclick=&#39;{{toggle}}&#39;&gt;Toggle&lt;/a&gt;
-        &lt;p&gt;
-            {{text}}
-        &lt;/p&gt;
-
-        &lt;h3&gt;innerHTML&amp;mdash;&lt;code&gt;model.innerHTML&lt;/code&gt;&lt;/h3&gt;
-        &lt;div&gt;&lt;!-- {{{innerHTML}}} --&gt;&lt;/div&gt;
-        &lt;!-- `jtmpl` accepts tags in HTML comments and automatically strips them --&gt;
-
-        &lt;h3&gt;Data binding&amp;mdash;&lt;code&gt;model.field&lt;/code&gt;&lt;/h3&gt;
-        &lt;label for=&quot;field&quot;&gt;Enter something&lt;/label&gt; &lt;input id=&quot;field&quot; value={{field}}&gt;
-        &lt;p&gt;
-            {{#field}}
-            Value entered &quot;{{field}}&quot;
-            {{/field}}
-            {{^field}}
-            Nothing entered
-            {{/field}}
-        &lt;/p&gt;
-
-        &lt;h3&gt;Data binding, toggle class&amp;mdash;&lt;code&gt;model[&#39;bound-class&#39;]&lt;/code&gt;&lt;/h3&gt;
-        &lt;div&gt;
-            &lt;a href=# class=&quot;try2confuse-the_parser {{bound-class}}&quot; onclick=&quot;{{toggleClass}}&quot;&gt;Toggle .bound-class on me&lt;/a&gt;
-        &lt;/div&gt;
-
-        &lt;h3&gt;Checkboxes&amp;mdash;&lt;code&gt;model.checkboxes&lt;/code&gt;&lt;/h3&gt;
-        {{#checkboxes}}
-            &lt;label&gt;&lt;input type=&quot;checkbox&quot; checked={{fooCheck}}&gt; check foo&lt;/label&gt;
-            &lt;label&gt;&lt;input type=&quot;checkbox&quot; checked={{barCheck}}&gt; check bar&lt;/label&gt;
-        {{/checkboxes}}
-
-        &lt;h3&gt;Select&amp;mdash;&lt;code&gt;model.options&lt;/code&gt;&lt;/h3&gt;
-        &lt;select&gt;
-            {{#options}}
-            &lt;option selected={{checked}}&gt;{{text}}&lt;/option&gt;
-            {{/options}}
-        &lt;/select&gt;
-
-        &lt;h3&gt;Radio group&amp;mdash;&lt;code&gt;model.options&lt;/code&gt;&lt;/h3&gt;
-        &lt;div&gt;
-            {{#options}}
-            &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; checked={{checked}}&gt;{{text}}&lt;/label&gt;
-            {{/options}}
-        &lt;/div&gt;
     &lt;/script&gt;
 
     &lt;script&gt;
@@ -293,26 +301,12 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
 
             &#39;bound-class&#39;: true,
 
-            toggleClass: function(e) {
-                this[&#39;bound-class&#39;] = !this[&#39;bound-class&#39;];
-                e.preventDefault();
-            },
-
-            innerHTML: &#39;&lt;p&gt;Hi, how are you?&lt;/p&gt;&#39;,
+            innerHTML: &#39;&lt;p&gt;I am a paragraph, change me: &lt;code&gt;&lt;pre&gt;model.innerHTML = &quot;new HTML content&quot;&lt;/pre&gt;&lt;/code&gt;&lt;/p&gt;&#39;,
 
             options: [
-                {
-                    checked: false,
-                    text: &#39;one&#39; 
-                },
-                {
-                    checked: true,
-                    text: &#39;two&#39;
-                },
-                {
-                    checked: false,
-                    text: &#39;three&#39;
-                }
+                { checked: true, text: &#39;one&#39; },
+                { checked: false, text: &#39;two&#39; },
+                { checked: false, text: &#39;three&#39; }
             ],
 
             checkboxes: {
