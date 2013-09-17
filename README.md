@@ -126,6 +126,7 @@ Specifications
 
 Downloads
 ---------
+_dev branch_
 
 * browse [jtmpl.coffee](https://github.com/atmin/jtmpl/blob/dev/src/coffee/jtmpl.coffee)
 
