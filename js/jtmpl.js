@@ -262,228 +262,16 @@
     }
     target.innerHTML = html;
     target.setAttribute('data-jt', '.');
-    bind = function(root, context, depth) {
-      var attr, attributeReact, bindProps, bindings, changeHandler, classReact, contextObserver, handler, initSlot, innerHTMLReact, itemIndex, jt, jtProps, k, node, nodeContext, optionHandler, propBindings, radioHandler, section, sectionReact, tmp, unobserve, v, val, _i, _j, _len, _len1, _ref1, _ref2, _ref3;
-      unobserve = function(el) {
-        var child, _i, _len, _ref1;
-        _ref1 = el.children;
-        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-          child = _ref1[_i];
-          unobserve(child);
-        }
-        if (el._jt_observer) {
-          Object.unobserve(el._jt_context, el._jt_observer);
-          delete el._jt_context;
-          return delete el._jt_observer;
-        }
-      };
-      initSlot = function(ctx, prop) {
-        if (ctx._jt_bind == null) {
-          ctx._jt_bind = {};
-        }
-        if (ctx._jt_bind[prop] == null) {
-          ctx._jt_bind[prop] = [];
-        }
-        return ctx._jt_bind[prop];
-      };
-      bindProps = function(context) {
-        var k, v, _results;
-        if (context._jt_bind != null) {
-          if (context._jt_bind['.'] && context._jt_bind['.'].length) {
-            Object.observe(context, context._jt_bind['.'][0]);
-          } else {
-            Object.observe(context, contextObserver(context._jt_bind));
-          }
-          delete context._jt_bind;
-        }
-        _results = [];
-        for (k in context) {
-          v = context[k];
-          if (typeof v === 'object') {
-            _results.push(bindProps(v));
-          } else {
-            _results.push(void 0);
-          }
-        }
-        return _results;
-      };
-      contextObserver = function(bindings) {
-        return function(changes) {
-          var b, change, _i, _len, _results;
-          _results = [];
-          for (_i = 0, _len = changes.length; _i < _len; _i++) {
-            change = changes[_i];
-            if (change.type === 'updated' && (bindings[change.name] != null)) {
-              _results.push((function() {
-                var _j, _len1, _ref1, _results1;
-                _ref1 = bindings[change.name];
-                _results1 = [];
-                for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-                  b = _ref1[_j];
-                  _results1.push(b(change));
-                }
-                return _results1;
-              })());
-            } else {
-              _results.push(void 0);
-            }
-          }
-          return _results;
-        };
-      };
-      innerHTMLReact = function(change) {
-        return this.innerHTML = change.object[change.name];
-      };
-      classReact = function(change) {
-        return (change.object[change.name] && addClass || removeClass)(this, change.name);
-      };
-      attributeReact = function(attr) {
-        return function(change) {
-          var newVal;
-          newVal = change.object[change.name];
-          if (attr === 'value' || attr === 'checked' || attr === 'selected') {
-            return this[attr] = newVal;
-          } else {
-            if ((typeof newVal === 'boolean' && !newVal) || newVal === null) {
-              return this.removeAttribute(attr);
-            } else {
-              return this.setAttribute(attr, newVal);
-            }
-          }
-        };
-      };
-      sectionReact = function(val) {
-        return function(changes) {
-          var change, deleted, idx, inserted, processNextStep, steps, updated, _i, _j, _k, _l, _len, _len1, _len2, _len3;
-          if (Array.isArray(val)) {
-            val = changes[0].object;
-            steps = [];
-            changes = (function() {
-              var _i, _len, _results;
-              _results = [];
-              for (_i = 0, _len = changes.length; _i < _len; _i++) {
-                change = changes[_i];
-                if ('' + parseInt(change.name) === change.name) {
-                  _results.push(change);
-                }
-              }
-              return _results;
-            })();
-            for (_i = 0, _len = changes.length; _i < _len; _i++) {
-              change = changes[_i];
-              console.log("" + change.name + " was " + change.type + " and is now " + change.object[change.name]);
-            }
-            inserted = (function() {
-              var _j, _len1, _results;
-              _results = [];
-              for (_j = 0, _len1 = changes.length; _j < _len1; _j++) {
-                change = changes[_j];
-                if (change.type === 'new') {
-                  _results.push(change.name);
-                }
-              }
-              return _results;
-            })();
-            deleted = (function() {
-              var _j, _len1, _results;
-              _results = [];
-              for (_j = 0, _len1 = changes.length; _j < _len1; _j++) {
-                change = changes[_j];
-                if (change.type === 'deleted') {
-                  _results.push(change.name);
-                }
-              }
-              return _results;
-            })();
-            deleted.reverse();
-            updated = (function() {
-              var _j, _len1, _results;
-              _results = [];
-              for (_j = 0, _len1 = changes.length; _j < _len1; _j++) {
-                change = changes[_j];
-                if (change.type === 'updated') {
-                  _results.push(change.name);
-                }
-              }
-              return _results;
-            })();
-            for (_j = 0, _len1 = inserted.length; _j < _len1; _j++) {
-              idx = inserted[_j];
-              steps.push((function(that, idx, val) {
-                return function() {
-                  var element;
-                  element = document.createElement('div');
-                  element.innerHTML = jtmpl(that.getAttribute('data-jt-1'), val[idx]);
-                  element = element.children[0];
-                  that.appendChild(element);
-                  return jtmpl(element, element.innerHTML, val[idx], {
-                    rootModel: model
-                  });
-                };
-              })(this, idx, val));
-            }
-            for (_k = 0, _len2 = updated.length; _k < _len2; _k++) {
-              idx = updated[_k];
-              steps.push((function(that, idx) {
-                return function() {
-                  var oldChild;
-                  oldChild = that.children[idx];
-                  unobserve(oldChild);
-                  return that.removeChild(oldChild);
-                };
-              })(this, idx));
-              steps.push((function(that, idx, val) {
-                return function() {
-                  var element;
-                  element = document.createElement('div');
-                  element.innerHTML = jtmpl(that.getAttribute('data-jt-1'), val[idx]);
-                  element = element.children[0];
-                  if (idx >= that.children.length) {
-                    that.appendChild(element);
-                  } else {
-                    that.insertBefore(element, that.children[idx]);
-                  }
-                  return jtmpl(element, element.innerHTML, val[idx], {
-                    rootModel: model
-                  });
-                };
-              })(this, idx, val));
-            }
-            for (_l = 0, _len3 = deleted.length; _l < _len3; _l++) {
-              idx = deleted[_l];
-              steps.push((function(that, idx) {
-                return function() {
-                  var element;
-                  element = that.children[idx];
-                  unobserve(element);
-                  return that.removeChild(element);
-                };
-              })(this, idx));
-            }
-            processNextStep = function() {
-              steps.shift()();
-              if (steps.length) {
-                return setTimeout(processNextStep, 0);
-              }
-            };
-            if (steps.length) {
-              setTimeout(processNextStep, 0);
-            }
-            if (!val.length) {
-              return this.innerHTML = jtmpl(this.getAttribute('data-jt-0') || '', {});
-            }
-          } else {
-            val = changes.object[changes.name];
-            return jtmpl(this, this.getAttribute("data-jt-" + (val && 1 || 0)) || '', changes.object);
-          }
-        };
-      };
+    bind = function(root, context) {
+      var addBinding, attr, changeHandler, handler, itemIndex, jt, jtProps, k, node, nodeContext, optionHandler, radioHandler, section, tmp, v, _i, _j, _len, _len1, _ref1, _ref2, _ref3, _results;
       changeHandler = function(context, k, v) {
         return function() {
           return context[v] = this[k];
         };
       };
       radioHandler = function(context, k, v) {
+        var changing;
+        changing = false;
         return function() {
           var input, _i, _len, _ref1;
           if (this[k]) {
@@ -499,31 +287,84 @@
         };
       };
       optionHandler = function(context, k, v) {
-        var changing;
-        changing = false;
         return function() {
-          var idx, option, _i, _len, _ref1;
-          if (changing) {
-            return;
-          }
-          changing = true;
+          var idx, option, _i, _len, _ref1, _results;
           idx = 0;
           _ref1 = this.children;
+          _results = [];
           for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
             option = _ref1[_i];
             if (option.nodeName === 'OPTION') {
               context[idx][v] = option.selected;
-              idx++;
+              _results.push(idx++);
+            } else {
+              _results.push(void 0);
             }
           }
-          return changing = false;
+          return _results;
         };
+      };
+      addBinding = function(context, node, prop, nodeProp) {
+        if (!context["__" + prop + "_bindings"]) {
+          Object.defineProperty(context, "__" + prop + "_bindings", {
+            enumerable: false,
+            writable: true,
+            value: []
+          });
+          Object.defineProperty(context, "__" + prop, {
+            enumerable: false,
+            writable: true,
+            value: context[prop]
+          });
+          Object.defineProperty(context, prop, {
+            get: function() {
+              return this["__" + prop];
+            },
+            set: function(val) {
+              var reactor, _i, _len, _ref1, _results;
+              this["__" + prop] = val;
+              _ref1 = this["__" + prop + "_bindings"];
+              _results = [];
+              for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+                reactor = _ref1[_i];
+                _results.push(reactor.call(this, val));
+              }
+              return _results;
+            }
+          });
+        }
+        if (!nodeProp) {
+          return context["__" + prop + "_bindings"].push((function(node) {
+            return function(val) {
+              return node.innerHTML = val;
+            };
+          })(node));
+        } else if (nodeProp === 'class') {
+          return context["__" + prop + "_bindings"].push((function(node, prop) {
+            return function(val) {
+              return (val && addClass || removeClass)(node, prop);
+            };
+          })(node, prop));
+        } else {
+          return context["__" + prop + "_bindings"].push((function(node, prop, nodeProp) {
+            return function(val) {
+              if (nodeProp === 'value' || nodeProp === 'checked' || nodeProp === 'selected') {
+                return node[nodeProp] = val;
+              } else {
+                if ((typeof val === 'boolean' && !val) || val === null) {
+                  return node.removeAttribute(nodeProp);
+                } else {
+                  return node.setAttribute(nodeProp, val);
+                }
+              }
+            };
+          })(node, prop, nodeProp));
+        }
       };
       itemIndex = 0;
       nodeContext = null;
-      bindings = {};
-      depth = depth || 0;
       _ref1 = root.childNodes;
+      _results = [];
       for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
         node = _ref1[_i];
         switch (node.nodeType) {
@@ -533,24 +374,18 @@
               for (_j = 0, _len1 = jtProps.length; _j < _len1; _j++) {
                 jt = jtProps[_j];
                 if ((_ref2 = jt.slice(0, 1)) === '#' || _ref2 === '^') {
-                  val = jt.slice(1);
-                  nodeContext = context[val];
-                  node._jt_observer = sectionReact(nodeContext).bind(node);
-                  if (Array.isArray(nodeContext)) {
-                    initSlot(nodeContext, '.').push(node._jt_observer);
-                    node._jt_context = nodeContext;
-                  } else {
-                    initSlot(context, val).push(node._jt_observer);
-                    node._jt_context = context;
-                  }
+                  section = jt.slice(1);
+                  nodeContext = context[section];
                 } else if (jt === '.') {
-                  nodeContext = context[itemIndex++] || context;
-                  if (typeof nodeContext !== 'object') {
+                  nodeContext = context[itemIndex] || context;
+                  if (typeof nodeContext === 'object') {
+
+                  } else {
                     nodeContext = null;
                   }
+                  itemIndex++;
                 } else {
                   _ref3 = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref3[0], k = _ref3[1], v = _ref3[2];
-                  propBindings = initSlot((typeof nodeContext === 'object' && !Array.isArray(nodeContext)) && nodeContext || context, v || k);
                   if (k && k.indexOf('on') === 0) {
                     handler = (options.rootModel != null) && options.rootModel[v] || model[v];
                     if (typeof handler === 'function') {
@@ -559,11 +394,9 @@
                       throw ":( " + v + " is not a function, cannot attach event handler";
                     }
                   } else if (!v) {
-                    propBindings.push(innerHTMLReact.bind(node));
-                  } else if (k === 'class') {
-                    propBindings.push(classReact.bind(node));
+                    addBinding(context, node, k);
                   } else {
-                    propBindings.push(attributeReact(k).bind(node));
+                    addBinding(context, node, v, k);
                     if (k === 'value' || k === 'checked' || k === 'selected') {
                       if (node.nodeName === 'OPTION' && node.parentNode.querySelectorAll('option')[0] === node) {
                         addEvent('change', node.parentNode, optionHandler(context, k, v).bind(node.parentNode));
@@ -578,283 +411,27 @@
                 }
               }
             }
-            bind(node, nodeContext || context, depth + 1);
-            break;
-          case node.TEXT_NODE:
+            _results.push(bind(node, nodeContext || context));
             break;
           case node.COMMENT_NODE:
             if (section = node.nodeValue.trim().match(/^(#|\^)\s([\s\S]*)$/)) {
               section[2] = section[2].replace(new RegExp(quoteRE(options.compiledDelimiters[0]), 'g'), options.delimiters[0]).replace(new RegExp(quoteRE(options.compiledDelimiters[1]), 'g'), options.delimiters[1]);
               if (section[1] === '#') {
-                root.setAttribute('data-jt-1', section[2]);
+                _results.push(root.setAttribute('data-jt-1', section[2]));
               } else {
-                root.setAttribute('data-jt-0', section[2]);
+                _results.push(root.setAttribute('data-jt-0', section[2]));
               }
+            } else {
+              _results.push(void 0);
             }
             break;
           default:
-            throw ":( unexpected nodeType " + node.nodeType;
+            _results.push(void 0);
         }
       }
-      if (!depth) {
-        return bindProps(context);
-      }
+      return _results;
     };
     return bind(target, model);
   };
 
 }).call(this);
-
-
-
-
-
-
-
-
-/*
-  Tested against Chromium build with Object.observe and acts EXACTLY the same,
-  though Chromium build is MUCH faster
-
-  Trying to stay as close to the spec as possible,
-  this is a work in progress, feel free to comment/update
-  
-  Specification:
-    http://wiki.ecmascript.org/doku.php?id=harmony:observe
-
-  Built using parts of:
-    https://github.com/tvcutsem/harmony-reflect/blob/master/examples/observer.js
-
-  Limits so far;
-    Built using polling... Will update again with polling/getter&setters to make things better at some point
-*/
-"use strict";
-if(!Object.observe){
-  (function(extend, global){
-    var isCallable = (function(toString){
-        var s = toString.call(toString),
-            u = typeof u;
-        return typeof global.alert === "object" ?
-          function(f){
-            return s === toString.call(f) || (!!f && typeof f.toString == u && typeof f.valueOf == u && /^\s*\bfunction\b/.test("" + f));
-          }:
-          function(f){
-            return s === toString.call(f);
-          }
-        ;
-    })(extend.prototype.toString);
-    var isNumeric=function(n){
-      return !isNaN(parseFloat(n)) && isFinite(n);
-    };
-    var sameValue = function(x, y){
-      if(x===y){
-        return x !== 0 || 1 / x === 1 / y;
-      }
-      return x !== x && y !== y;
-    };
-    var isAccessorDescriptor = function(desc){
-      if (typeof(desc) === 'undefined'){
-        return false;
-      }
-      return ('get' in desc || 'set' in desc);
-    };
-    var isDataDescriptor = function(desc){
-      if (typeof(desc) === 'undefined'){
-        return false;
-      }
-      return ('value' in desc || 'writable' in desc);
-    };
-      
-    var validateArguments = function(O, callback){
-      if(typeof(O)!=='object'){
-        // Throw Error
-        throw new TypeError("Object.observeObject called on non-object");
-      }
-      if(isCallable(callback)===false){
-        // Throw Error
-        throw new TypeError("Object.observeObject: Expecting function");
-      }
-      if(Object.isFrozen(callback)===true){
-        // Throw Error
-        throw new TypeError("Object.observeObject: Expecting unfrozen function");
-      }
-    };
-
-    var Observer = (function(){
-      var wraped = [];
-      var Observer = function(O, callback){
-        validateArguments(O, callback);
-        Object.getNotifier(O).addListener(callback);
-        if(wraped.indexOf(O)===-1){
-          wraped.push(O);
-        }else{
-          Object.getNotifier(O)._checkPropertyListing();
-        }
-      };
-      
-      Observer.prototype.deliverChangeRecords = function(O){
-        Object.getNotifier(O).deliverChangeRecords();
-      };
-      
-      wraped.lastScanned = 0;
-      var f = (function(wrapped){
-              return function(){
-                var i = 0, l = wrapped.length, startTime = new Date(), takingTooLong=false;
-                for(i=wrapped.lastScanned; (i<l)&&(!takingTooLong); i++){
-                  Object.getNotifier(wrapped[i])._checkPropertyListing();
-                  takingTooLong=((new Date())-startTime)>100; // make sure we don't take more than 100 milliseconds to scan all objects
-                }
-                wrapped.lastScanned=i<l?i:0; // reset wrapped so we can make sure that we pick things back up
-                setTimeout(f, 100);
-              };
-            })(wraped);
-      setTimeout(f, 100);
-      
-      return Observer;
-    })();
-    
-    var Notifier = function(watching){
-    var _listeners = [], _updates = [], _updater = false, properties = [], values = [];
-      var self = this;
-      Object.defineProperty(self, '_watching', {
-                  get: (function(watched){
-                    return function(){
-                      return watched;
-                    };
-                  })(watching)
-                });
-      var wrapProperty = function(object, prop){
-        var propType = typeof(object[prop]), descriptor = Object.getOwnPropertyDescriptor(object, prop);
-        if((prop==='getNotifier')||isAccessorDescriptor(descriptor)||(!descriptor.enumerable)){
-          return false;
-        }
-        if((object instanceof Array)&&isNumeric(prop)){
-          var idx = properties.length;
-          properties[idx] = prop;
-          values[idx] = object[prop];
-          return true;
-        }
-        (function(idx, prop){
-          properties[idx] = prop;
-          values[idx] = object[prop];
-          Object.defineProperty(object, prop, {
-            get: function(){
-              return values[idx];
-            },
-            set: function(value){
-              if(!sameValue(values[idx], value)){
-                Object.getNotifier(object).queueUpdate(object, prop, 'updated', values[idx]);
-                values[idx] = value;
-              }
-            }
-          });
-        })(properties.length, prop);
-        return true;
-      };
-      self._checkPropertyListing = function(dontQueueUpdates){
-        var object = self._watching, keys = Object.keys(object), i=0, l=keys.length;
-        var newKeys = [], oldKeys = properties.slice(0), updates = [];
-        var prop, queueUpdates = !dontQueueUpdates, propType, value, idx;
-        
-        for(i=0; i<l; i++){
-          prop = keys[i];
-          value = object[prop];
-          propType = typeof(value);
-          if((idx = properties.indexOf(prop))===-1){
-            if(wrapProperty(object, prop)&&queueUpdates){
-              self.queueUpdate(object, prop, 'new', null, object[prop]);
-            }
-          }else{
-            if((object instanceof Array)&&(isNumeric(prop))){
-              if(values[idx] !== value){
-                if(queueUpdates){
-                  self.queueUpdate(object, prop, 'updated', values[idx], value);
-                }
-                values[idx] = value;
-              }
-            }
-            oldKeys.splice(oldKeys.indexOf(prop), 1);
-          }
-        }
-        if(queueUpdates){
-          l = oldKeys.length;
-          for(i=0; i<l; i++){
-            idx = properties.indexOf(oldKeys[i]);
-            self.queueUpdate(object, oldKeys[i], 'deleted', values[idx]);
-            properties.splice(idx,1);
-            values.splice(idx,1);
-          };
-        }
-      };
-      self.addListener = function(callback){
-        var idx = _listeners.indexOf(callback);
-        if(idx===-1){
-          _listeners.push(callback);
-        }
-      };
-      self.removeListener = function(callback){
-        var idx = _listeners.indexOf(callback);
-        if(idx>-1){
-          _listeners.splice(idx, 1);
-        }
-      };
-      self.listeners = function(){
-        return _listeners;
-      };
-      self.queueUpdate = function(what, prop, type, was){
-        this.queueUpdates([{
-          type: type,
-          object: what,
-          name: prop,
-          oldValue: was
-        }]);
-      };
-      self.queueUpdates = function(updates){
-        var self = this, i = 0, l = updates.length||0, update;
-        for(i=0; i<l; i++){
-          update = updates[i];
-          _updates.push(update);
-        }
-        if(_updater){
-          clearTimeout(_updater);
-        }
-        _updater = setTimeout(function(){
-          _updater = false;
-          self.deliverChangeRecords();
-        }, 100);
-      };
-      self.deliverChangeRecords = function(){
-        var i = 0, l = _listeners.length, keepRunning = true;
-        for(i=0; i<l&&keepRunning; i++){
-          if(typeof(_listeners[i])==='function'){
-            if(_listeners[i]===console.log){
-              console.log(_updates);
-            }else{
-              keepRunning = !(_listeners[i](_updates));
-            }
-          }
-        }
-        _updates=[];
-      };
-      self._checkPropertyListing(true);
-    };
-    
-    var _notifiers=[], _indexes=[];
-    extend.getNotifier = function(O){
-    var idx = _indexes.indexOf(O), notifier = idx>-1?_notifiers[idx]:false;
-      if(!notifier){
-        idx = _indexes.length;
-        _indexes[idx] = O;
-        notifier = _notifiers[idx] = new Notifier(O);
-      }
-      return notifier;
-    };
-    extend.observe = function(O, callback){
-      return new Observer(O, callback);
-    };
-    extend.unobserve = function(O, callback){
-      validateArguments(O, callback);
-      extend.getNotifier(O).removeListener(callback);
-    };
-  })(Object, this);
-}

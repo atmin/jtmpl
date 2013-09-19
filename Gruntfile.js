@@ -8,7 +8,7 @@ module.exports = function(grunt) {
         separator: '\n\n\n\n\n\n\n\n'
       },
       dist: {
-        src: ['js/<%= pkg.name %>.js', 'components/Object.observe/Object.observe.poly.js'],
+        src: ['js/<%= pkg.name %>.js'/*, 'components/Object.observe/Object.observe.poly.js'*/],
         dest: 'js/<%= pkg.name %>.js'
       }
     },
