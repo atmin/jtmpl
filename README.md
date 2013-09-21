@@ -1,12 +1,8 @@
 _`{{`_ `jtmpl` _`}}`_
 =====================
 
-#### Humanistic JavaScript MVC framework
+### Live templates
 
-
-
-<br>
- _[Kitchensink](kitchensink.html) demo is working. First release coming very soon, after resolving a couple of bugs_
 
 
 What
@@ -16,14 +12,6 @@ What
 
 There's never need to touch the DOM directly, `model` is the [single source of truth](http://en.wikipedia.org/wiki/Single_Source_of_Truth)
 
-Other JavaScript MV* frameworks require you either:
-
-* explicitly specify (via code or DOM element attributes) how to do the binding
-
-* build DOM via code :(
-
-`jtmpl` provides you _live_ templates that just work.
-
 
 
 Why
@@ -31,9 +19,24 @@ Why
 
 * embrace [KISS](http://en.wikipedia.org/wiki/Keep_it_simple) and [DRY](http://en.wikipedia.org/wiki/Don't_repeat_yourself)
 
-* write least amount of code possible
+* write least amount of code possible, enjoy conceptual simplicity
 
 * ideas by humans, automation by computers
+
+
+Other [JavaScript MV*](http://www.infoq.com/research/top-javascript-mvc-frameworks) frameworks:
+
+* require you explicitly specify (via code or DOM attributes) how to bind data to DOM nodes
+
+* or invent JavaScript-based [DSL](http://en.wikipedia.org/wiki/Domain-specific_language) to build the DOM
+
+* [Ember](http://emberjs.com) auto-updating Handlebars templates feature comes closest to what `jtmpl` is, but the templating syntax is more complex, it replaces HTML tags with custom tags. In contrast, `jtmpl`:
+	* augments HTML tags by adding Mustache tags, so it can bind to any property
+	* also binds DOM events custom reactors
+	* is tiny in comparison
+
+`jtmpl` enables you to focus on structure and data and not worry about DOM synchronization. Assuming you already know HTML, JavaScript and Mustache, the learning curve is basically non-existent. Check the [Kitchensink demo](kitchensink.html).
+
 
 
 
@@ -63,7 +66,7 @@ Hello, world
 
 * `Stage2` renders live DOM structure (think automatic [MVC](http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller)):
 
-<!-- [Link to example](hello.html) -->
+<iframe src="hello.html" style="border:0; border-left:1px dotted black; height:4em"></iframe>
 
 
 	$ hello.html
@@ -104,8 +107,6 @@ Hello, world
 	</body>
 	</html>
 
-<iframe src="hello.html"></iframe>
-
 
 
 
@@ -113,13 +114,11 @@ Hello, world
 Specifications
 --------------
 
-* based on [Object.observe](http://updates.html5rocks.com/2012/11/Respond-to-change-with-Object-observe)
-
-* no dependencies, [polyfill](https://github.com/jdarling/Object.observe) built-in
+* no dependencies
 
 * less than 5KB minified and gzipped
 
-* Firefox, Chrome, Opera, IE 9 (IE8 requires Array.isArray, Array.map, Function.bind and String.trim [polyfills](http://stackoverflow.com/questions/2790001/fixing-javascript-array-functions-in-internet-explorer-indexof-foreach-etc))
+* Firefox, Chrome, Opera, IE 9+
 
 
 
@@ -234,6 +233,28 @@ Showcase of all features, tests
 				Feel free to modify <code>model</code> from JS console and observe changes.
 			</p>
 
+			<h3>Nested collections</h3>
+			<ul class="dummy-class just for the_test">
+				{{#collection}}
+				<li>
+					<h4><code>model.collection[i].inner</code></h4>
+					<ul>
+						{{#inner}}<li>{{.}}</li>{{/inner}}
+						{{^inner}}<li>&lt; empty &gt;</li>{{/inner}}
+					</ul>
+					&nbsp;
+					<button onclick={{innerPush}}>push</button>
+					<button onclick="{{innerPop}}" disabled={{popDisabled}}>pop</button>
+				</li>
+				{{/collection}}
+				{{^collection}}
+				<li>&lt; empty &gt;</li>
+				{{/collection}}
+			</ul>
+			<br>
+			<button onclick={{push}}>push</button>
+			<button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
+
 			<h3>Toggle text</h3>
 			<a href="#" onclick='{{toggle}}'>Toggle <code>model.text</code></a>
 			<p>
@@ -287,28 +308,6 @@ Showcase of all features, tests
 			<div><!-- {{{innerHTML}}} --></div>
 			<!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
 
-			<h3>Nested collections</h3>
-			<ul class="dummy-class just for the_test">
-				{{#collection}}
-				<li>
-					<h4><code>model.collection[i].inner</code></h4>
-					<ul>
-						{{#inner}}<li>{{.}}</li>{{/inner}}
-						{{^inner}}<li>&lt; empty &gt;</li>{{/inner}}
-					</ul>
-					&nbsp;
-					<button onclick={{innerPush}}>push</button>
-					<button onclick="{{innerPop}}" disabled={{popDisabled}}>pop</button>
-				</li>
-				{{/collection}}
-				{{^collection}}
-				<li>&lt; empty &gt;</li>
-				{{/collection}}
-			</ul>
-			<br>
-			<button onclick={{push}}>push</button>
-			<button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
-
 		</script>
 
 		<script>
@@ -316,7 +315,7 @@ Showcase of all features, tests
 				text: 'lowercase',
 
 				collection: [
-					{ popDisabled: false, inner: [1, 2, 3] },
+					{ popDisabled: false, inner: [1, 2, 3, 4, 5] },
 					{ popDisabled: false, inner: [6, 7] },
 					{ popDisabled: false, inner: [8, 9, 10, 11] }
 				],

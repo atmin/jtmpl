@@ -263,15 +263,13 @@
     target.innerHTML = html;
     target.setAttribute('data-jt', '.');
     bind = function(root, context) {
-      var addBinding, attr, changeHandler, handler, itemIndex, jt, jtProps, k, node, nodeContext, optionHandler, radioHandler, section, tmp, v, _i, _j, _len, _len1, _ref1, _ref2, _ref3, _results;
+      var addBinding, addSectionBinding, attr, bindArrayToNodeChildren, changeHandler, createSectionItem, handler, initBindings, itemIndex, jt, jtProps, k, node, nodeContext, optionHandler, radioHandler, section, sectionModifier, tmp, v, _i, _j, _len, _len1, _ref1, _ref2;
       changeHandler = function(context, k, v) {
         return function() {
           return context[v] = this[k];
         };
       };
       radioHandler = function(context, k, v) {
-        var changing;
-        changing = false;
         return function() {
           var input, _i, _len, _ref1;
           if (this[k]) {
@@ -304,7 +302,7 @@
           return _results;
         };
       };
-      addBinding = function(context, node, prop, nodeProp) {
+      initBindings = function(context, prop) {
         if (!context["__" + prop + "_bindings"]) {
           Object.defineProperty(context, "__" + prop + "_bindings", {
             enumerable: false,
@@ -316,7 +314,7 @@
             writable: true,
             value: context[prop]
           });
-          Object.defineProperty(context, prop, {
+          return Object.defineProperty(context, prop, {
             get: function() {
               return this["__" + prop];
             },
@@ -333,6 +331,67 @@
             }
           });
         }
+      };
+      createSectionItem = function(parent, context) {
+        var element;
+        element = document.createElement('body');
+        element.innerHTML = jtmpl(parent.getAttribute('data-jt-1') || '', context);
+        element = element.children[0];
+        jtmpl(element, element.innerHTML, context, {
+          rootModel: model
+        });
+        return element;
+      };
+      bindArrayToNodeChildren = function(array, node) {
+        var i, item, _fn, _i, _len;
+        array.pop = function() {
+          return Array.prototype.pop.call(this, arguments);
+        };
+        array.push = function() {
+          return Array.prototype.push.call(this, arguments);
+        };
+        array.reverse = function() {
+          return Array.prototype.reverse.call(this, arguments);
+        };
+        array.shift = function() {
+          return Array.prototype.shift.call(this, arguments);
+        };
+        array.unshift = function() {
+          return Array.prototype.unshift.call(this, arguments);
+        };
+        array.sort = function() {
+          return Array.prototype.sort.call(this, arguments);
+        };
+        array.splice = function() {
+          return Array.prototype.splice.call(this, arguments);
+        };
+        _fn = function(item, i) {
+          Object.defineProperty(array, "__" + i, {
+            enumerable: false,
+            writable: true,
+            value: item
+          });
+          return Object.defineProperty(array, i, {
+            get: function() {
+              return this["__" + i];
+            },
+            set: function(val) {
+              this["__" + i] = val;
+              return node.replaceChild(createSectionItem(node, val), node.children[i]);
+            }
+          });
+        };
+        for (i = _i = 0, _len = array.length; _i < _len; i = ++_i) {
+          item = array[i];
+          _fn(item, i);
+        }
+        return array;
+      };
+      addBinding = function(context, node, prop, nodeProp) {
+        if (typeof context !== 'object') {
+          return;
+        }
+        initBindings(context, prop);
         if (!nodeProp) {
           return context["__" + prop + "_bindings"].push((function(node) {
             return function(val) {
@@ -361,10 +420,38 @@
           })(node, prop, nodeProp));
         }
       };
+      addSectionBinding = function(context, node, prop, isNegative) {
+        initBindings(context, prop);
+        return context["__" + prop + "_bindings"].push((function(node, prop, isNegative) {
+          return function(val) {
+            var i, item, _i, _len, _results;
+            if (Array.isArray(val)) {
+              bindArrayToNodeChildren(val, node);
+              node.innerHTML = !val.length ? jtmpl(node.getAttribute('data-jt-0') || '', {}) : '';
+              _results = [];
+              for (i = _i = 0, _len = val.length; _i < _len; i = ++_i) {
+                item = val[i];
+                initBindings(val, i);
+                _results.push(node.appendChild(createSectionItem(node, item)));
+              }
+              return _results;
+            } else if (typeof val === 'object') {
+              node.innerHTML = jtmpl(node.getAttribute('data-jt-1') || '', val);
+              return jtmpl(node, node.innerHTML, val, {
+                rootModel: model
+              });
+            } else {
+              node.innerHTML = jtmpl(node.getAttribute(!!val ? 'data-jt-1' : 'data-jt-0') || '', this);
+              return jtmpl(node, node.innerHTML, val, {
+                rootModel: model
+              });
+            }
+          };
+        })(node, prop, isNegative));
+      };
       itemIndex = 0;
       nodeContext = null;
       _ref1 = root.childNodes;
-      _results = [];
       for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
         node = _ref1[_i];
         switch (node.nodeType) {
@@ -373,19 +460,18 @@
               jtProps = attr.trim().split(' ').sort();
               for (_j = 0, _len1 = jtProps.length; _j < _len1; _j++) {
                 jt = jtProps[_j];
-                if ((_ref2 = jt.slice(0, 1)) === '#' || _ref2 === '^') {
+                sectionModifier = jt.slice(0, 1);
+                if (sectionModifier === '#' || sectionModifier === '^') {
                   section = jt.slice(1);
                   nodeContext = context[section];
-                } else if (jt === '.') {
-                  nodeContext = context[itemIndex] || context;
-                  if (typeof nodeContext === 'object') {
-
-                  } else {
-                    nodeContext = null;
+                  addSectionBinding(context, node, section, sectionModifier === '^');
+                  if (Array.isArray(nodeContext)) {
+                    bindArrayToNodeChildren(nodeContext, node);
                   }
-                  itemIndex++;
+                } else if (jt === '.') {
+                  nodeContext = context[itemIndex++] || context;
                 } else {
-                  _ref3 = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref3[0], k = _ref3[1], v = _ref3[2];
+                  _ref2 = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref2[0], k = _ref2[1], v = _ref2[2];
                   if (k && k.indexOf('on') === 0) {
                     handler = (options.rootModel != null) && options.rootModel[v] || model[v];
                     if (typeof handler === 'function') {
@@ -394,9 +480,17 @@
                       throw ":( " + v + " is not a function, cannot attach event handler";
                     }
                   } else if (!v) {
-                    addBinding(context, node, k);
+                    if (nodeContext && !Array.isArray(nodeContext)) {
+                      addBinding(nodeContext, node, k);
+                    } else {
+                      addBinding(context, node, k);
+                    }
                   } else {
-                    addBinding(context, node, v, k);
+                    if (nodeContext && !Array.isArray(nodeContext)) {
+                      addBinding(nodeContext, node, v, k);
+                    } else {
+                      addBinding(context, node, v, k);
+                    }
                     if (k === 'value' || k === 'checked' || k === 'selected') {
                       if (node.nodeName === 'OPTION' && node.parentNode.querySelectorAll('option')[0] === node) {
                         addEvent('change', node.parentNode, optionHandler(context, k, v).bind(node.parentNode));
@@ -411,25 +505,20 @@
                 }
               }
             }
-            _results.push(bind(node, nodeContext || context));
+            bind(node, nodeContext || context);
             break;
           case node.COMMENT_NODE:
             if (section = node.nodeValue.trim().match(/^(#|\^)\s([\s\S]*)$/)) {
               section[2] = section[2].replace(new RegExp(quoteRE(options.compiledDelimiters[0]), 'g'), options.delimiters[0]).replace(new RegExp(quoteRE(options.compiledDelimiters[1]), 'g'), options.delimiters[1]);
               if (section[1] === '#') {
-                _results.push(root.setAttribute('data-jt-1', section[2]));
+                root.setAttribute('data-jt-1', section[2]);
               } else {
-                _results.push(root.setAttribute('data-jt-0', section[2]));
+                root.setAttribute('data-jt-0', section[2]);
               }
-            } else {
-              _results.push(void 0);
             }
-            break;
-          default:
-            _results.push(void 0);
         }
       }
-      return _results;
+      return node;
     };
     return bind(target, model);
   };

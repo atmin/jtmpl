@@ -334,222 +334,28 @@ root.jtmpl = (target, tpl, model, options) ->
 
 	# Bind event handlers
 	bind = (root, context) ->
-
-		# class Observer
-		# 	constructor: (@context) ->
-		# 		@reactors = {}
-		# 		@contexts = []
-		# 		@observers = []
-		# 		@observe(@context, @getObserver())
-
-		# 	observe: (context, observer) ->
-		# 		if @contexts.indexOf(context) > -1 then return
-
-		# 		l = @contexts.length
-		# 		@contexts.push(context)
-		# 		@observers.push(observer)
-		# 		Object.observe(@contexts[l], @observers[l])
-
-		# 	unobserve: (context) ->
-		# 		if context?
-		# 			i = @contexts.indexOf(context)
-		# 			if i > -1
-		# 				Object.unobserve(@contexts[i], @observers[i])
-		# 				@contexts.slice(i, 1)
-		# 				@observers.slice(i, 1)
-		# 		else
-		# 			Object.unobserve(@contexts[i], @observers[i]) for tmp, i in @contexts
-		# 			@contexts = []
-		# 			@observers = []
-
-		# 	getObserver: -> 
-		# 		((changes) ->
-		# 			for change in changes
-		# 				if change.type is 'updated' and @reactors[change.name]?
-		# 					for reactor in @reactors[change.name]
-		# 						reactor.call(this, change)
-		# 		).bind(this)
-
-		# 	getArrayObserver: -> 
-		# 		((changes) ->
-		# 			for change in changes
-		# 				console.log("#{ change.name } was #{ change.type } and is now #{ change.object[change.name] }")
-		# 		).bind(this)
-				
-		# 	addReactor: (prop, reactor) ->
-		# 		if not @reactors[prop]? then @reactors[prop] = []
-		# 		@reactors[prop].push(reactor)
-
-		# 	getInnerHTMLReactor: (node) ->
-		# 		(change) -> node.innerHTML = change.object[change.name]
-
-		# 	getClassReactor: (node) ->
-		# 		(change) -> (change.object[change.name] and addClass or removeClass)(node, change.name)
-
-		# 	getAttributeReactor: (node, attr) -> 
-		# 		(change) -> 
-		# 			newVal = change.object[change.name]
-		# 			if attr in ['value', 'checked', 'selected']
-		# 				node[attr] = newVal
-		# 			else
-		# 				if (typeof newVal is 'boolean' and not newVal) or newVal is null
-		# 					node.removeAttribute(attr)
-		# 				else
-		# 					node.setAttribute(attr, newVal)
-
-		# 	watchSection: (node, context, section) ->
-		# 		if Array.isArray(section)
-		# 			@observe(section, @getArrayObserver())
-		# 		else if typeof section is 'object'
-		# 			@observe(section, @getObserver())
-
-
-		# unobserve = (el) ->
-		# 	for child in el.children
-		# 		unobserve(child)
-		# 	if el._jt_observer
-		# 		Object.unobserve(el._jt_context, el._jt_observer)
-		# 		delete el._jt_context
-		# 		delete el._jt_observer
-
-		# initSlot = (ctx, prop) ->
-		# 	if not ctx._jt_bind? then ctx._jt_bind = {}
-		# 	if not ctx._jt_bind[prop]? then ctx._jt_bind[prop] = []
-		# 	ctx._jt_bind[prop]
-
-		# bindProps = (context) ->
-		# 	if context._jt_bind?
-		# 		if context._jt_bind['.'] and context._jt_bind['.'].length
-		# 			Object.observe(context, context._jt_bind['.'][0])
-		# 		else
-		# 			Object.observe(context, contextObserver(context._jt_bind))
-		# 		delete context._jt_bind
-		# 	for k, v of context 
-		# 		if typeof v is 'object' then bindProps(v)
-
-		# contextObserver = (bindings) ->
-		# 	(changes) ->
-		# 		for change in changes
-		# 			if change.type is 'updated' and bindings[change.name]?
-		# 				for b in bindings[change.name]
-		# 					b(change)
-
-		# innerHTMLReact = (change) -> this.innerHTML = change.object[change.name]
-
-		# classReact = (change) -> (change.object[change.name] and addClass or removeClass)(this, change.name)
-
-		# attributeReact = (attr) -> 
-		# 	(change) -> 
-		# 		newVal = change.object[change.name]
-		# 		if attr in ['value', 'checked', 'selected']
-		# 			this[attr] = newVal
-		# 		else
-		# 			if (typeof newVal is 'boolean' and not newVal) or newVal is null
-		# 				this.removeAttribute(attr)
-		# 			else
-		# 				this.setAttribute(attr, newVal)
-
-		# sectionReact = (val) -> 
-		# 	(changes) ->
-		# 		if Array.isArray(val)
-
-		# 			val = changes[0].object
-		# 			steps = []
-
-		# 			# filter non-array indexes
-		# 			changes = (change for change in changes when '' + parseInt(change.name) is change.name)
-		# 			for change in changes
-		# 				console.log("#{ change.name } was #{ change.type } and is now #{ change.object[change.name] }")
-
-		# 			inserted = (change.name for change in changes when change.type is 'new')
-
-		# 			deleted = (change.name for change in changes when change.type is 'deleted')
-		# 			# deletion should be done backwards to resolve mismatching indices
-		# 			deleted.reverse()
-
-		# 			updated = (change.name for change in changes when change.type is 'updated')
-		# 			# updated.reverse()
-
-		# 			for idx in inserted
-		# 				steps.push(
-		# 					((that, idx, val) -> ->
-		# 						element = document.createElement('div')
-		# 						element.innerHTML = jtmpl(that.getAttribute('data-jt-1'), val[idx])
-		# 						element = element.children[0]
-		# 						that.appendChild(element)
-		# 						jtmpl(element, element.innerHTML, val[idx], { rootModel: model })
-		# 					)(this, idx, val))
-
-		# 			for idx in updated
-		# 				steps.push(
-		# 					((that, idx) -> ->
-		# 						oldChild = that.children[idx]
-		# 						unobserve(oldChild)
-		# 						that.removeChild(oldChild)
-		# 					)(this, idx))
-		# 				steps.push(
-		# 					((that, idx, val) -> ->
-		# 						element = document.createElement('div')
-		# 						element.innerHTML = jtmpl(that.getAttribute('data-jt-1'), val[idx])
-		# 						element = element.children[0]
-		# 						if idx >= that.children.length
-		# 							that.appendChild(element)
-		# 						else
-		# 							that.insertBefore(element, that.children[idx])
-		# 						jtmpl(element, element.innerHTML, val[idx], { rootModel: model })
-		# 					)(this, idx, val))
-
-		# 			for idx in deleted
-		# 				steps.push(
-		# 					((that, idx) -> ->
-		# 						element = that.children[idx]
-		# 						unobserve(element)
-		# 						that.removeChild(element)
-		# 					)(this, idx))
-
-		# 			processNextStep = ->
-		# 				steps.shift()()
-		# 				if steps.length then setTimeout(processNextStep, 0)
-		# 			if steps.length then setTimeout(processNextStep, 0)
-
-		# 			# render inverted section?
-		# 			if not val.length
-		# 				this.innerHTML = jtmpl(this.getAttribute('data-jt-0') or '', {})
-
-		# 		else
-		# 			val = changes.object[changes.name]
-		# 			jtmpl(this, this.getAttribute("data-jt-#{ val and 1 or 0 }") or '', changes.object)
-		
+		# DOM event handler factories
 		changeHandler = (context, k, v) -> -> context[v] = this[k]
 
-		radioHandler = (context, k, v) -> 
-			changing = false
-			->
-				# if changing then return
+		radioHandler = (context, k, v) -> ->
+			if this[k]
+				for input in jtmpl("input[type=radio][name=#{ this.name }]")
+					if input isnt this
+						triggerEvent('change', input)
+			context[v] = this[k]
 
-				# changing = true
-				if this[k]
-					for input in jtmpl("input[type=radio][name=#{ this.name }]")
-						if input isnt this
-							triggerEvent('change', input)
-				context[v] = this[k]
-				# changing = false
+		optionHandler = (context, k, v) -> ->
+			idx = 0
+			for option in this.children
+				if option.nodeName is 'OPTION'
+					context[idx][v] = option.selected
+					idx++
 
-		optionHandler = (context, k, v) -> 
-			# changing = false
-			->
-				# if changing then return
+		# create slots for property value and change reactor functions
+		# setter notifies all reactors
+		initBindings = (context, prop) ->
+			# if typeof context isnt 'object' then return
 
-				# changing = true
-				idx = 0
-				for option in this.children
-					if option.nodeName is 'OPTION'
-						context[idx][v] = option.selected
-						idx++
-				# changing = false
-
-		addBinding = (context, node, prop, nodeProp) ->
-			# lazy init
 			if not context["__#{ prop }_bindings"]
 
 				Object.defineProperty(context, "__#{ prop }_bindings",
@@ -568,6 +374,60 @@ root.jtmpl = (target, tpl, model, options) ->
 						this["__#{ prop }"] = val
 						reactor.call(this, val) for reactor in this["__#{ prop }_bindings"]
 				)
+
+		createSectionItem = (parent, context) ->
+			element = document.createElement('body')
+			element.innerHTML = jtmpl(parent.getAttribute('data-jt-1') or '', context)
+			element = element.children[0]
+			jtmpl(element, element.innerHTML, context, { rootModel: model })
+			element
+
+		bindArrayToNodeChildren = (array, node) ->
+			# proxy mutable array operations
+			array.pop = ->
+				Array.prototype.pop.call(this, arguments)
+
+			array.push = ->
+				Array.prototype.push.call(this, arguments)
+
+			array.reverse = ->
+				Array.prototype.reverse.call(this, arguments)
+
+			array.shift = ->
+				Array.prototype.shift.call(this, arguments)
+
+			array.unshift = ->
+				Array.prototype.unshift.call(this, arguments)
+
+			array.sort = ->
+				Array.prototype.sort.call(this, arguments)
+
+			array.splice = ->
+				Array.prototype.splice.call(this, arguments)
+
+			# onchange handlers for each item
+			for item, i in array
+				((item, i) ->
+					Object.defineProperty(array, "__#{ i }",
+						enumerable: false
+						writable: true
+						value: item
+					)
+					Object.defineProperty(array, i, 
+						get: -> this["__#{ i }"]
+						set: (val) -> 
+							this["__#{ i }"] = val
+							node.replaceChild(createSectionItem(node, val), node.children[i])
+					)
+				)(item, i)
+
+
+			array
+
+		addBinding = (context, node, prop, nodeProp) ->
+			if typeof context isnt 'object' then return
+
+			initBindings(context, prop)
 
 			if not nodeProp
 				# innerHTML reactor
@@ -598,13 +458,41 @@ root.jtmpl = (target, tpl, model, options) ->
 					)(node, prop, nodeProp)
 				)
 
+		addSectionBinding = (context, node, prop, isNegative) ->
+			initBindings(context, prop)
+
+			context["__#{ prop }_bindings"].push(
+				((node, prop, isNegative) ->
+					(val) ->
+						# collection?
+						if Array.isArray(val)
+							bindArrayToNodeChildren(val, node)
+
+							node.innerHTML = 
+								if not val.length
+									jtmpl(node.getAttribute('data-jt-0') or '', {})
+								else 
+									''
+							for item, i in val
+								initBindings(val, i)
+								node.appendChild(createSectionItem(node, item))
+
+						# local context?
+						else if typeof val is 'object'
+							node.innerHTML = jtmpl(node.getAttribute('data-jt-1') or '', val)
+							jtmpl(node, node.innerHTML, val, { rootModel: model })
+
+						# if section
+						else
+							node.innerHTML = jtmpl(node.getAttribute(if !!val then 'data-jt-1' else 'data-jt-0') or '', this)
+							jtmpl(node, node.innerHTML, val, { rootModel: model })
+
+				)(node, prop, isNegative)
+			)
+
 
 		itemIndex = 0
 		nodeContext = null
-		# bindings = {}
-		# depth = depth or 0
-		# observer = observer or null
-		# section = null
 
 		# iterate children
 		for node in root.childNodes
@@ -614,9 +502,6 @@ root.jtmpl = (target, tpl, model, options) ->
 				when node.ELEMENT_NODE
 					if attr = node.getAttribute('data-jt')
 
-						# lazy init observer on current context
-						# observer = observer or (typeof context is 'object' and new Observer(context))
-
 						# we want the dot first
 						jtProps = attr.trim().split(' ').sort()
 
@@ -624,36 +509,21 @@ root.jtmpl = (target, tpl, model, options) ->
 						for jt in jtProps
 
 							# section?
-							if jt.slice(0, 1) in ['#', '^']
+							sectionModifier = jt.slice(0, 1)
+							if sectionModifier in ['#', '^']
 								section = jt.slice(1)
 								nodeContext = context[section]
-								# observer.watchSection(node, context, nodeContext)
-
-								# val = jt.slice(1)
-								# nodeContext = context[val]
-								# node._jt_observer = sectionReact(nodeContext).bind(node)
-								# if Array.isArray(nodeContext)
-								# 	initSlot(nodeContext, '.').push(node._jt_observer)
-								# 	node._jt_context = nodeContext
-								# else
-								# 	initSlot(context, val).push(node._jt_observer)
-								# 	node._jt_context = context
+								addSectionBinding(context, node, section, sectionModifier is '^')
+								if Array.isArray(nodeContext)
+									bindArrayToNodeChildren(nodeContext, node)
 
 							# section item?
 							else if jt is '.'
-								nodeContext = context[itemIndex] or context
-								if typeof nodeContext is 'object'
-									# observer.watchSection(node, context, nodeContext)
-								else
-									nodeContext = null
-								itemIndex++
+								nodeContext = context[itemIndex++] or context
 
 							# var
 							else
 								[tmp, k, v] = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/)
-
-								# propBindings = initSlot(
-								# 	(typeof nodeContext is 'object' and not Array.isArray(nodeContext)) and nodeContext or context, v or k)
 
 								# attach event?
 								if k and k.indexOf('on') is 0
@@ -665,20 +535,17 @@ root.jtmpl = (target, tpl, model, options) ->
 
 								# node.innerHTML?
 								else if not v
-									addBinding(context, node, k)
-									# observer.addReactor(k, observer.getInnerHTMLReactor(node))
-									# propBindings.push(innerHTMLReact.bind(node))
-
-								# # class?
-								# else if k is 'class'
-									# observer.addReactor(v, observer.getClassReactor(node))
-									# propBindings.push(classReact.bind(node))
+									if nodeContext and not Array.isArray(nodeContext)
+										addBinding(nodeContext, node, k)
+									else
+										addBinding(context, node, k)
 
 								# attribute
 								else
-									addBinding(context, node, v, k)
-									# observer.addReactor(v, observer.getAttributeReactor(node, k))
-									# propBindings.push(attributeReact(k).bind(node))
+									if nodeContext and not Array.isArray(nodeContext)
+										addBinding(nodeContext, node, v, k)
+									else
+										addBinding(context, node, v, k)
 
 									# monitor DOM onchange event?
 									if k in ['value', 'checked', 'selected']
@@ -695,8 +562,6 @@ root.jtmpl = (target, tpl, model, options) ->
 											addEvent('change', node, changeHandler(context, k, v).bind(node))
 
 					bind(node, nodeContext or context)
-					# bind(node, nodeContext or context, observer)
-					# bind(node, nodeContext or context, depth + 1)
 
 				when node.COMMENT_NODE
 					# collection template?
@@ -712,11 +577,7 @@ root.jtmpl = (target, tpl, model, options) ->
 							# inverted section
 							root.setAttribute('data-jt-0', section[2])
 
-
-		# end of all recursion?
-		# if not depth
-			# bind gathered properties (context._jt_bind)
-			# bindProps(context)
+		node
 
 
 

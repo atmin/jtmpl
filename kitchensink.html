@@ -29,6 +29,28 @@
 			Feel free to modify <code>model</code> from JS console and observe changes.
 		</p>
 
+		<h3>Nested collections</h3>
+		<ul class="dummy-class just for the_test">
+			{{#collection}}
+			<li>
+				<h4><code>model.collection[i].inner</code></h4>
+				<ul>
+					{{#inner}}<li>{{.}}</li>{{/inner}}
+					{{^inner}}<li>&lt; empty &gt;</li>{{/inner}}
+				</ul>
+				&nbsp;
+				<button onclick={{innerPush}}>push</button>
+				<button onclick="{{innerPop}}" disabled={{popDisabled}}>pop</button>
+			</li>
+			{{/collection}}
+			{{^collection}}
+			<li>&lt; empty &gt;</li>
+			{{/collection}}
+		</ul>
+		<br>
+		<button onclick={{push}}>push</button>
+		<button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
+
 		<h3>Toggle text</h3>
 		<a href="#" onclick='{{toggle}}'>Toggle <code>model.text</code></a>
 		<p>
@@ -82,28 +104,6 @@
 		<div><!-- {{{innerHTML}}} --></div>
 		<!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
 
-		<h3>Nested collections</h3>
-		<ul class="dummy-class just for the_test">
-			{{#collection}}
-			<li>
-				<h4><code>model.collection[i].inner</code></h4>
-				<ul>
-					{{#inner}}<li>{{.}}</li>{{/inner}}
-					{{^inner}}<li>&lt; empty &gt;</li>{{/inner}}
-				</ul>
-				&nbsp;
-				<button onclick={{innerPush}}>push</button>
-				<button onclick="{{innerPop}}" disabled={{popDisabled}}>pop</button>
-			</li>
-			{{/collection}}
-			{{^collection}}
-			<li>&lt; empty &gt;</li>
-			{{/collection}}
-		</ul>
-		<br>
-		<button onclick={{push}}>push</button>
-		<button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
-
 	</script>
 
 	<script>
@@ -111,7 +111,7 @@
 			text: 'lowercase',
 
 			collection: [
-				{ popDisabled: false, inner: [1, 2, 3] },
+				{ popDisabled: false, inner: [1, 2, 3, 4, 5] },
 				{ popDisabled: false, inner: [6, 7] },
 				{ popDisabled: false, inner: [8, 9, 10, 11] }
 			],
