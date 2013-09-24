@@ -383,45 +383,96 @@ root.jtmpl = (target, tpl, model, options) ->
 			element
 
 		bindArrayToNodeChildren = (array, node) ->
-			# proxy mutable array operations
-			array.pop = ->
-				Array.prototype.pop.call(this, arguments)
+			# should we augment array?
+			if not array.__values
+				# proxy mutable array operations
+				array.__garbageCollectNodes = ->
+					i = this.__nodes.length
+					while --i
+						if not this.__nodes[i].parentNode
+							this.__nodes.splice(i, 1)
 
-			array.push = ->
-				Array.prototype.push.call(this, arguments)
+				array.pop = ->
+					this.__garbageCollectNodes()
+					node.removeChild(node.children[node.children.length - 1]) for node in this.__nodes
+					Array.prototype.pop.apply(this, arguments)
+					Array.prototype.pop.apply(this.__values, arguments)
 
-			array.reverse = ->
-				Array.prototype.reverse.call(this, arguments)
+				array.push = (item) ->
+					this.__garbageCollectNodes()
+					node.appendChild(createSectionItem(node, item)) for node in this.__nodes
+					Array.prototype.push.apply(this, arguments)
+					len = this.__values.length
+					result = Array.prototype.push.apply(this.__values, arguments)
+					bindProp(item, len)
+					return result
 
-			array.shift = ->
-				Array.prototype.shift.call(this, arguments)
+				array.reverse = ->
+					this.__garbageCollectNodes()
+					Array.prototype.reverse.apply(this.__values, arguments)
+					for node in this.__nodes
+					 	node.innerHTML = ''
+						for item in array
+							node.appendChild(createSectionItem(node, item))
 
-			array.unshift = ->
-				Array.prototype.unshift.call(this, arguments)
+				array.shift = ->
+					this.__garbageCollectNodes()
+					node.removeChild(node.children[0]) for node in this.__nodes
+					Array.prototype.shift.apply(this, arguments)
+					Array.prototype.shift.apply(this.__values, arguments)
 
-			array.sort = ->
-				Array.prototype.sort.call(this, arguments)
+				array.unshift = ->
+					this.__garbageCollectNodes()
+					for item in Array.prototype.slice.call(arguments).reverse()
+						for node in this.__nodes
+							node.insertBefore(createSectionItem(node, item), node.children[0])
+					Array.prototype.unshift.apply(this, arguments)
+					Array.prototype.unshift.apply(this.__values, arguments)
 
-			array.splice = ->
-				Array.prototype.splice.call(this, arguments)
+				array.sort = ->
+					this.__garbageCollectNodes()
+					Array.prototype.sort.apply(this.__values, arguments)
+					for node in this.__nodes
+						node.innerHTML = ''
+						for item in array
+							node.appendChild(createSectionItem(node, item))
 
-			# onchange handlers for each item
-			for item, i in array
-				((item, i) ->
-					Object.defineProperty(array, "__#{ i }",
-						enumerable: false
-						writable: true
-						value: item
-					)
+				array.splice = (index, howMany) ->
+					this.__garbageCollectNodes()
+					for node in this.__nodes
+						for i in [0...howMany]
+							node.removeChild(node.children[index])
+						for item in Array.prototype.slice.call(arguments, 2)
+							node.insertBefore(createSectionItem(node, item), node.children[index])
+							bindProp(item, index)
+					Array.prototype.splice.apply(this.__values, arguments)
+
+				bindProp = (item, i) ->
+					array.__values[i] = item
 					Object.defineProperty(array, i, 
-						get: -> this["__#{ i }"]
+						get: -> this.__values[i]
 						set: (val) -> 
-							this["__#{ i }"] = val
-							node.replaceChild(createSectionItem(node, val), node.children[i])
+							this.__garbageCollectNodes()
+							this.__values[i] = val
+							node.replaceChild(createSectionItem(node, val), node.children[i]) for node in this.__nodes
 					)
-				)(item, i)
 
+				# bound nodes
+				Object.defineProperty(array, '__nodes',
+					enumerable: false
+					writable: true
+					value: []
+				)
+				# onchange handlers for each item
+				Object.defineProperty(array, '__values',
+					enumerable: false
+					writable: true
+					value: []
+				)
+				for item, i in array
+					bindProp(item, i)
 
+			if array.__nodes.indexOf(node) is -1 then array.__nodes.push(node)
 			array
 
 		addBinding = (context, node, prop, nodeProp) ->

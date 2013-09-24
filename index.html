@@ -27,22 +27,12 @@
 </li>
 <li><p>ideas by humans, automation by computers</p>
 </li>
-</ul>
-<p>Other <a href="http://www.infoq.com/research/top-javascript-mvc-frameworks">JavaScript MV*</a> frameworks:</p>
-<ul>
-<li><p>require you explicitly specify (via code or DOM attributes) how to bind data to DOM nodes</p>
+<li><p>extend the concept of a templating engine with the most essential feature of <a href="http://www.infoq.com/research/top-javascript-mvc-frameworks">JavaScript MV*</a> frameworks&mdash;<a href="http://en.wikipedia.org/wiki/Data_binding">data-binding</a></p>
 </li>
-<li><p>or invent JavaScript-based <a href="http://en.wikipedia.org/wiki/Domain-specific_language">DSL</a> to build the DOM</p>
-</li>
-<li><p><a href="http://emberjs.com">Ember</a> auto-updating Handlebars templates feature comes closest to what <code>jtmpl</code> is, but the templating syntax is more complex, it replaces HTML tags with custom tags. In contrast, <code>jtmpl</code>:</p>
-<ul>
-<li>augments HTML tags by adding Mustache tags, so it can bind to any property</li>
-<li>also binds DOM events custom reactors</li>
-<li>is tiny in comparison</li>
-</ul>
+<li><p>do not require explicit hooks, boilerplate initialization code or invent a <a href="http://en.wikipedia.org/wiki/Domain-specific_language">DSL</a> to build the DOM&mdash;template already contains relations between model properties and HTML tags (which result in DOM nodes), so leverage this</p>
 </li>
 </ul>
-<p><code>jtmpl</code> enables you to focus on structure and data and not worry about DOM synchronization. Assuming you already know HTML, JavaScript and Mustache, the learning curve is basically non-existent. Check the <a href="kitchensink.html">Kitchensink demo</a>.</p>
+<p><code>jtmpl</code> enables you to focus on structure and data and not worry about DOM synchronization. Assuming you already know HTML, JavaScript and Mustache, the learning curve is non-existent. Check the <a href="kitchensink.html">Kitchensink demo</a>.</p>
 <h2>How</h2>
 <ol>
 <li><p>Compile template using a <code>model</code> object into a valid HTML string (with added metadata)</p>
@@ -59,7 +49,7 @@
 
 Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
 <ul>
-<li><code>Stage2</code> renders live DOM structure (think automatic <a href="http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller">MVC</a>):</li>
+<li><code>Stage2</code> renders live DOM structure:</li>
 </ul>
 <iframe src="hello.html" style="border:0; border-left:1px dotted black; height:4em"></iframe>
 
@@ -128,7 +118,7 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
 <li><p><code>jtmpl(&#39;#target-id&#39; or domElement, &#39;template contents or &quot;#template-id&quot;&#39;, model)</code>&mdash;compiles a template using <code>model</code>, injects it into target and binds it to <code>model</code>. </p>
 <ul>
 <li>template contents can be already prerendered by server to save the client some processing and help for SEO</li>
-<li>if target is a script tag (of type=&quot;text/html&quot; or similar), then it is replaced with a div.</li>
+<li>if target is a script tag (of type=&quot;text/html&quot; or similar), then it is replaced with a div. This makes possible directly converting a template, embedded in a clean way, into a DOM node</li>
 </ul>
 </li>
 <li><p><em>Deprecated</em> <code>jtmpl(selector)</code>&mdash;returns an array, just a handy wrapper around <code>document.querySelectorAll</code>. Will remove this feature, as <code>jtmpl(string)</code> syntax will probably be used for something more consistent</p>
@@ -143,6 +133,8 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
 <li><p>similarly, sections are automatically enclosed in a <code>&lt;div&gt;</code> if needed</p>
 </li>
 <li><p>and the same goes for section items</p>
+</li>
+<li><p>all default enclosing tags are configurable</p>
 </li>
 <li><p><code>data-jt</code> attributes containing metadata for <code>Stage2</code> are injected in HTML elements</p>
 </li>
@@ -205,28 +197,6 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
             Feel free to modify &lt;code&gt;model&lt;/code&gt; from JS console and observe changes.
         &lt;/p&gt;
 
-        &lt;h3&gt;Nested collections&lt;/h3&gt;
-        &lt;ul class=&quot;dummy-class just for the_test&quot;&gt;
-            {{#collection}}
-            &lt;li&gt;
-                &lt;h4&gt;&lt;code&gt;model.collection[i].inner&lt;/code&gt;&lt;/h4&gt;
-                &lt;ul&gt;
-                    {{#inner}}&lt;li&gt;{{.}}&lt;/li&gt;{{/inner}}
-                    {{^inner}}&lt;li&gt;&amp;lt; empty &amp;gt;&lt;/li&gt;{{/inner}}
-                &lt;/ul&gt;
-                &amp;nbsp;
-                &lt;button onclick={{innerPush}}&gt;push&lt;/button&gt;
-                &lt;button onclick=&quot;{{innerPop}}&quot; disabled={{popDisabled}}&gt;pop&lt;/button&gt;
-            &lt;/li&gt;
-            {{/collection}}
-            {{^collection}}
-            &lt;li&gt;&amp;lt; empty &amp;gt;&lt;/li&gt;
-            {{/collection}}
-        &lt;/ul&gt;
-        &lt;br&gt;
-        &lt;button onclick={{push}}&gt;push&lt;/button&gt;
-        &lt;button onclick=&quot;{{pop}}&quot; disabled={{popDisabled}}&gt;pop&lt;/button&gt;
-
         &lt;h3&gt;Toggle text&lt;/h3&gt;
         &lt;a href=&quot;#&quot; onclick=&#39;{{toggle}}&#39;&gt;Toggle &lt;code&gt;model.text&lt;/code&gt;&lt;/a&gt;
         &lt;p&gt;
@@ -279,6 +249,28 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
         &lt;h3&gt;&lt;code&gt;model.innerHTML&lt;/code&gt;&lt;/h3&gt;
         &lt;div&gt;&lt;!-- {{{innerHTML}}} --&gt;&lt;/div&gt;
         &lt;!-- `jtmpl` accepts tags in HTML comments and automatically strips them --&gt;
+
+        &lt;h3&gt;Nested collections&lt;/h3&gt;
+        &lt;ul class=&quot;dummy-class just for the_test&quot;&gt;
+            {{#collection}}
+            &lt;li&gt;
+                &lt;h4&gt;&lt;code&gt;model.collection[i].inner&lt;/code&gt;&lt;/h4&gt;
+                &lt;ul&gt;
+                    {{#inner}}&lt;li&gt;{{.}}&lt;/li&gt;{{/inner}}
+                    {{^inner}}&lt;li&gt;&amp;lt; empty &amp;gt;&lt;/li&gt;{{/inner}}
+                &lt;/ul&gt;
+                &amp;nbsp;
+                &lt;button onclick={{innerPush}}&gt;push&lt;/button&gt;
+                &lt;button onclick=&quot;{{innerPop}}&quot; disabled={{popDisabled}}&gt;pop&lt;/button&gt;
+            &lt;/li&gt;
+            {{/collection}}
+            {{^collection}}
+            &lt;li&gt;&amp;lt; empty &amp;gt;&lt;/li&gt;
+            {{/collection}}
+        &lt;/ul&gt;
+        &lt;br&gt;
+        &lt;button onclick={{push}}&gt;push&lt;/button&gt;
+        &lt;button onclick=&quot;{{pop}}&quot; disabled={{popDisabled}}&gt;pop&lt;/button&gt;
 
     &lt;/script&gt;
 

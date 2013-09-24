@@ -23,19 +23,11 @@ Why
 
 * ideas by humans, automation by computers
 
+* extend the concept of a templating engine with the most essential feature of [JavaScript MV*](http://www.infoq.com/research/top-javascript-mvc-frameworks) frameworks&mdash;[data-binding](http://en.wikipedia.org/wiki/Data_binding)
 
-Other [JavaScript MV*](http://www.infoq.com/research/top-javascript-mvc-frameworks) frameworks:
+* do not require explicit hooks, boilerplate initialization code or invent a [DSL](http://en.wikipedia.org/wiki/Domain-specific_language) to build the DOM&mdash;template already contains relations between model properties and HTML tags (which result in DOM nodes), so leverage this
 
-* require you explicitly specify (via code or DOM attributes) how to bind data to DOM nodes
-
-* or invent JavaScript-based [DSL](http://en.wikipedia.org/wiki/Domain-specific_language) to build the DOM
-
-* [Ember](http://emberjs.com) auto-updating Handlebars templates feature comes closest to what `jtmpl` is, but the templating syntax is more complex, it replaces HTML tags with custom tags. In contrast, `jtmpl`:
-	* augments HTML tags by adding Mustache tags, so it can bind to any property
-	* also binds DOM events custom reactors
-	* is tiny in comparison
-
-`jtmpl` enables you to focus on structure and data and not worry about DOM synchronization. Assuming you already know HTML, JavaScript and Mustache, the learning curve is basically non-existent. Check the [Kitchensink demo](kitchensink.html).
+`jtmpl` enables you to focus on structure and data and not worry about DOM synchronization. Assuming you already know HTML, JavaScript and Mustache, the learning curve is non-existent. Check the [Kitchensink demo](kitchensink.html).
 
 
 
@@ -64,7 +56,7 @@ Hello, world
 
 
 
-* `Stage2` renders live DOM structure (think automatic [MVC](http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller)):
+* `Stage2` renders live DOM structure:
 
 <iframe src="hello.html" style="border:0; border-left:1px dotted black; height:4em"></iframe>
 
@@ -146,7 +138,7 @@ Details
 
 * `jtmpl('#target-id' or domElement, 'template contents or "#template-id"', model)`&mdash;compiles a template using `model`, injects it into target and binds it to `model`. 
 	* template contents can be already prerendered by server to save the client some processing and help for SEO
-	* if target is a script tag (of type="text/html" or similar), then it is replaced with a div.
+	* if target is a script tag (of type="text/html" or similar), then it is replaced with a div. This makes possible directly converting a template, embedded in a clean way, into a DOM node
 
 * _Deprecated_ `jtmpl(selector)`&mdash;returns an array, just a handy wrapper around `document.querySelectorAll`. Will remove this feature, as `jtmpl(string)` syntax will probably be used for something more consistent
 
@@ -163,6 +155,8 @@ Details
 * similarly, sections are automatically enclosed in a `<div>` if needed
 
 * and the same goes for section items
+
+* all default enclosing tags are configurable
 
 * `data-jt` attributes containing metadata for `Stage2` are injected in HTML elements
 
@@ -233,28 +227,6 @@ Showcase of all features, tests
 				Feel free to modify <code>model</code> from JS console and observe changes.
 			</p>
 
-			<h3>Nested collections</h3>
-			<ul class="dummy-class just for the_test">
-				{{#collection}}
-				<li>
-					<h4><code>model.collection[i].inner</code></h4>
-					<ul>
-						{{#inner}}<li>{{.}}</li>{{/inner}}
-						{{^inner}}<li>&lt; empty &gt;</li>{{/inner}}
-					</ul>
-					&nbsp;
-					<button onclick={{innerPush}}>push</button>
-					<button onclick="{{innerPop}}" disabled={{popDisabled}}>pop</button>
-				</li>
-				{{/collection}}
-				{{^collection}}
-				<li>&lt; empty &gt;</li>
-				{{/collection}}
-			</ul>
-			<br>
-			<button onclick={{push}}>push</button>
-			<button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
-
 			<h3>Toggle text</h3>
 			<a href="#" onclick='{{toggle}}'>Toggle <code>model.text</code></a>
 			<p>
@@ -307,6 +279,28 @@ Showcase of all features, tests
 			<h3><code>model.innerHTML</code></h3>
 			<div><!-- {{{innerHTML}}} --></div>
 			<!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
+
+			<h3>Nested collections</h3>
+			<ul class="dummy-class just for the_test">
+				{{#collection}}
+				<li>
+					<h4><code>model.collection[i].inner</code></h4>
+					<ul>
+						{{#inner}}<li>{{.}}</li>{{/inner}}
+						{{^inner}}<li>&lt; empty &gt;</li>{{/inner}}
+					</ul>
+					&nbsp;
+					<button onclick={{innerPush}}>push</button>
+					<button onclick="{{innerPop}}" disabled={{popDisabled}}>pop</button>
+				</li>
+				{{/collection}}
+				{{^collection}}
+				<li>&lt; empty &gt;</li>
+				{{/collection}}
+			</ul>
+			<br>
+			<button onclick={{push}}>push</button>
+			<button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
 
 		</script>
 

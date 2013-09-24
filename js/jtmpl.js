@@ -343,47 +343,164 @@
         return element;
       };
       bindArrayToNodeChildren = function(array, node) {
-        var i, item, _fn, _i, _len;
-        array.pop = function() {
-          return Array.prototype.pop.call(this, arguments);
-        };
-        array.push = function() {
-          return Array.prototype.push.call(this, arguments);
-        };
-        array.reverse = function() {
-          return Array.prototype.reverse.call(this, arguments);
-        };
-        array.shift = function() {
-          return Array.prototype.shift.call(this, arguments);
-        };
-        array.unshift = function() {
-          return Array.prototype.unshift.call(this, arguments);
-        };
-        array.sort = function() {
-          return Array.prototype.sort.call(this, arguments);
-        };
-        array.splice = function() {
-          return Array.prototype.splice.call(this, arguments);
-        };
-        _fn = function(item, i) {
-          Object.defineProperty(array, "__" + i, {
+        var bindProp, i, item, _i, _len;
+        if (!array.__values) {
+          array.__garbageCollectNodes = function() {
+            var i, _results;
+            i = this.__nodes.length;
+            _results = [];
+            while (--i) {
+              if (!this.__nodes[i].parentNode) {
+                _results.push(this.__nodes.splice(i, 1));
+              } else {
+                _results.push(void 0);
+              }
+            }
+            return _results;
+          };
+          array.pop = function() {
+            var _i, _len, _ref1;
+            this.__garbageCollectNodes();
+            _ref1 = this.__nodes;
+            for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+              node = _ref1[_i];
+              node.removeChild(node.children[node.children.length - 1]);
+            }
+            Array.prototype.pop.apply(this, arguments);
+            return Array.prototype.pop.apply(this.__values, arguments);
+          };
+          array.push = function(item) {
+            var len, result, _i, _len, _ref1;
+            this.__garbageCollectNodes();
+            _ref1 = this.__nodes;
+            for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+              node = _ref1[_i];
+              node.appendChild(createSectionItem(node, item));
+            }
+            Array.prototype.push.apply(this, arguments);
+            len = this.__values.length;
+            result = Array.prototype.push.apply(this.__values, arguments);
+            bindProp(item, len);
+            return result;
+          };
+          array.reverse = function() {
+            var item, _i, _j, _len, _len1, _ref1, _results;
+            this.__garbageCollectNodes();
+            Array.prototype.reverse.apply(this.__values, arguments);
+            _ref1 = this.__nodes;
+            for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+              node = _ref1[_i];
+              node.innerHTML = '';
+            }
+            _results = [];
+            for (_j = 0, _len1 = array.length; _j < _len1; _j++) {
+              item = array[_j];
+              _results.push(node.appendChild(createSectionItem(node, item)));
+            }
+            return _results;
+          };
+          array.shift = function() {
+            var _i, _len, _ref1;
+            this.__garbageCollectNodes();
+            _ref1 = this.__nodes;
+            for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+              node = _ref1[_i];
+              node.removeChild(node.children[0]);
+            }
+            Array.prototype.shift.apply(this, arguments);
+            return Array.prototype.shift.apply(this.__values, arguments);
+          };
+          array.unshift = function() {
+            var item, _i, _j, _len, _len1, _ref1, _ref2;
+            this.__garbageCollectNodes();
+            _ref1 = Array.prototype.slice.call(arguments).reverse();
+            for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+              item = _ref1[_i];
+              _ref2 = this.__nodes;
+              for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+                node = _ref2[_j];
+                node.insertBefore(createSectionItem(node, item), node.children[0]);
+              }
+            }
+            Array.prototype.unshift.apply(this, arguments);
+            return Array.prototype.unshift.apply(this.__values, arguments);
+          };
+          array.sort = function() {
+            var item, _i, _len, _ref1, _results;
+            this.__garbageCollectNodes();
+            Array.prototype.sort.apply(this.__values, arguments);
+            _ref1 = this.__nodes;
+            _results = [];
+            for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+              node = _ref1[_i];
+              node.innerHTML = '';
+              _results.push((function() {
+                var _j, _len1, _results1;
+                _results1 = [];
+                for (_j = 0, _len1 = array.length; _j < _len1; _j++) {
+                  item = array[_j];
+                  _results1.push(node.appendChild(createSectionItem(node, item)));
+                }
+                return _results1;
+              })());
+            }
+            return _results;
+          };
+          array.splice = function(index, howMany) {
+            var i, item, _i, _j, _k, _len, _len1, _ref1, _ref2;
+            this.__garbageCollectNodes();
+            _ref1 = this.__nodes;
+            for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+              node = _ref1[_i];
+              for (i = _j = 0; 0 <= howMany ? _j < howMany : _j > howMany; i = 0 <= howMany ? ++_j : --_j) {
+                node.removeChild(node.children[index]);
+              }
+              _ref2 = Array.prototype.slice.call(arguments, 2);
+              for (_k = 0, _len1 = _ref2.length; _k < _len1; _k++) {
+                item = _ref2[_k];
+                node.insertBefore(createSectionItem(node, item), node.children[index]);
+                bindProp(item, index);
+              }
+            }
+            return Array.prototype.splice.apply(this.__values, arguments);
+          };
+          bindProp = function(item, i) {
+            array.__values[i] = item;
+            return Object.defineProperty(array, i, {
+              get: function() {
+                return this.__values[i];
+              },
+              set: function(val) {
+                var _i, _len, _ref1, _results;
+                this.__garbageCollectNodes();
+                this.__values[i] = val;
+                _ref1 = this.__nodes;
+                _results = [];
+                for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+                  node = _ref1[_i];
+                  _results.push(node.replaceChild(createSectionItem(node, val), node.children[i]));
+                }
+                return _results;
+              }
+            });
+          };
+          Object.defineProperty(array, '__nodes', {
             enumerable: false,
             writable: true,
-            value: item
+            value: []
           });
-          return Object.defineProperty(array, i, {
-            get: function() {
-              return this["__" + i];
-            },
-            set: function(val) {
-              this["__" + i] = val;
-              return node.replaceChild(createSectionItem(node, val), node.children[i]);
-            }
+          Object.defineProperty(array, '__values', {
+            enumerable: false,
+            writable: true,
+            value: []
           });
-        };
-        for (i = _i = 0, _len = array.length; _i < _len; i = ++_i) {
-          item = array[i];
-          _fn(item, i);
+          for (i = _i = 0, _len = array.length; _i < _len; i = ++_i) {
+            item = array[i];
+            bindProp(item, i);
+          }
+        }
+        if (array.__nodes.indexOf(node) === -1) {
+          array.__nodes.push(node);
         }
         return array;
       };

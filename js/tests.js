@@ -82,14 +82,10 @@
 
   test('bind', function() {
     model.collection[0].inner[0] = 42;
+    equal(jtmpl('ul li ul li')[0].innerHTML, '42', 'nested section item innerHTML');
+    equal(jtmpl('ul')[0].children.length, model.collection.length, 'collection.length equals li.length');
     model.field = 'qunit';
-    stop();
-    return setTimeout(function() {
-      equal(jtmpl('ul li ul li')[0].innerHTML, '42', 'innerHTML binding');
-      equal(jtmpl('ul')[0].children.length, model.collection.length, 'collection.length equals li.length');
-      equal(jtmpl('p')[2].innerHTML, '<code>model.field</code> = "<span data-jt="field">qunit</span>"', 'positive if section');
-      return start();
-    }, 1000);
+    return equal(jtmpl('p')[2].innerHTML, '<code>model.field</code> = "<span data-jt="field">qunit</span>"', 'positive if section');
   });
 
 }).call(this);
