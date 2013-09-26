@@ -86,7 +86,7 @@
 		<ul class="dummy-class just for the_test">
 			{{#collection}}
 			<li>
-				<h4><code>model.collection[i].inner</code></h4>
+				<h4><code>model.collection[i].inner</code> <button onclick={{deleteMe}} style="display:none">Delete me</button></h4>
 				<ul>
 					{{#inner}}<li>{{.}}</li>{{/inner}}
 					{{^inner}}<li>&lt; empty &gt;</li>{{/inner}}
@@ -141,6 +141,9 @@
 				this.text = this.text == 'lowercase' ?
 					'UPPERCASE': 'lowercase';
 				e.preventDefault();
+			},
+			deleteMe: function(i) {
+				this.splice(i, 1);
 			},
 			push: function() {
 				this.collection.push({

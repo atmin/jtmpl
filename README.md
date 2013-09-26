@@ -23,7 +23,7 @@ Why
 
 * ideas by humans, automation by computers
 
-* extend the concept of a templating engine with the most essential feature of [JavaScript MV*](http://www.infoq.com/research/top-javascript-mvc-frameworks) frameworks&mdash;[data-binding](http://en.wikipedia.org/wiki/Data_binding)
+* extend the concept of a templating engine with the most essential feature of [JavaScript MVC](http://www.infoq.com/research/top-javascript-mvc-frameworks) frameworks&mdash;[data-binding](http://en.wikipedia.org/wiki/Data_binding)
 
 * do not require explicit hooks, boilerplate initialization code or invent a [DSL](http://en.wikipedia.org/wiki/Domain-specific_language) to build the DOM&mdash;template already contains relations between model properties and HTML tags (which result in DOM nodes), so leverage this
 
@@ -47,7 +47,7 @@ How
 Hello, world
 ------------
 
-* `Stage1` is a template compiler
+#### `Stage1` is a template compiler:
 	
 
 	$ jtmpl('Hello, {{who}}', { who: 'server' })
@@ -55,8 +55,10 @@ Hello, world
 	Hello, <span data-jt="who">server</span>
 
 
+ 
+<br>
 
-* `Stage2` renders live DOM structure:
+#### `Stage2` renders live DOM structure:
 
 <iframe src="hello.html" style="border:0; border-left:1px dotted black; height:4em"></iframe>
 
@@ -162,7 +164,6 @@ Details
 
 * `Stage1` also emits section structures (with changed delimiters) embedded in HTML comments
 
-* partials are not currently supported, plans are to support id-based and URL-based partials
 
 
 
@@ -178,14 +179,57 @@ Details
 
 * `<tag value="{{var}}">`&mdash;When `var` changes `tag.value` changes and vice versa
 
-* `<tag><!-- {{var}} --></tag>`&mdash;HTML comment is stripped when it contains one Mustache tag. This allows you to build easily templates that are valid HTML
+* `<tag><!-- {{var}} --></tag>`&mdash;HTML comment is stripped when it contains one Mustache tag. This enables wrapping template tags in HTML comments, if you are concerned about template code being valid HTML
 
-* `<tag onevent="{{handler}}">`&mdash;`on`-prefixed properties are event handlers. `handler` is expected to be a function, `this` is the `model`. No need to add `onchange` handlers, DOM element values and `model` are already synced.
+* `<tag onevent="{{handler}}">`&mdash;`on`-prefixed properties are event handlers. `handler` is expected to be a function, `handler`'s `this` is the context in which the handler has been attached. No need to add `onchange` handlers, DOM element values and `model` are already synced.
 
-* `<tag> {{#section}}...{{/section}} </tag>`&mdash;Whenever `section[i]` changes corresponding HTML element changes (you can insert or delete items via `Array.splice()` and only affected DOM elements are updated). There are no restrictions on the nesting level.
+ Currently, events are directly bound to elements for simplicity, plans are to use event delegation on section root node instead, for efficient handling of large collections. This will happen transparently and won't concern existing handlers semantics.
+
+* `<tag> {{#section}}...{{/section}} </tag>`&mdash;Whenever `section` array changes `<tag>` children, that are affected (and only they) change. There are no restrictions on the nesting level.
 
 
 
+### Planned features
+
+* comments
+
+* partials (template include)
+	
+	* `{{>var_template_id_or_url}}`
+	* `{{>"#template-id"}}`
+	* `{{>"//xhr-fetch-template.url"}}`
+
+	_"http:" or "https:" part [can be omitted](http://stackoverflow.com/a/550073/2713676), so it'll inherit current scheme_
+
+	Included templates inherit their parent context.
+
+* blocks and template inheritance akin to [Django template inheritance](https://docs.djangoproject.com/en/dev/topics/templates/#id1)
+
+	```
+	<script id="base" type="text/html">
+		{{+primary_block}}
+			Block contents is template code, of course
+		{{/primary_block}}
+		{{+secondary_block}}
+			Some secondary content
+		{{/secondary_block}}
+	</script>
+
+	<script id="descendant" type="text/html">
+		{{<"#base"}}
+
+		{{+primary_block}}
+			Will override #base's primary_block content
+		{{/primary_block}}
+		{{+secondary_block}}
+			If this block was non-existent, you would see "Some secondary content" from #base
+		{{/secondary_block}}
+	</script>
+	```
+
+	_Syntax inspired by [Dust](http://akdubya.github.io/dustjs/)_
+
+* refactor in "everything is a plugin" style and figure out a plugin system
 
 
 Kitchen Sink
@@ -284,7 +328,7 @@ Showcase of all features, tests
 			<ul class="dummy-class just for the_test">
 				{{#collection}}
 				<li>
-					<h4><code>model.collection[i].inner</code></h4>
+					<h4><code>model.collection[i].inner</code> <button onclick={{deleteMe}} style="display:none">Delete me</button></h4>
 					<ul>
 						{{#inner}}<li>{{.}}</li>{{/inner}}
 						{{^inner}}<li>&lt; empty &gt;</li>{{/inner}}
@@ -339,6 +383,9 @@ Showcase of all features, tests
 					this.text = this.text == 'lowercase' ?
 						'UPPERCASE': 'lowercase';
 					e.preventDefault();
+				},
+				deleteMe: function(i) {
+					this.splice(i, 1);
 				},
 				push: function() {
 					this.collection.push({

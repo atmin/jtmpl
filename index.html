@@ -27,7 +27,7 @@
 </li>
 <li><p>ideas by humans, automation by computers</p>
 </li>
-<li><p>extend the concept of a templating engine with the most essential feature of <a href="http://www.infoq.com/research/top-javascript-mvc-frameworks">JavaScript MV*</a> frameworks&mdash;<a href="http://en.wikipedia.org/wiki/Data_binding">data-binding</a></p>
+<li><p>extend the concept of a templating engine with the most essential feature of <a href="http://www.infoq.com/research/top-javascript-mvc-frameworks">JavaScript MVC</a> frameworks&mdash;<a href="http://en.wikipedia.org/wiki/Data_binding">data-binding</a></p>
 </li>
 <li><p>do not require explicit hooks, boilerplate initialization code or invent a <a href="http://en.wikipedia.org/wiki/Domain-specific_language">DSL</a> to build the DOM&mdash;template already contains relations between model properties and HTML tags (which result in DOM nodes), so leverage this</p>
 </li>
@@ -42,15 +42,12 @@
 </li>
 </ol>
 <h2>Hello, world</h2>
-<ul>
-<li><code>Stage1</code> is a template compiler</li>
-</ul>
+<h4><code>Stage1</code> is a template compiler:</h4>
 <pre><code>$ jtmpl(&#39;Hello, {{who}}&#39;, { who: &#39;server&#39; })
 
 Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
-<ul>
-<li><code>Stage2</code> renders live DOM structure:</li>
-</ul>
+<p><br></p>
+<h4><code>Stage2</code> renders live DOM structure:</h4>
 <iframe src="hello.html" style="border:0; border-left:1px dotted black; height:4em"></iframe>
 
 
@@ -140,8 +137,6 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
 </li>
 <li><p><code>Stage1</code> also emits section structures (with changed delimiters) embedded in HTML comments</p>
 </li>
-<li><p>partials are not currently supported, plans are to support id-based and URL-based partials</p>
-</li>
 </ul>
 <h3>Interpretation of patterns</h3>
 <ul>
@@ -155,11 +150,51 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
 </li>
 <li><p><code>&lt;tag value=&quot;{{var}}&quot;&gt;</code>&mdash;When <code>var</code> changes <code>tag.value</code> changes and vice versa</p>
 </li>
-<li><p><code>&lt;tag&gt;&lt;!-- {{var}} --&gt;&lt;/tag&gt;</code>&mdash;HTML comment is stripped when it contains one Mustache tag. This allows you to build easily templates that are valid HTML</p>
+<li><p><code>&lt;tag&gt;&lt;!-- {{var}} --&gt;&lt;/tag&gt;</code>&mdash;HTML comment is stripped when it contains one Mustache tag. This enables wrapping template tags in HTML comments, if you are concerned about template code being valid HTML</p>
 </li>
-<li><p><code>&lt;tag onevent=&quot;{{handler}}&quot;&gt;</code>&mdash;<code>on</code>-prefixed properties are event handlers. <code>handler</code> is expected to be a function, <code>this</code> is the <code>model</code>. No need to add <code>onchange</code> handlers, DOM element values and <code>model</code> are already synced.</p>
+<li><p><code>&lt;tag onevent=&quot;{{handler}}&quot;&gt;</code>&mdash;<code>on</code>-prefixed properties are event handlers. <code>handler</code> is expected to be a function, <code>handler</code>&#39;s <code>this</code> is the context in which the handler has been attached. No need to add <code>onchange</code> handlers, DOM element values and <code>model</code> are already synced.</p>
+<p>Currently, events are directly bound to elements for simplicity, plans are to use event delegation on section root node instead, for efficient handling of large collections. This will happen transparently and won&#39;t concern existing handlers semantics.</p>
 </li>
-<li><p><code>&lt;tag&gt; {{#section}}...{{/section}} &lt;/tag&gt;</code>&mdash;Whenever <code>section[i]</code> changes corresponding HTML element changes (you can insert or delete items via <code>Array.splice()</code> and only affected DOM elements are updated). There are no restrictions on the nesting level.</p>
+<li><p><code>&lt;tag&gt; {{#section}}...{{/section}} &lt;/tag&gt;</code>&mdash;Whenever <code>section</code> array changes <code>&lt;tag&gt;</code> children, that are affected (and only they) change. There are no restrictions on the nesting level.</p>
+</li>
+</ul>
+<h3>Planned features</h3>
+<ul>
+<li><p>comments</p>
+</li>
+<li><p>partials (template include)</p>
+<ul>
+<li><code>{{&gt;var_template_id_or_url}}</code></li>
+<li><code>{{&gt;&quot;#template-id&quot;}}</code></li>
+<li><p><code>{{&gt;&quot;//xhr-fetch-template.url&quot;}}</code></p>
+<p><em>&quot;http:&quot; or &quot;https:&quot; part <a href="http://stackoverflow.com/a/550073/2713676">can be omitted</a>, so it&#39;ll inherit current scheme</em></p>
+<p>Included templates inherit their parent context.</p>
+</li>
+</ul>
+</li>
+<li><p>blocks and template inheritance akin to <a href="https://docs.djangoproject.com/en/dev/topics/templates/#id1">Django template inheritance</a></p>
+<pre><code>  &lt;script id=&quot;base&quot; type=&quot;text/html&quot;&gt;
+      {{+primary_block}}
+          Block contents is template code, of course
+      {{/primary_block}}
+      {{+secondary_block}}
+          Some secondary content
+      {{/secondary_block}}
+  &lt;/script&gt;
+
+  &lt;script id=&quot;descendant&quot; type=&quot;text/html&quot;&gt;
+      {{&lt;&quot;#base&quot;}}
+
+      {{+primary_block}}
+          Will override #base&#39;s primary_block content
+      {{/primary_block}}
+      {{+secondary_block}}
+          If this block was non-existent, you would see &quot;Some secondary content&quot; from #base
+      {{/secondary_block}}
+  &lt;/script&gt;</code></pre>
+<p>  <em>Syntax inspired by <a href="http://akdubya.github.io/dustjs/">Dust</a></em></p>
+</li>
+<li><p>refactor in &quot;everything is a plugin&quot; style and figure out a plugin system</p>
 </li>
 </ul>
 <h2>Kitchen Sink</h2>
@@ -254,7 +289,7 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
         &lt;ul class=&quot;dummy-class just for the_test&quot;&gt;
             {{#collection}}
             &lt;li&gt;
-                &lt;h4&gt;&lt;code&gt;model.collection[i].inner&lt;/code&gt;&lt;/h4&gt;
+                &lt;h4&gt;&lt;code&gt;model.collection[i].inner&lt;/code&gt; &lt;button onclick={{deleteMe}} style=&quot;display:none&quot;&gt;Delete me&lt;/button&gt;&lt;/h4&gt;
                 &lt;ul&gt;
                     {{#inner}}&lt;li&gt;{{.}}&lt;/li&gt;{{/inner}}
                     {{^inner}}&lt;li&gt;&amp;lt; empty &amp;gt;&lt;/li&gt;{{/inner}}
@@ -309,6 +344,9 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
                 this.text = this.text == &#39;lowercase&#39; ?
                     &#39;UPPERCASE&#39;: &#39;lowercase&#39;;
                 e.preventDefault();
+            },
+            deleteMe: function(i) {
+                this.splice(i, 1);
             },
             push: function() {
                 this.collection.push({
