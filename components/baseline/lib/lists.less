@@ -1,0 +1,23 @@
+.bl-list-unstyled() {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bl-list-inline() {
+  .bl-list-unstyled();
+  .bl-clearfix();
+  li {
+    float: left;
+  }
+}
+
+.bl-lists() {
+  .list-inline {
+    .bl-list-inline();
+  }
+
+  .list-unstyled {
+    .bl-list-unstyled();
+  }
+}

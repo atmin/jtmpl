@@ -1,0 +1,177 @@
+
+<!doctype html>
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="css/baseline.css">
+	<link rel="stylesheet" type="text/css" href="css/qunit.css">
+	<style>
+		h2, h3 {margin-top: 64px}
+		body {padding: 1% 7%; color:#586e75}
+		.bound-class {
+			color:red;
+			-webkit-transition:color 0.5s ease-in;  
+			-moz-transition:color 0.5s ease-in;  
+			-o-transition:color 0.5s ease-in;  
+			transition:color 0.5s ease-in;
+		}
+	</style>
+	<script src="js/qunit.js"></script>
+	<script src="js/jtmpl.js"></script>
+</head>
+
+<body>
+	<script id="kitchensink" type="text/jtmpl">
+
+		<h1>Kitchen Sync</h1>
+		<h2>Feature explorer</h2>
+		<a href=#qunit>Tests</a>
+		<p>
+			Feel free to modify <code>model</code> from JS console and observe changes.
+		</p>
+
+		<h3>Toggle text</h3>
+		<a href="#" onclick='{{toggle}}'>Toggle <code>model.text</code></a>
+		<p>
+			{{text}}
+		</p>
+
+		<h3>Data binding</h3>
+		<label for="field">Enter something</label> <input id="field" value={{field}}>
+		<p>
+			{{#field}}
+			<code>model.field</code> = "{{field}}"
+			{{/field}}
+			{{^field}}
+			<code>model.field</code> is empty
+			{{/field}}
+		</p>
+
+		<h3>Data binding, toggle class</h3>
+		<div>
+			<label><input type="checkbox" checked="{{bound-class}}"> <code>model['bound-class']</code></label>
+			<p class="{{bound-class}}">Lorem ipsum ...</p>
+		</div>
+
+		<h3>Checkboxes toggling "if" sections</h3>
+		{{#checkboxes}}
+			<label><input type="checkbox" checked={{fooCheck}}> check foo</label>
+			<label><input type="checkbox" checked={{barCheck}}> check bar</label>
+			{{#fooCheck}}
+			<p><code>model.checkboxes.fooCheck</code> is checked<p>
+			{{/fooCheck}}
+			{{#barCheck}}
+			<p><code>model.checkboxes.barCheck</code> is checked<p>
+			{{/barCheck}}
+		{{/checkboxes}}
+
+		<h3>Select and radiogroup</h3>
+		<h5><code>model.options</code></h5>
+		<select>
+			{{#options}}
+			<option selected={{checked}}>{{text}}</option>
+			{{/options}}
+		</select>
+		<h5><code>model.options</code> again</h5>
+		<p>
+			{{#options}}
+			<label><input type="radio" name="radio-group" checked={{checked}}>{{text}}</label>
+			{{/options}}
+		</p>
+
+		<h3><code>model.innerHTML</code></h3>
+		<div><!-- {{{innerHTML}}} --></div>
+		<!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
+
+		<h3>Nested collections</h3>
+		<ul class="dummy-class just for the_test">
+			{{#collection}}
+			<li>
+				<h4><code>model.collection[i].inner</code> <button onclick={{deleteMe}} style="display:none">Delete me</button></h4>
+				<ul>
+					{{#inner}}<li>{{.}}</li>{{/inner}}
+					{{^inner}}<li>&lt; empty &gt;</li>{{/inner}}
+				</ul>
+				&nbsp;
+				<button onclick={{innerPush}}>push</button>
+				<button onclick="{{innerPop}}" disabled={{popDisabled}}>pop</button>
+			</li>
+			{{/collection}}
+			{{^collection}}
+			<li>&lt; empty &gt;</li>
+			{{/collection}}
+		</ul>
+		<br>
+		<button onclick={{push}}>push</button>
+		<button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
+
+	</script>
+
+	<script>
+		model = {
+			text: 'lowercase',
+
+			collection: [
+				{ popDisabled: false, inner: [1, 2, 3, 4, 5] },
+				{ popDisabled: false, inner: [6, 7] },
+				{ popDisabled: false, inner: [8, 9, 10, 11] }
+			],
+
+			popDisabled: false,
+
+			field: '',
+
+			'bound-class': true,
+
+			innerHTML: '<p>I am a paragraph, change me: <code><pre>model.innerHTML = "new HTML content"</pre></code></p>',
+
+			options: [
+				{ checked: true, text: 'one' },
+				{ checked: false, text: 'two' },
+				{ checked: false, text: 'three' }
+			],
+
+			checkboxes: {
+				fooCheck: true,
+				barCheck: false
+			},
+
+
+			// event handlers
+			toggle: function(e) {
+				this.text = this.text == 'lowercase' ?
+					'UPPERCASE': 'lowercase';
+				e.preventDefault();
+			},
+			deleteMe: function(i) {
+				this.splice(i, 1);
+			},
+			push: function() {
+				this.collection.push({
+					popDisabled: true,
+					inner: []
+				});
+				this.popDisabled = false;
+			},
+			pop: function() {
+				this.collection.pop();
+				this.popDisabled = this.collection.length == 0;
+			},
+			innerPush: function() {
+				this.inner.push(parseInt(Math.random() * 100));
+				this.popDisabled = false;
+			},
+			innerPop: function() {
+				this.inner.pop();
+				this.popDisabled = this.inner.length == 0;
+			}
+		};
+
+		jtmpl('#kitchensink', '#kitchensink', model);
+	</script>
+
+	<h2>QUnit Blackbox Tests</h2>
+	<div id="qunit"></div>
+	<div id="qunit-fixture"></div>
+	<script src="js/tests.js"></script>
+</body>
+</html>

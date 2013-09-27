@@ -1,0 +1,26 @@
+.bl-message(@color) {
+  background: @color;
+  border: 1px solid darken(@color, 10);
+  color: darken(@color, 60);
+  padding: 5px 10px;
+}
+
+.bl-messages() {
+
+  .message-error {
+    .bl-message(#F2DEDE);
+  }
+
+  .message-warning {
+    .bl-message(#FCF8E3);
+  }
+
+  .message-success {
+    .bl-message(#DFF0D8);
+  }
+
+  .message-info {
+    .bl-message(#f0f0f0);
+  }
+
+}

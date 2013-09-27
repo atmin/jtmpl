@@ -1,0 +1,23 @@
+.bl-tabs(@bg: #f5f5f5, @borderColor: #e5e5e5, @activeBg: #fff, @borderRadius: 5px) {
+  .bl-list-inline();
+  border-bottom: 1px solid @borderColor;
+
+  li {
+    background: @bg;
+    margin: 0 10px;
+    margin-bottom: -1px;
+    padding: 8px 12px;
+    border: 1px solid @borderColor;
+    border-radius: @borderRadius @borderRadius 0 0;
+    a {
+      text-decoration: none;
+    }
+  }
+
+  .active {
+    border-bottom: 1px solid @activeBg;
+    background: @activeBg;
+
+  }
+
+}

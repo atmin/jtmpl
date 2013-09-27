@@ -1,0 +1,1018 @@
+//
+// baseline - a set of less mixins that give you a starting point when starting a new project
+// v0.6.2
+// https://github.com/jgallen23/baseline
+// copyright JGA 2013
+// MIT License
+//
+
+.bl-gradient(@startColor: #555, @endColor: #333) {
+  background-color: mix(@startColor, @endColor, 60%);
+  background-image: -moz-linear-gradient(top, @startColor, @endColor); // FF 3.6+
+  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(@startColor), to(@endColor)); // Safari 4+, Chrome 2+
+  background-image: -webkit-linear-gradient(top, @startColor, @endColor); // Safari 5.1+, Chrome 10+
+  background-image: -o-linear-gradient(top, @startColor, @endColor); // Opera 11.10
+  background-image: linear-gradient(to bottom, @startColor, @endColor); // Standard, IE10
+  background-repeat: repeat-x;
+  filter: e(%("progid:DXImageTransform.Microsoft.gradient(startColorstr='%d', endColorstr='%d', GradientType=0)",argb(@startColor),argb(@endColor))); // IE9 and down
+}
+
+
+.bl-gradient-three-color(@startColor: #00b3ee, @midColor: #7a43b6, @colorStop: 50%, @endColor: #c3325f) {
+  background-color: mix(@midColor, @endColor, 80%);
+  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(@startColor), color-stop(@colorStop, @midColor), to(@endColor));
+  background-image: -webkit-linear-gradient(@startColor, @midColor @colorStop, @endColor);
+  background-image: -moz-linear-gradient(top, @startColor, @midColor @colorStop, @endColor);
+  background-image: -o-linear-gradient(@startColor, @midColor @colorStop, @endColor);
+  background-image: linear-gradient(@startColor, @midColor @colorStop, @endColor);
+  background-repeat: no-repeat;
+  filter: e(%("progid:DXImageTransform.Microsoft.gradient(startColorstr='%d', endColorstr='%d', GradientType=0)",argb(@startColor),argb(@endColor))); // IE9 and down, gets no color-stop at all for proper fallback
+}
+
+.bl-size(@px) {
+  width: @px;
+  height: @px;
+}
+
+.bl-size(@width, @height) {
+  width: @width;
+  height: @height;
+}
+
+.bl-vcenter(@height) {
+  height: @height;
+  line-height: @height;
+}
+
+
+.bl-box-sizing(@boxmodel) {
+  -webkit-box-sizing: @boxmodel;
+  -moz-box-sizing: @boxmodel;
+  box-sizing: @boxmodel;
+}
+
+.bl-transition(@prop: all, @duration:0.2s, @ease:ease-out) {
+  -webkit-transition: @prop @duration @ease;
+  transition: @prop @duration @ease;
+}
+
+.bl-arrow-base() {
+  position: relative;
+
+  &:after {
+    content: "";
+    height: 0;
+    width: 0;
+    position: absolute;
+  }
+}
+
+.bl-arrow-top(@color, @size: 10px) {
+  .bl-arrow-base();
+
+  &:after {
+    left: 50%;
+    margin-left: -@size;
+    top: -@size;
+    border-left: @size solid transparent;
+    border-right: @size solid transparent;
+    border-bottom: @size solid @color;
+  }
+}
+
+.bl-arrow-right(@color, @size: 10px) {
+  .bl-arrow-base();
+
+  &:after {
+    top: 50%;
+    margin-top: -@size;
+    right: -@size;
+    border-top: @size solid transparent;
+    border-bottom: @size solid transparent;
+    border-left: @size solid @color;
+  }
+}
+
+.bl-arrow-left(@color, @size: 10px) {
+  .bl-arrow-base();
+
+  &:after {
+    top: 50%;
+    margin-top: -@size;
+    left: -@size;
+    border-top: @size solid transparent;
+    border-bottom: @size solid transparent;
+    border-right: @size solid @color;
+  }
+}
+
+.bl-arrow-bottom(@color, @size: 10px) {
+  .bl-arrow-base();
+
+  &:after {
+    left: 50%;
+    margin-left: -@size;
+    bottom: -@size;
+    border-left: @size solid transparent;
+    border-right: @size solid transparent;
+    border-top: @size solid @color;
+  }
+}
+
+.bl-bar(@bg: #333, @fg: #fff, @height: 50px, @fontSize: 20px, @degree: 10) {
+
+  .bl-gradient(lighten(@bg, @degree), darken(@bg, @degree));
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.3);
+  height: @height;
+
+  .title {
+    color: @fg;
+    font-size: @fontSize;
+    line-height: @height;
+    padding: 0 20px;
+  }
+
+}
+
+
+.bl-button-reset() {
+  cursor: pointer;
+  display: inline-block;
+  text-align: center;
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+  line-height: 20px;
+  border-radius: 5px;
+  padding: 4px 12px;
+}
+
+.bl-button-flat(@bgColor: #333, @textColor: #fff, @hoverBgColor: #336699, @hoverTextColor: #fff) {
+
+  .bl-button-reset();
+
+  background-color: @bgColor;
+  color: @textColor;
+  border: 1px solid @bgColor;
+
+  &.hover,
+  &:hover {
+    color: @hoverTextColor;
+    background-color: @hoverBgColor;
+    border: 1px solid @hoverBgColor;
+  }
+
+  &.active,
+  &:active {
+    background-color: @hoverBgColor;
+    border: 1px solid @hoverBgColor;
+    outline: 0;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.05);
+  }
+
+}
+
+.bl-button-gradient(@bgColor: #fff, @textColor: #333, @hoverBgColor: #666, @hoverTextColor: #fff) {
+
+  .bl-button-reset();
+
+  color: @textColor;
+
+  .bl-gradient(@bgColor, darken(@bgColor, 20));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 1px 2px rgba(0,0,0,.05);
+  border: 1px solid darken(@bgColor, 20);
+
+  &.hover,
+  &:hover {
+    background: darken(@bgColor, 10);
+  }
+
+  &.active,
+  &:active {
+    background-image: none;
+    outline: 0;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.05);
+  }
+}
+
+.bl-clearfix() {
+  &:after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+}
+
+@bl-warning-bg: #f9fad2;
+@bl-warning: darken(@bl-warning-bg, 60);
+@bl-error-bg: #f2dede;
+@bl-error: darken(@bl-error-bg, 60);
+@bl-success-bg: #dff0d8;
+@bl-success: darken(@bl-success-bg, 60);
+
+//  grid
+//
+//  Less Usage:
+//
+//    @import "baseline";
+//    .bl-grid(); //defaults to 12 column, 20px gutter size and prefix of grid
+//    .bl-grid(16, 40px); //16 column with 40px gutter size
+//    .bl-grid(16, 40px, "row"); //16 column with 40px gutter size, set prefix to row: <div class="row12">
+//
+//  HTML Usage:
+//
+//    <div class="grid12">
+//      <div class="column2">Sidebar</div>
+//      <div class="column10">Content</div>
+//    </div>
+//
+//  Offset:
+//
+//    <div class="grid12">
+//      <div class="column2 offset2">This content will be offset to the left by 2 columns</div>
+//    </div>
+.bl-grid(@columnCount: 12, @gutterSize: 20px, @prefix: "grid") {
+
+  (~".@{prefix}@{columnCount}") {
+    .bl-border-box();
+    .bl-clearfix();
+    margin-left: -@gutterSize;
+
+    [class*=column] {
+      float: left;
+      .bl-border-box();
+      padding: 0 0 0 @gutterSize;
+
+    }
+
+    .columnLoop (@index) when (@index > 0) {
+      (~".column@{index}") { 
+        width: @index/@columnCount * 100%;
+      }
+      (~".offset@{index}") {
+        margin-left: @index/@columnCount * 100%;
+      }
+      .columnLoop(@index - 1);
+
+    }
+    .columnLoop (0) {}
+
+    .columnLoop(@columnCount);
+
+  }
+
+  .grid-pad {
+    padding: @gutterSize;
+  }
+
+}
+
+.bl-grid-fixed(@columnSize: 100px, @gutterSize: 20px) {
+
+  @size: @columnSize + @gutterSize;
+  padding-left: @size;
+
+  .column-fixed {
+    margin-left: -@size;
+    width: @size;
+  }
+}
+
+.bl-grid-fixed-left(@columnSize, @gutterSize) {
+  .bl-grid-fixed(@columnSize, @gutterSize);
+}
+
+.bl-grid-fixed-right(@columnSize: 100px, @gutterSize: 20px) {
+
+  @size: @columnSize + @gutterSize;
+  padding-right: @size;
+
+  .column-fixed {
+    margin-right: -@size;
+    width: @size;
+  }
+
+}
+
+.bl-grid-debug(@color: red) {
+
+  [class*=column] {
+    outline: 1px solid @color;
+  }
+}
+
+
+.bl-border-box() {
+  .bl-box-sizing(border-box);
+}
+
+.bl-pull-left() {
+  float: left;
+}
+
+.bl-pull-right() {
+  float: right;
+}
+
+.bl-hide() {
+  display: none;
+}
+
+.bl-helpers() {
+
+  .pull-left {
+    .bl-pull-left();
+  }
+  .pull-right {
+    .bl-pull-right();
+  }
+  .hide {
+    .bl-hide();
+  }
+
+}
+
+.bl-list-unstyled() {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bl-list-inline() {
+  .bl-list-unstyled();
+  .bl-clearfix();
+  li {
+    float: left;
+  }
+}
+
+.bl-lists() {
+  .list-inline {
+    .bl-list-inline();
+  }
+
+  .list-unstyled {
+    .bl-list-unstyled();
+  }
+}
+
+.bl-message(@color) {
+  background: @color;
+  border: 1px solid darken(@color, 10);
+  color: darken(@color, 60);
+  padding: 5px 10px;
+}
+
+.bl-messages() {
+
+  .message-error {
+    .bl-message(#F2DEDE);
+  }
+
+  .message-warning {
+    .bl-message(#FCF8E3);
+  }
+
+  .message-success {
+    .bl-message(#DFF0D8);
+  }
+
+  .message-info {
+    .bl-message(#f0f0f0);
+  }
+
+}
+
+
+.bl-modal(@width: 900px) {
+  .bl-border-box();
+  position: fixed;
+  padding: 20px;
+  top: 100px;
+  left: 50%;
+  z-index: 999;
+  overflow: auto;
+  width: @width;
+  margin: 0 0 0 -(@width/2);
+  background-color: #ffffff;
+  border: 1px solid #999;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+
+  border-radius: 6px;
+  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.3);
+  background-clip: padding-box;
+
+  button.close {
+    .bl-button-reset();
+    .bl-pull-right();
+    border: 1px solid #e5e5e5;
+    border-radius: 5px;
+    &:hover {
+      border: 1px solid darken(#e5e5e5, 20);
+    }
+  }
+
+}
+
+.bl-modal-backdrop() {
+
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 900;
+  background-color: #000000;
+  opacity: 0.8;
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";
+}
+
+.bl-normalize() {
+/*! normalize.css v2.0.1 | MIT License | git.io/normalize */
+
+/* ==========================================================================
+   HTML5 display definitions
+   ========================================================================== */
+
+/*
+ * Corrects `block` display not defined in IE 8/9.
+ */
+
+article,
+aside,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+nav,
+section,
+summary {
+    display: block;
+}
+
+/*
+ * Corrects `inline-block` display not defined in IE 8/9.
+ */
+
+audio,
+canvas,
+video {
+    display: inline-block;
+}
+
+/*
+ * Prevents modern browsers from displaying `audio` without controls.
+ * Remove excess height in iOS 5 devices.
+ */
+
+audio:not([controls]) {
+    display: none;
+    height: 0;
+}
+
+/*
+ * Addresses styling for `hidden` attribute not present in IE 8/9.
+ */
+
+[hidden] {
+    display: none;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+/*
+ * 1. Sets default font family to sans-serif.
+ * 2. Prevents iOS text size adjust after orientation change, without disabling
+ *    user zoom.
+ */
+
+html {
+    font-family: sans-serif; /* 1 */
+    -webkit-text-size-adjust: 100%; /* 2 */
+    -ms-text-size-adjust: 100%; /* 2 */
+}
+
+/*
+ * Removes default margin.
+ */
+
+body {
+    margin: 0;
+}
+
+/* ==========================================================================
+   Links
+   ========================================================================== */
+
+/*
+ * Addresses `outline` inconsistency between Chrome and other browsers.
+ */
+
+a:focus {
+    outline: thin dotted;
+}
+
+/*
+ * Improves readability when focused and also mouse hovered in all browsers.
+ */
+
+a:active,
+a:hover {
+    outline: 0;
+}
+
+/* ==========================================================================
+   Typography
+   ========================================================================== */
+
+/*
+ * Addresses `h1` font sizes within `section` and `article` in Firefox 4+,
+ * Safari 5, and Chrome.
+ */
+
+h1 {
+    font-size: 2em;
+}
+
+/*
+ * Addresses styling not present in IE 8/9, Safari 5, and Chrome.
+ */
+
+abbr[title] {
+    border-bottom: 1px dotted;
+}
+
+/*
+ * Addresses style set to `bolder` in Firefox 4+, Safari 5, and Chrome.
+ */
+
+b,
+strong {
+    font-weight: bold;
+}
+
+/*
+ * Addresses styling not present in Safari 5 and Chrome.
+ */
+
+dfn {
+    font-style: italic;
+}
+
+/*
+ * Addresses styling not present in IE 8/9.
+ */
+
+mark {
+    background: #ff0;
+    color: #000;
+}
+
+
+/*
+ * Corrects font family set oddly in Safari 5 and Chrome.
+ */
+
+code,
+kbd,
+pre,
+samp {
+    font-family: monospace, serif;
+    font-size: 1em;
+}
+
+/*
+ * Improves readability of pre-formatted text in all browsers.
+ */
+
+pre {
+    white-space: pre;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/*
+ * Sets consistent quote types.
+ */
+
+q {
+    quotes: "\201C" "\201D" "\2018" "\2019";
+}
+
+/*
+ * Addresses inconsistent and variable font size in all browsers.
+ */
+
+small {
+    font-size: 80%;
+}
+
+/*
+ * Prevents `sub` and `sup` affecting `line-height` in all browsers.
+ */
+
+sub,
+sup {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+}
+
+sup {
+    top: -0.5em;
+}
+
+sub {
+    bottom: -0.25em;
+}
+
+/* ==========================================================================
+   Embedded content
+   ========================================================================== */
+
+/*
+ * Removes border when inside `a` element in IE 8/9.
+ */
+
+img {
+    border: 0;
+}
+
+/*
+ * Corrects overflow displayed oddly in IE 9.
+ */
+
+svg:not(:root) {
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   Figures
+   ========================================================================== */
+
+/*
+ * Addresses margin not present in IE 8/9 and Safari 5.
+ */
+
+figure {
+    margin: 0;
+}
+
+/* ==========================================================================
+   Forms
+   ========================================================================== */
+
+/*
+ * Define consistent border, margin, and padding.
+ */
+
+fieldset {
+    border: 1px solid #c0c0c0;
+    margin: 0 2px;
+    padding: 0.35em 0.625em 0.75em;
+}
+
+/*
+ * 1. Corrects color not being inherited in IE 8/9.
+ * 2. Remove padding so people aren't caught out if they zero out fieldsets.
+ */
+
+legend {
+    border: 0; /* 1 */
+    padding: 0; /* 2 */
+}
+
+/*
+ * 1. Corrects font family not being inherited in all browsers.
+ * 2. Corrects font size not being inherited in all browsers.
+ * 3. Addresses margins set differently in Firefox 4+, Safari 5, and Chrome
+ */
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit; /* 1 */
+    font-size: 100%; /* 2 */
+    margin: 0; /* 3 */
+}
+
+/*
+ * Addresses Firefox 4+ setting `line-height` on `input` using `!important` in
+ * the UA stylesheet.
+ */
+
+button,
+input {
+    line-height: normal;
+}
+
+/*
+ * 1. Avoid the WebKit bug in Android 4.0.* where (2) destroys native `audio`
+ *    and `video` controls.
+ * 2. Corrects inability to style clickable `input` types in iOS.
+ * 3. Improves usability and consistency of cursor style between image-type
+ *    `input` and others.
+ */
+
+button,
+html input[type="button"], /* 1 */
+input[type="reset"],
+input[type="submit"] {
+    -webkit-appearance: button; /* 2 */
+    cursor: pointer; /* 3 */
+}
+
+/*
+ * Re-set default cursor for disabled elements.
+ */
+
+button[disabled],
+input[disabled] {
+    cursor: default;
+}
+
+/*
+ * 1. Addresses box sizing set to `content-box` in IE 8/9.
+ * 2. Removes excess padding in IE 8/9.
+ */
+
+input[type="checkbox"],
+input[type="radio"] {
+    box-sizing: border-box; /* 1 */
+    padding: 0; /* 2 */
+}
+
+/*
+ * 1. Addresses `appearance` set to `searchfield` in Safari 5 and Chrome.
+ * 2. Addresses `box-sizing` set to `border-box` in Safari 5 and Chrome
+ *    (include `-moz` to future-proof).
+ */
+
+input[type="search"] {
+    -webkit-appearance: textfield; /* 1 */
+    -moz-box-sizing: content-box;
+    -webkit-box-sizing: content-box; /* 2 */
+    box-sizing: content-box;
+}
+
+/*
+ * Removes inner padding and search cancel button in Safari 5 and Chrome
+ * on OS X.
+ */
+
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+    -webkit-appearance: none;
+}
+
+/*
+ * Removes inner padding and border in Firefox 4+.
+ */
+
+button::-moz-focus-inner,
+input::-moz-focus-inner {
+    border: 0;
+    padding: 0;
+}
+
+/*
+ * 1. Removes default vertical scrollbar in IE 8/9.
+ * 2. Improves readability and alignment in all browsers.
+ */
+
+textarea {
+    overflow: auto; /* 1 */
+    vertical-align: top; /* 2 */
+}
+
+/* ==========================================================================
+   Tables
+   ========================================================================== */
+
+/*
+ * Remove most spacing between table cells.
+ */
+
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+}
+
+// Based on nib reset.styl (https://github.com/visionmedia/nib/blob/master/lib/nib/reset.styl)
+// Based on [Eric Meyer's reset](http://meyerweb.com/eric/thoughts/2007/05/01/reset-reloaded/)
+
+.bl-reset() {
+  html, body, div, span, applet, object, iframe,
+  h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+  a, abbr, acronym, address, big, cite, code,
+  del, dfn, em, img, ins, kbd, q, s, samp,
+  small, strike, strong, sub, sup, tt, var,
+  dl, dt, dd, ol, ul, li,
+  fieldset, form, label, legend,
+  table, caption, tbody, tfoot, thead, tr, th, td {
+    .bl-reset-box-model();
+    .bl-reset-font();
+  }
+  body {
+    .bl-reset-body();
+  }
+  ol, ul {
+    list-style: none;
+  }
+  table {
+    .bl-reset-table();
+  }
+  caption, th, td {
+    .bl-reset-table-cell();
+  }
+  a img {
+    border: none;
+  }
+}
+
+.bl-nested-reset() {
+  div, span, object, iframe, h1, h2, h3, h4, h5, h6, p,
+  pre, a, abbr, acronym, address, code, del, dfn, em, img,
+  dl, dt, dd, ol, ul, li, fieldset, form, label,
+  legend, caption, tbody, tfoot, thead, tr {
+    .bl-reset-box-model();
+    .bl-reset-font();
+  }
+  table {
+    .bl-reset-table();
+  }
+  caption, th, td {
+    .bl-reset-table-cell();
+  }
+  a img {
+    border: none;
+  }
+}
+
+.bl-reset-box-model() {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+}
+
+.bl-reset-font() {
+  font-weight: inherit;
+  font-style: inherit;
+  font-family: inherit;
+  font-size: 100%;
+  vertical-align: baseline;
+}
+
+.bl-reset-body() {
+  line-height: 1;
+  color: black;
+  background: white;
+}
+
+.bl-reset-table() {
+  border-collapse: separate;
+  border-spacing: 0;
+  vertical-align: middle;
+}
+
+.bl-reset-table-cell() {
+  text-align: left;
+  font-weight: normal;
+  vertical-align: middle;
+}
+
+.bl-reset-html5() {
+  article, aside, canvas, details, figcaption,
+  figure, footer, header, hgroup, menu, nav,
+  section, summary {
+    .bl-reset-box-model();
+    display: block;
+  }
+  audio, canvas, video {
+    display: inline-block;
+    *display: inline;
+    *zoom: 1;
+  }
+  audio:not([controls]),[hidden] {
+    display: none;
+  }
+}
+
+@bl-spacing-small: 10px;
+@bl-spacing-medium: 20px;
+@bl-spacing-large: 40px;
+@bl-spacing-xlarge: 60px;
+
+.bl-spacing-small() {
+  margin-bottom: @bl-spacing-small;
+}
+
+.bl-spacing-medium() {
+  margin-bottom: @bl-spacing-medium;
+}
+
+.bl-spacing-large() {
+  margin-bottom: @bl-spacing-large;
+}
+
+.bl-spacing-xlarge() {
+  margin-bottom: @bl-spacing-xlarge;
+}
+
+.bl-spacing-helpers() {
+
+  .spacing-small {
+    .bl-spacing-small();
+  }
+
+  .spacing-medium {
+    .bl-spacing-medium();
+  }
+
+  .spacing-large {
+    .bl-spacing-large();
+  }
+
+  .spacing-xlarge {
+    .bl-spacing-xlarge();
+  }
+
+}
+
+.bl-tabs(@bg: #f5f5f5, @borderColor: #e5e5e5, @activeBg: #fff, @borderRadius: 5px) {
+  .bl-list-inline();
+  border-bottom: 1px solid @borderColor;
+
+  li {
+    background: @bg;
+    margin: 0 10px;
+    margin-bottom: -1px;
+    padding: 8px 12px;
+    border: 1px solid @borderColor;
+    border-radius: @borderRadius @borderRadius 0 0;
+    a {
+      text-decoration: none;
+    }
+  }
+
+  .active {
+    border-bottom: 1px solid @activeBg;
+    background: @activeBg;
+
+  }
+
+}
+
+.bl-typography(@family: ~"'Helvetica Neue', Helvetica, Arial, sans-serif", @bodySize: 14px, @lineHeight: 20px) {
+  .font-size(@factor: 1) {
+    font-size: @bodySize * @factor;
+  }
+
+  .lines(@count: 1) {
+    line-height: (@lineHeight * @count);
+  }
+  h1,h2,h3,h4,h5,h6 {
+    margin: 0;
+    text-rendering: optimizelegibility;
+  }
+
+  h1 {
+    .font-size(2.75);
+    .lines(2.5);
+  }
+  h2 {
+    .font-size(2.25);
+    .lines(2);
+  }
+  h3 {
+    .font-size(1.75);
+    .lines(2);
+  }
+  h4 {
+    .font-size(1.25);
+  }
+  h5 {
+    .font-size(1);
+  }
+  h6 {
+    .font-size(.85);
+  }
+  p {
+    margin: 0;
+    .lines(1);
+  }
+
+  body {
+    font-size: (@bodySize);
+    font-family: @family;
+    line-height: (@lineHeight);
+  }
+}
