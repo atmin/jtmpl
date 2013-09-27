@@ -25,9 +25,9 @@ Why
 
 * extend the concept of a templating engine with the most essential feature of [JavaScript MVC](http://www.infoq.com/research/top-javascript-mvc-frameworks) frameworks&mdash;[data-binding](http://en.wikipedia.org/wiki/Data_binding)
 
-* do not require explicit hooks, boilerplate initialization code or invent a [DSL](http://en.wikipedia.org/wiki/Domain-specific_language) to build the DOM&mdash;template already contains relations between model properties and HTML tags (which result in DOM nodes), so leverage this
+* do not require explicit hooks, boilerplate initialization code or invent a JavaScript-based [DSL](http://en.wikipedia.org/wiki/Domain-specific_language) to build the DOM&mdash;template already contains relations between model properties and HTML tags (which result in DOM nodes), so leverage this
 
-`jtmpl` enables you to focus on structure and data and not worry about DOM synchronization. Assuming you already know HTML, JavaScript and Mustache, the learning curve is non-existent. Check the [Kitchensink demo](kitchensink.html).
+`jtmpl` enables you to focus on structure and data and not worry about DOM synchronization. If you already know HTML, JavaScript and Mustache, the learning curve is non-existent. Check the [Kitchensink demo](kitchensink.html).
 
 
 

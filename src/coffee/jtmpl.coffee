@@ -3,7 +3,7 @@
 root = this
 root.jtmpl = (target, tpl, model, options) ->
 	reId = /^\#[\w-]+$/
-
+	AP = Array.prototype
 
 
 	## Interface
@@ -12,7 +12,7 @@ root.jtmpl = (target, tpl, model, options) ->
 	if (target is null or typeof target is 'string') and not tpl?
 		if not document?
 			throw ':( this API is only available in a browser'
-		return Array.prototype.slice.call(document.querySelectorAll(target))
+		return AP.slice.call(document.querySelectorAll(target))
 
 	# `jtmpl(tpl, model)`?
 	if typeof target is 'string' and typeof tpl in ['number', 'string', 'boolean', 'object'] and model is undefined
@@ -395,57 +395,70 @@ root.jtmpl = (target, tpl, model, options) ->
 				array.pop = ->
 					this.__garbageCollectNodes()
 					node.removeChild(node.children[node.children.length - 1]) for node in this.__nodes
-					Array.prototype.pop.apply(this, arguments)
-					Array.prototype.pop.apply(this.__values, arguments)
+					AP.pop.apply(this, arguments)
+					AP.pop.apply(this.__values, arguments)
 
 				array.push = (item) ->
 					this.__garbageCollectNodes()
 					node.appendChild(createSectionItem(node, item)) for node in this.__nodes
-					Array.prototype.push.apply(this, arguments)
+					AP.push.apply(this, arguments)
 					len = this.__values.length
-					result = Array.prototype.push.apply(this.__values, arguments)
+					result = AP.push.apply(this.__values, arguments)
 					bindProp(item, len)
-					return result
+					result
 
 				array.reverse = ->
 					this.__garbageCollectNodes()
-					Array.prototype.reverse.apply(this.__values, arguments)
+					result = AP.reverse.apply(this.__values, arguments)
 					for node in this.__nodes
 					 	node.innerHTML = ''
-						for item in array
+						for item, i in this.__values
 							node.appendChild(createSectionItem(node, item))
+							bindProp(item, i)
+					result
 
 				array.shift = ->
 					this.__garbageCollectNodes()
-					node.removeChild(node.children[0]) for node in this.__nodes
-					Array.prototype.shift.apply(this, arguments)
-					Array.prototype.shift.apply(this.__values, arguments)
+					AP.shift.apply(this, arguments)
+					result = AP.shift.apply(this.__values, arguments)
+					for node in this.__nodes
+						node.removeChild(node.children[0])
+					for item, i in this.__values
+						bindProp(item, i)
+					result
 
 				array.unshift = ->
 					this.__garbageCollectNodes()
-					for item in Array.prototype.slice.call(arguments).reverse()
+					for item in AP.slice.call(arguments).reverse()
 						for node in this.__nodes
 							node.insertBefore(createSectionItem(node, item), node.children[0])
-					Array.prototype.unshift.apply(this, arguments)
-					Array.prototype.unshift.apply(this.__values, arguments)
+					AP.unshift.apply(this, arguments)
+					result = AP.unshift.apply(this.__values, arguments)
+					for item, i in this.__values
+						bindProp(item, i)
+					result
 
 				array.sort = ->
 					this.__garbageCollectNodes()
-					Array.prototype.sort.apply(this.__values, arguments)
+					AP.sort.apply(this, arguments)
+					result = AP.sort.apply(this.__values, arguments)
 					for node in this.__nodes
 						node.innerHTML = ''
-						for item in array
-							node.appendChild(createSectionItem(node, item))
+						for item, i in array
+							node.appendChild(createSectionItem(node, item)) for node in this.__nodes
+							bindProp(item, i)
+					result
 
 				array.splice = (index, howMany) ->
 					this.__garbageCollectNodes()
 					for node in this.__nodes
 						for i in [0...howMany]
 							node.removeChild(node.children[index])
-						for item in Array.prototype.slice.call(arguments, 2)
+						for item in AP.slice.call(arguments, 2)
 							node.insertBefore(createSectionItem(node, item), node.children[index])
 							bindProp(item, index)
-					Array.prototype.splice.apply(this.__values, arguments)
+					AP.splice.apply(this, arguments)
+					AP.splice.apply(this.__values, arguments)
 
 				bindProp = (item, i) ->
 					array.__values[i] = item
