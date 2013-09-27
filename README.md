@@ -1,5 +1,6 @@
 _`{{`_ `jtmpl` _`}}`_
 =====================
+###### 0.0.1
 
 ### Live templates
 
@@ -119,9 +120,8 @@ Specifications
 
 Downloads
 ---------
-_dev branch_
 
-* browse [jtmpl.coffee](https://github.com/atmin/jtmpl/blob/dev/src/coffee/jtmpl.coffee)
+* browse [jtmpl.coffee (master)](https://github.com/atmin/jtmpl/blob/master/src/coffee/jtmpl.coffee), [jtmpl.coffee (dev)](https://github.com/atmin/jtmpl/blob/dev/src/coffee/jtmpl.coffee)
 
 * [jtmpl.js](js/jtmpl.js)
 
