@@ -1,0 +1,12 @@
+{
+  "name": "jtmpl",
+  "version": "0.0.1",
+  "main": "[\"js/jtmpl.min.js\", \"js/jtmpl.js\"]",
+  "dependencies": {
+  },
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "components"
+  ]
+}
