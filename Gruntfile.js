@@ -8,7 +8,7 @@ module.exports = function(grunt) {
         separator: '\n\n\n\n\n\n\n\n'
       },
       dist: {
-        src: ['js/<%= pkg.name %>.js'/*, 'components/Object.observe/Object.observe.poly.js'*/],
+        src: ['js/<%= pkg.name %>.js'],
         dest: 'js/<%= pkg.name %>.js'
       }
     },
@@ -99,7 +99,6 @@ module.exports = function(grunt) {
           {src: 'README.md', dest: 'dot.lit.md'},
           {src: 'components/qunit/qunit/qunit.js', dest: 'js/qunit.js'},
           {src: 'components/qunit/qunit/qunit.css', dest: 'css/qunit.css'},
-          {src: 'components/Object.observe/Object.observe.poly.js', dest: 'js/Object.observe.poly.js'},
           {src: 'components/highlightjs/highlight.pack.js', dest: 'js/highlight.min.js'},
           {src: 'components/highlightjs/styles/solarized_dark.css', dest: 'css/highlight.css'},
           {src: 'components/baseline/examples/baseline.css', dest: 'css/baseline.css'}
