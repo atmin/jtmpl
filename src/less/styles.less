@@ -39,11 +39,27 @@ footer {
 
 .wrapper {
 	margin: 1em auto;
+	padding: 0 4%;
+}
+
+.text-center {
+	text-align: center;
 }
 
 .btn, .btn:visited {
-	padding: 8px 16px;
+	padding: 16px 24px;
 	color: #fff;
+	margin: 1em 1em 0 0;
+	width: 100%;
+	display: inline-block;
+	border: 1px solid #DDD;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+}
+
+.btn i {
+	margin-right: 8px;
 }
 
 .btn-readme {
@@ -76,7 +92,10 @@ footer {
 
 
 
-
+/* apply a natural box layout model to all elements */
+*, *:before, *:after {
+  -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box;
+}
 
 
 
@@ -128,7 +147,7 @@ audio[controls], canvas, video {
 	* To add a background to the WRAPPER, set it in the 'body' element
 */
 html {
-	height: 100%;
+	/*height: 100%;*/
 	font-size: 100%;
 	overflow-y: scroll; /* Force a scrollbar in non-IE */
 	-webkit-text-size-adjust: 100%; /* Prevent iOS text size adjust on orientation change without disabling user zoom */
@@ -461,13 +480,13 @@ sub {
 
 @media only screen and (min-width: 480px) {
 	.wrapper {
-		padding: 0 4%;
+		padding: 0 8%;
 	}
 }
 
 @media only screen and (min-width: 768px) { 
-	.wrapper {
-		padding: 0 8%;
+	.btn {
+		width: 12em;
 	}
 }
 
