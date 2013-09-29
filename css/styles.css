@@ -6,7 +6,8 @@ h1 sup {
 h1 sup {
   font-size: 40%;
 }
-h1 a {
+h1 a,
+h1 a:visited {
   color: #586e75;
 }
 h2 {
@@ -25,7 +26,8 @@ footer {
   margin: 0 auto;
   padding: 2%;
 }
-.btn {
+.btn,
+.btn:visited {
   padding: 8px 16px;
   color: #fff;
 }
@@ -317,6 +319,7 @@ dl dd {
 a,
 a:visited {
   text-decoration: none;
+  color: #cb4b16;
 }
 a:hover {
   border-bottom: 1px solid;
