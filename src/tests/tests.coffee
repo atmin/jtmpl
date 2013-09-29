@@ -92,7 +92,7 @@ test 'bind', ->
 		'collection.length equals li.length'
 
 	model.field = 'qunit'
-	equal jtmpl('p')[2].innerHTML, 
+	equal jtmpl('p')[3].innerHTML, 
 		'<code>model.field</code> = "<span data-jt="field">qunit</span>"',
 		'positive if section'
 

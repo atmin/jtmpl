@@ -57,6 +57,14 @@ module.exports = function(grunt) {
       }
     },
 
+    sass: {
+      dist: {
+        files: {
+          'css/styles.css' : 'src/sass/style.scss'
+        }
+      }
+    },
+
     watch: {
       jshint: {
         files: ['<%= jshint.files %>'],
@@ -69,6 +77,10 @@ module.exports = function(grunt) {
       less: {
         files: ['src/less/*.less'],
         tasks: ['less']
+      },
+      sass: {
+        files: ['src/sass/*.scss'],
+        tasks: ['sass']
       },
       readme: {
         files: ['README.md'],
@@ -100,8 +112,7 @@ module.exports = function(grunt) {
           {src: 'components/qunit/qunit/qunit.js', dest: 'js/qunit.js'},
           {src: 'components/qunit/qunit/qunit.css', dest: 'css/qunit.css'},
           {src: 'components/highlightjs/highlight.pack.js', dest: 'js/highlight.min.js'},
-          {src: 'components/highlightjs/styles/solarized_dark.css', dest: 'css/highlight.css'},
-          {src: 'components/baseline/examples/baseline.css', dest: 'css/baseline.css'}
+          {src: 'components/highlightjs/styles/solarized_dark.css', dest: 'css/highlight.css'}
         ]
       }
     },
@@ -115,13 +126,13 @@ module.exports = function(grunt) {
     },
 
     md2html: {
-      index: {
+      readme: {
         options: {
           layout: 'src/templates/layout.html'
         },
         files: [{
           src: ['README.md'],
-          dest: 'index.html'
+          dest: 'README.html'
         }]
       }
     },
@@ -144,6 +155,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-less');
   grunt.loadNpmTasks('grunt-css');
 
-  grunt.registerTask('default', ['coffee', 'concat', 'uglify', 'copy', 'dotlit', 'md2html', 'clean', 'connect', 'watch']);
+  grunt.registerTask('default', ['coffee', 'less', 'concat', 'uglify', 'copy', 'dotlit', 'md2html', 'clean', 'connect', 'watch']);
 
 };

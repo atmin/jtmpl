@@ -99,7 +99,7 @@
     equal(jtmpl('ul li ul li')[0].innerHTML, '42', 'nested section item innerHTML');
     equal(jtmpl('ul')[0].children.length, model.collection.length, 'collection.length equals li.length');
     model.field = 'qunit';
-    equal(jtmpl('p')[2].innerHTML, '<code>model.field</code> = "<span data-jt="field">qunit</span>"', 'positive if section');
+    equal(jtmpl('p')[3].innerHTML, '<code>model.field</code> = "<span data-jt="field">qunit</span>"', 'positive if section');
     model.collection[0].inner.splice(4, 1);
     model.collection[0].inner[3] = 42;
     equal(jtmpl('ul li ul li')[3].innerHTML, '42', 'collection.splice delete last element');

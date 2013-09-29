@@ -638,6 +638,7 @@
               }
             }
             bind(node, nodeContext || context);
+            nodeContext = null;
             break;
           case node.COMMENT_NODE:
             if (section = node.nodeValue.trim().match(/^(#|\^)\s([\s\S]*)$/)) {

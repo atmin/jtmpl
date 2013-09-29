@@ -626,6 +626,7 @@ root.jtmpl = (target, tpl, model, options) ->
 											addEvent('change', node, changeHandler(context, k, v).bind(node))
 
 					bind(node, nodeContext or context)
+					nodeContext = null
 
 				when node.COMMENT_NODE
 					# collection template?
