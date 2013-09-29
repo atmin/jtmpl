@@ -41,7 +41,7 @@ There's never need to touch the DOM directly, `model` is the [single source of t
 ### Hello, world
 
 
-##### `Stage1` is a template compiler:
+#### `Stage1` is a template compiler:
 	
 
 	$ jtmpl('Hello, {{who}}', { who: 'server' })
@@ -52,7 +52,7 @@ There's never need to touch the DOM directly, `model` is the [single source of t
  
 <br>
 
-##### `Stage2` renders live DOM structure:
+#### `Stage2` renders live DOM structure:
 
 <iframe src="hello.html" style="border:0; border-left:1px dotted black; height:4em"></iframe>
 
