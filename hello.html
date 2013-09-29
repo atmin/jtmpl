@@ -2,35 +2,35 @@
 <!doctype html>
 <html>
 <head>
-	<script src="js/jtmpl.min.js"></script>
+  <script src="js/jtmpl.min.js"></script>
 </head>
 <body>
-	<!-- View -->
-	<script id="view" type="text/html">
-		Hello, {{who}}
-		<button onclick={{click}}>{{buttonText}}</button>
-	</script>
+  <!-- View -->
+  <script id="view" type="text/html">
+    Hello, {{who}}
+    <button onclick={{click}}>{{buttonText}}</button>
+  </script>
 
-	<!-- Model (View is controlled implicitly) -->
-	<script>
-		model = {
-			who: 'browser',
-			buttonText: 'Shout',
-			click: function() {
-				with (this) {
-					if (who == 'browser') {
-						who = 'BROWSER'; 
-						buttonText = 'Keep quiet';
-					}
-					else {
-						who = 'browser'; 
-						buttonText = 'Shout again';
-					} 
-				}
-			}
-		}
+  <!-- Model (View is controlled implicitly) -->
+  <script>
+    model = {
+      who: 'browser',
+      buttonText: 'Shout',
+      click: function() {
+        with (this) {
+          if (who == 'browser') {
+            who = 'BROWSER'; 
+            buttonText = 'Keep quiet';
+          }
+          else {
+            who = 'browser'; 
+            buttonText = 'Shout again';
+          } 
+        }
+      }
+    }
 
-		jtmpl("#view", "#view", model)
-	</script>
+    jtmpl("#view", "#view", model)
+  </script>
 </body>
 </html>

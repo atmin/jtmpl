@@ -20,11 +20,7 @@ footer {
   margin: 64px 0 10px;
 }
 .wrapper {
-  width: 70%;
-  min-width: 600px;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2%;
+  margin: 1em auto;
 }
 .btn,
 .btn:visited {
@@ -165,27 +161,28 @@ h3,
 h4,
 h5 {
   font-family: Monaco, Consolas, "Lucida Console", monospace;
+  margin-top: 2em;
 }
 h1 {
   font-size: 4.25em;
   /* 68px */
 
   line-height: 1.1471em;
-  margin: 0 0 0.3824em;
+  margin: 2em 0 0.3824em;
 }
 h2 {
   font-size: 2.625em;
   /* 42px */
 
   line-height: 1.2381em;
-  margin: 0 0 0.619em;
+  margin: 2em 0 0.619em;
 }
 h3 {
   font-size: 1.625em;
   /* 26px */
 
   line-height: 1em;
-  margin: 0 0 1em;
+  margin: 2em 0 1em;
 }
 small {
   font-size: 0.625em;
@@ -435,13 +432,19 @@ sub {
 ---------------------------------------- */
 /* The media queries included in here are only placeholder. Modify them as your content requires */
 @media only screen and (min-width: 480px) {
-  /* Wide mobile (480px+) styles go here */
+  .wrapper {
+    padding: 0 4%;
+  }
 }
 @media only screen and (min-width: 768px) {
-  /* Tablets/netbooks (768px+) styles go here */
+  .wrapper {
+    padding: 0 8%;
+  }
 }
 @media only screen and (min-width: 1024px) {
-  /* Desktops (1024px+) styles go here */
+  .wrapper {
+    width: 960px;
+  }
 }
 /* Print styles
 ---------------------------------------- */

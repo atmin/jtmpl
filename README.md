@@ -31,7 +31,7 @@ There's never need to touch the DOM directly, `model` is the [single source of t
 
 1. Compile template using a `model` object into a valid HTML string (with added metadata)
 
-	`Stage1` can be processed server-side or browser-side
+    `Stage1` can be processed server-side or browser-side
 
 2. Using `Stage1` output generate DOM and bind elements properties to `model` properties 
 
@@ -42,11 +42,11 @@ There's never need to touch the DOM directly, `model` is the [single source of t
 
 
 #### `Stage1` is a template compiler:
-	
+    
 
-	$ jtmpl('Hello, {{who}}', { who: 'server' })
+    $ jtmpl('Hello, {{who}}', { who: 'server' })
 
-	Hello, <span data-jt="who">server</span>
+    Hello, <span data-jt="who">server</span>
 
 
  
@@ -57,43 +57,43 @@ There's never need to touch the DOM directly, `model` is the [single source of t
 <iframe src="hello.html" style="border:0; border-left:1px dotted black; height:4em"></iframe>
 
 
-	$ hello.html
+    $ hello.html
 
-	<!doctype html>
-	<html>
-	<head>
-		<script src="js/jtmpl.min.js"></script>
-	</head>
-	<body>
-		<!-- View -->
-		<script id="view" type="text/html">
-			Hello, {{who}}
-			<button onclick={{click}}>{{buttonText}}</button>
-		</script>
+    <!doctype html>
+    <html>
+    <head>
+      <script src="js/jtmpl.min.js"></script>
+    </head>
+    <body>
+      <!-- View -->
+      <script id="view" type="text/html">
+        Hello, {{who}}
+        <button onclick={{click}}>{{buttonText}}</button>
+      </script>
 
-		<!-- Model (View is controlled implicitly) -->
-		<script>
-			model = {
-				who: 'browser',
-				buttonText: 'Shout',
-				click: function() {
-					with (this) {
-						if (who == 'browser') {
-							who = 'BROWSER'; 
-							buttonText = 'Keep quiet';
-						}
-						else {
-							who = 'browser'; 
-							buttonText = 'Shout again';
-						} 
-					}
-				}
-			}
+      <!-- Model (View is controlled implicitly) -->
+      <script>
+        model = {
+          who: 'browser',
+          buttonText: 'Shout',
+          click: function() {
+            with (this) {
+              if (who == 'browser') {
+                who = 'BROWSER'; 
+                buttonText = 'Keep quiet';
+              }
+              else {
+                who = 'browser'; 
+                buttonText = 'Shout again';
+              } 
+            }
+          }
+        }
 
-			jtmpl("#view", "#view", model)
-		</script>
-	</body>
-	</html>
+        jtmpl("#view", "#view", model)
+      </script>
+    </body>
+    </html>
 
 
 
@@ -129,8 +129,8 @@ There's never need to touch the DOM directly, `model` is the [single source of t
 * `jtmpl('template or "#element-id"', model)`&mdash;compiles template string (or #element-id innerHTML) using `model`
 
 * `jtmpl('#target-id' or domElement, 'template contents or "#template-id"', model)`&mdash;compiles a template using `model`, injects it into target and binds it to `model`. 
-	* template contents can be already prerendered by server to save the client some processing and help for SEO
-	* if target is a script tag (of type="text/html" or similar), then it is replaced with a div. This makes possible directly converting a template, embedded in a clean way, into a DOM node
+    * template contents can be already prerendered by server to save the client some processing and help for SEO
+    * if target is a script tag (of type="text/html" or similar), then it is replaced with a div. This makes possible directly converting a template, embedded in a clean way, into a DOM node
 
 * _Deprecated_ `jtmpl(selector)`&mdash;returns an array, just a handy wrapper around `document.querySelectorAll`. Will remove this feature, as `jtmpl(string)` syntax will probably be used for something more consistent
 
@@ -184,40 +184,40 @@ There's never need to touch the DOM directly, `model` is the [single source of t
 * comments
 
 * partials (template include)
-	
-	* `{{>var_template_id_or_url}}`
-	* `{{>"#template-id"}}`
-	* `{{>"//xhr-fetch-template.url"}}`
+    
+    * `{{>var_template_id_or_url}}`
+    * `{{>"#template-id"}}`
+    * `{{>"//xhr-fetch-template.url"}}`
 
-	_"http:" or "https:" part [can be omitted](http://stackoverflow.com/a/550073/2713676), so it'll inherit current scheme_
+    _"http:" or "https:" part [can be omitted](http://stackoverflow.com/a/550073/2713676), so it'll inherit current scheme_
 
-	Included templates inherit their parent context.
+    Included templates inherit their parent context.
 
 * blocks and template inheritance akin to [Django template inheritance](https://docs.djangoproject.com/en/dev/topics/templates/#id1)
 
-	```
-	<script id="base" type="text/html">
-		{{+primary_block}}
-			Block contents is template code, of course
-		{{/primary_block}}
-		{{+secondary_block}}
-			Some secondary content
-		{{/secondary_block}}
-	</script>
+    ```
+    <script id="base" type="text/html">
+      {{+primary_block}}
+        Block contents is template code, of course
+      {{/primary_block}}
+      {{+secondary_block}}
+        Some secondary content
+      {{/secondary_block}}
+    </script>
 
-	<script id="descendant" type="text/html">
-		{{<"#base"}}
+    <script id="descendant" type="text/html">
+      {{<"#base"}}
 
-		{{+primary_block}}
-			Will override #base's primary_block content
-		{{/primary_block}}
-		{{+secondary_block}}
-			If this block was non-existent, you would see "Some secondary content" from #base
-		{{/secondary_block}}
-	</script>
-	```
+      {{+primary_block}}
+        Will override #base's primary_block content
+      {{/primary_block}}
+      {{+secondary_block}}
+        If this block was non-existent, you would see "Some secondary content" from #base
+      {{/secondary_block}}
+    </script>
+    ```
 
-	_Syntax inspired by [Dust](http://akdubya.github.io/dustjs/)_
+    _Syntax inspired by [Dust](http://akdubya.github.io/dustjs/)_
 
 * refactor in "everything is a plugin" style and figure out a plugin system
 
@@ -228,193 +228,196 @@ Showcase of all features, tests
 
 [Link to example](kitchensink.html)
 
-	$ kitchensink.html
+    $ kitchensink.html
 
-	<!doctype html>
-	<html>
-	<head>
-		<link rel="stylesheet" type="text/css" href="css/styles.css">
-		<link rel="stylesheet" type="text/css" href="css/qunit.css">
-		<style>
-			body {line-height: 24px;}
-			h2, h3 {margin-top: 64px}
-			.bound-class {
-				color:red;
-				-webkit-transition:color 0.5s ease-in;  
-				-moz-transition:color 0.5s ease-in;  
-				-o-transition:color 0.5s ease-in;  
-				transition:color 0.5s ease-in;
-			}
-		</style>
-		<script src="js/qunit.js"></script>
-		<script src="js/jtmpl.js"></script>
-	</head>
+    <!doctype html>
+    <html>
+    <head>
+      <link rel="stylesheet" type="text/css" href="css/styles.css">
+      <link rel="stylesheet" type="text/css" href="css/qunit.css">
+      <style>
+        body {line-height: 24px;}
+        h2, h3 {margin-top: 64px}
+        .bound-class {
+          color:red;
+          -webkit-transition:color 0.5s ease-in;  
+          -moz-transition:color 0.5s ease-in;  
+          -o-transition:color 0.5s ease-in;  
+          transition:color 0.5s ease-in;
+        }
+      </style>
+      <script src="js/qunit.js"></script>
+      <script src="js/jtmpl.js"></script>
+    </head>
 
-	<body>
-		<div class="wrapper">
-			<script id="kitchensink" type="text/jtmpl">
+    <body>
+      <div class="wrapper">
+        <script id="kitchensink" type="text/jtmpl">
 
-	            <h1><span>{&gt;</span> <a href="/">jtmpl</a></h1>
-				<h2>KitchenSync&mdash;feature explorer</h2>
-				<p>
-					Feel free to modify <code>model</code> from JS console and observe changes.
-				</p>
+                <h1><span>{&gt;</span> <a href="/">jtmpl</a></h1>
+          <h2>KitchenSync&mdash;feature explorer</h2>
+          <p>
+            Feel free to modify <code>model</code> from JS console and observe changes.
+          </p>
 
-				<h3>Toggle text</h3>
-				<a href="#" onclick='{{toggle}}'>Toggle <code>model.text</code></a>
-				<p>
-					{{text}}
-				</p>
-				<h3>Data binding</h3>
-				<p>
-					<label for="field">Enter something</label> <input id="field" value={{field}}>
-				</p>
-				<p>
-					{{#field}}
-					<code>model.field</code> = "{{field}}"
-					{{/field}}
-					{{^field}}
-					<code>model.field</code> is empty
-					{{/field}}
-				</p>
+          <h3>Toggle text</h3>
+          <a href="#" onclick='{{toggle}}'>Toggle <code>model.text</code></a>
+          <p>
+            {{text}}
+          </p>
+          <h3>Data binding</h3>
+          <p>
+            <label for="field">Enter something</label> <input id="field" value={{field}}>
+          </p>
+          <p>
+            {{#field}}
+            <code>model.field</code> = "{{field}}"
+            {{/field}}
+            {{^field}}
+            <code>model.field</code> is empty
+            {{/field}}
+          </p>
 
-				<h3>Data binding, toggle class</h3>
-				<p>
-					<label><input type="checkbox" checked="{{bound-class}}"> <code>model['bound-class']</code></label>
-				</p>
-				<p class="{{bound-class}}">Lorem ipsum ...</p>
+          <h3>Data binding, toggle class</h3>
+          <p>
+            <label>
+                <input type="checkbox" checked="{{bound-class}}">
+                <code>model['bound-class']</code>
+            </label>
+          </p>
+          <p class="{{bound-class}}">Lorem ipsum ...</p>
 
-				<h3>Checkboxes toggling "if" sections</h3>
-				{{#checkboxes}}
-					<p>
-						<label><input type="checkbox" checked={{fooCheck}}> check foo</label>
-						<label><input type="checkbox" checked={{barCheck}}> check bar</label>
-					</p>
-					{{#fooCheck}}
-					<p><code>model.checkboxes.fooCheck</code> is checked<p>
-					{{/fooCheck}}
-					{{#barCheck}}
-					<p><code>model.checkboxes.barCheck</code> is checked<p>
-					{{/barCheck}}
-				{{/checkboxes}}
+          <h3>Checkboxes toggling "if" sections</h3>
+          {{#checkboxes}}
+            <p>
+              <label><input type="checkbox" checked={{fooCheck}}> check foo</label>
+              <label><input type="checkbox" checked={{barCheck}}> check bar</label>
+            </p>
+            {{#fooCheck}}
+            <p><code>model.checkboxes.fooCheck</code> is checked<p>
+            {{/fooCheck}}
+            {{#barCheck}}
+            <p><code>model.checkboxes.barCheck</code> is checked<p>
+            {{/barCheck}}
+          {{/checkboxes}}
 
-				<h3>Select and radiogroup</h3>
-				<h5><code>model.options</code></h5>
-				<p>
-					<select>
-						{{#options}}
-						<option selected={{checked}}>{{text}}</option>
-						{{/options}}
-					</select>
-				</p>
-				<h5><code>model.options</code> again</h5>
-				<p>
-					{{#options}}
-					<label><input type="radio" name="radio-group" checked={{checked}}>{{text}}</label>
-					{{/options}}
-				</p>
+          <h3>Select and radiogroup</h3>
+          <h5><code>model.options</code></h5>
+          <p>
+            <select>
+              {{#options}}
+              <option selected={{checked}}>{{text}}</option>
+              {{/options}}
+            </select>
+          </p>
+          <h5><code>model.options</code> again</h5>
+          <p>
+            {{#options}}
+            <label><input type="radio" name="radio-group" checked={{checked}}>{{text}}</label>
+            {{/options}}
+          </p>
 
-				<h3><code>model.innerHTML</code></h3>
-				<div><!-- {{{innerHTML}}} --></div>
-				<!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
+          <h3><code>model.innerHTML</code></h3>
+          <div><!-- {{{innerHTML}}} --></div>
+          <!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
 
-				<h3>Nested collections</h3>
-				<ul class="dummy-class just for the_test">
-					{{#collection}}
-					<li>
-						<code>model.collection[i].inner</code>
-						<button onclick={{innerPush}}>push</button>
-						<button onclick="{{innerPop}}" disabled={{popDisabled}}>pop</button>
-						<ul>
-							{{#inner}}<li>{{.}}</li>{{/inner}}
-							{{^inner}}<div>&lt; empty &gt;</div>{{/inner}}
-						</ul>
-						<br>
-					</li>
-					{{/collection}}
-					{{^collection}}
-					<div>&lt; empty &gt;</div>
-					{{/collection}}
-				</ul>
-				<br>
-				<button onclick={{push}}>push</button>
-				<button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
+          <h3>Nested collections</h3>
+          <ul class="dummy-class just for the_test">
+            {{#collection}}
+            <li>
+              <code>model.collection[i].inner</code>
+              <button onclick={{innerPush}}>push</button>
+              <button onclick="{{innerPop}}" disabled={{popDisabled}}>pop</button>
+              <ul>
+                {{#inner}}<li>{{.}}</li>{{/inner}}
+                {{^inner}}<div>&lt; empty &gt;</div>{{/inner}}
+              </ul>
+              <br>
+            </li>
+            {{/collection}}
+            {{^collection}}
+            <div>&lt; empty &gt;</div>
+            {{/collection}}
+          </ul>
+          <br>
+          <button onclick={{push}}>push</button>
+          <button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
 
-			</script>
-
-			<script>
-				model = {
-					text: 'lowercase',
-
-					collection: [
-						{ popDisabled: false, inner: [1, 2, 3, 4, 5] },
-						{ popDisabled: false, inner: [6, 7] },
-						{ popDisabled: false, inner: [8, 9, 10, 11] }
-					],
-
-					popDisabled: false,
-
-					field: '',
-
-					'bound-class': true,
-
-					innerHTML: '<p>I am a paragraph, change me: <code><pre>model.innerHTML = "new HTML content"</pre></code></p>',
-
-					options: [
-						{ checked: true, text: 'one' },
-						{ checked: false, text: 'two' },
-						{ checked: false, text: 'three' }
-					],
-
-					checkboxes: {
-						fooCheck: true,
-						barCheck: false
-					},
-
-
-					// event handlers
-					toggle: function(e) {
-						this.text = this.text == 'lowercase' ?
-							'UPPERCASE': 'lowercase';
-						e.preventDefault();
-					},
-					push: function() {
-						this.collection.push({
-							popDisabled: true,
-							inner: []
-						});
-						this.popDisabled = false;
-					},
-					pop: function() {
-						this.collection.pop();
-						this.popDisabled = this.collection.length == 0;
-					},
-					innerPush: function() {
-						this.inner.push(parseInt(Math.random() * 100));
-						this.popDisabled = false;
-					},
-					innerPop: function() {
-						this.inner.pop();
-						this.popDisabled = this.inner.length == 0;
-					}
-				};
-
-				jtmpl('#kitchensink', '#kitchensink', model);
-			</script>
-
-			<h2>QUnit Blackbox Tests</h2>
-			<div id="qunit"></div>
-			<div id="qunit-fixture"></div>
-		</div> <!-- .wrapper -->
-		<script src="js/tests.js"></script>
-		<!-- Google Analytics -->
-        <script>
-          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-          ga('create', 'UA-43285803-1', 'jtmpl.com');
-          ga('send', 'pageview');
         </script>
-	</body>
-	</html>
+
+        <script>
+          model = {
+            text: 'lowercase',
+
+            collection: [
+              { popDisabled: false, inner: [1, 2, 3, 4, 5] },
+              { popDisabled: false, inner: [6, 7] },
+              { popDisabled: false, inner: [8, 9, 10, 11] }
+            ],
+
+            popDisabled: false,
+
+            field: '',
+
+            'bound-class': true,
+
+            innerHTML: '<p>I am a paragraph, change me: <code><pre>model.innerHTML = "new HTML content"</pre></code></p>',
+
+            options: [
+              { checked: true, text: 'one' },
+              { checked: false, text: 'two' },
+              { checked: false, text: 'three' }
+            ],
+
+            checkboxes: {
+              fooCheck: true,
+              barCheck: false
+            },
+
+
+            // event handlers
+            toggle: function(e) {
+              this.text = this.text == 'lowercase' ?
+                'UPPERCASE': 'lowercase';
+              e.preventDefault();
+            },
+            push: function() {
+              this.collection.push({
+                popDisabled: true,
+                inner: []
+              });
+              this.popDisabled = false;
+            },
+            pop: function() {
+              this.collection.pop();
+              this.popDisabled = this.collection.length == 0;
+            },
+            innerPush: function() {
+              this.inner.push(parseInt(Math.random() * 100));
+              this.popDisabled = false;
+            },
+            innerPop: function() {
+              this.inner.pop();
+              this.popDisabled = this.inner.length == 0;
+            }
+          };
+
+          jtmpl('#kitchensink', '#kitchensink', model);
+        </script>
+
+        <h2>QUnit Blackbox Tests</h2>
+        <div id="qunit"></div>
+        <div id="qunit-fixture"></div>
+      </div> <!-- .wrapper -->
+      <script src="js/tests.js"></script>
+      <!-- Google Analytics -->
+          <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+            ga('create', 'UA-43285803-1', 'jtmpl.com');
+            ga('send', 'pageview');
+          </script>
+    </body>
+    </html>
