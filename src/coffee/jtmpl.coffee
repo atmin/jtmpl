@@ -392,13 +392,22 @@ root.jtmpl = (target, tpl, model, options) ->
 						if not this.__nodes[i].parentNode
 							this.__nodes.splice(i, 1)
 
+				array.__removeEmpty = ->
+					if not this.length then node.innerHTML = ''
+
+				array.__addEmpty = ->
+					if not this.length then node.innerHTML = jtmpl(node.getAttribute('data-jt-0') or '', {})
+
 				array.pop = ->
+					this.__removeEmpty()
 					this.__garbageCollectNodes()
 					node.removeChild(node.children[node.children.length - 1]) for node in this.__nodes
 					AP.pop.apply(this, arguments)
 					AP.pop.apply(this.__values, arguments)
+					this.__addEmpty()
 
 				array.push = (item) ->
+					this.__removeEmpty()
 					this.__garbageCollectNodes()
 					node.appendChild(createSectionItem(node, item)) for node in this.__nodes
 					AP.push.apply(this, arguments)
@@ -408,6 +417,7 @@ root.jtmpl = (target, tpl, model, options) ->
 					result
 
 				array.reverse = ->
+					this.__removeEmpty()
 					this.__garbageCollectNodes()
 					result = AP.reverse.apply(this.__values, arguments)
 					for node in this.__nodes
@@ -415,9 +425,11 @@ root.jtmpl = (target, tpl, model, options) ->
 						for item, i in this.__values
 							node.appendChild(createSectionItem(node, item))
 							bindProp(item, i)
+					this.__addEmpty()
 					result
 
 				array.shift = ->
+					this.__removeEmpty()
 					this.__garbageCollectNodes()
 					AP.shift.apply(this, arguments)
 					result = AP.shift.apply(this.__values, arguments)
@@ -425,9 +437,11 @@ root.jtmpl = (target, tpl, model, options) ->
 						node.removeChild(node.children[0])
 					for item, i in this.__values
 						bindProp(item, i)
+					this.__addEmpty()
 					result
 
 				array.unshift = ->
+					this.__removeEmpty()
 					this.__garbageCollectNodes()
 					for item in AP.slice.call(arguments).reverse()
 						for node in this.__nodes
@@ -436,9 +450,11 @@ root.jtmpl = (target, tpl, model, options) ->
 					result = AP.unshift.apply(this.__values, arguments)
 					for item, i in this.__values
 						bindProp(item, i)
+					this.__addEmpty()
 					result
 
 				array.sort = ->
+					this.__removeEmpty()
 					this.__garbageCollectNodes()
 					AP.sort.apply(this, arguments)
 					result = AP.sort.apply(this.__values, arguments)
@@ -447,9 +463,11 @@ root.jtmpl = (target, tpl, model, options) ->
 						for item, i in array
 							node.appendChild(createSectionItem(node, item)) for node in this.__nodes
 							bindProp(item, i)
+					this.__addEmpty()
 					result
 
 				array.splice = (index, howMany) ->
+					this.__removeEmpty()
 					this.__garbageCollectNodes()
 					for node in this.__nodes
 						for i in [0...howMany]
@@ -459,6 +477,7 @@ root.jtmpl = (target, tpl, model, options) ->
 							bindProp(item, index)
 					AP.splice.apply(this, arguments)
 					AP.splice.apply(this.__values, arguments)
+					this.__addEmpty()
 
 				bindProp = (item, i) ->
 					array.__values[i] = item

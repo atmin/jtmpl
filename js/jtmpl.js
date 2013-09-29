@@ -359,8 +359,19 @@
             }
             return _results;
           };
+          array.__removeEmpty = function() {
+            if (!this.length) {
+              return node.innerHTML = '';
+            }
+          };
+          array.__addEmpty = function() {
+            if (!this.length) {
+              return node.innerHTML = jtmpl(node.getAttribute('data-jt-0') || '', {});
+            }
+          };
           array.pop = function() {
             var _i, _len, _ref1;
+            this.__removeEmpty();
             this.__garbageCollectNodes();
             _ref1 = this.__nodes;
             for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
@@ -368,10 +379,12 @@
               node.removeChild(node.children[node.children.length - 1]);
             }
             AP.pop.apply(this, arguments);
-            return AP.pop.apply(this.__values, arguments);
+            AP.pop.apply(this.__values, arguments);
+            return this.__addEmpty();
           };
           array.push = function(item) {
             var len, result, _i, _len, _ref1;
+            this.__removeEmpty();
             this.__garbageCollectNodes();
             _ref1 = this.__nodes;
             for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
@@ -386,6 +399,7 @@
           };
           array.reverse = function() {
             var i, item, result, _i, _j, _len, _len1, _ref1, _ref2;
+            this.__removeEmpty();
             this.__garbageCollectNodes();
             result = AP.reverse.apply(this.__values, arguments);
             _ref1 = this.__nodes;
@@ -399,10 +413,12 @@
               node.appendChild(createSectionItem(node, item));
               bindProp(item, i);
             }
+            this.__addEmpty();
             return result;
           };
           array.shift = function() {
             var i, item, result, _i, _j, _len, _len1, _ref1, _ref2;
+            this.__removeEmpty();
             this.__garbageCollectNodes();
             AP.shift.apply(this, arguments);
             result = AP.shift.apply(this.__values, arguments);
@@ -416,10 +432,12 @@
               item = _ref2[i];
               bindProp(item, i);
             }
+            this.__addEmpty();
             return result;
           };
           array.unshift = function() {
             var i, item, result, _i, _j, _k, _len, _len1, _len2, _ref1, _ref2, _ref3;
+            this.__removeEmpty();
             this.__garbageCollectNodes();
             _ref1 = AP.slice.call(arguments).reverse();
             for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
@@ -437,10 +455,12 @@
               item = _ref3[i];
               bindProp(item, i);
             }
+            this.__addEmpty();
             return result;
           };
           array.sort = function() {
             var i, item, result, _i, _j, _k, _len, _len1, _len2, _ref1, _ref2;
+            this.__removeEmpty();
             this.__garbageCollectNodes();
             AP.sort.apply(this, arguments);
             result = AP.sort.apply(this.__values, arguments);
@@ -458,10 +478,12 @@
                 bindProp(item, i);
               }
             }
+            this.__addEmpty();
             return result;
           };
           array.splice = function(index, howMany) {
             var i, item, _i, _j, _k, _len, _len1, _ref1, _ref2;
+            this.__removeEmpty();
             this.__garbageCollectNodes();
             _ref1 = this.__nodes;
             for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
@@ -477,7 +499,8 @@
               }
             }
             AP.splice.apply(this, arguments);
-            return AP.splice.apply(this.__values, arguments);
+            AP.splice.apply(this.__values, arguments);
+            return this.__addEmpty();
           };
           bindProp = function(item, i) {
             array.__values[i] = item;
