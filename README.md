@@ -2,8 +2,7 @@
 ==========================================
 
 
-What
-----
+### What
 
 `jtmpl` is a DOM-aware templating engine. It renders a [Mustache](http://mustache.github.io) HTML template using a `model` object and infers bindings from template structure, so when `model` changes DOM is updated accordingly and vice versa. 
 
@@ -11,8 +10,7 @@ There's never need to touch the DOM directly, `model` is the [single source of t
 
 
 
-Why
----
+### Why
 
 * embrace [KISS](http://en.wikipedia.org/wiki/Keep_it_simple) and [DRY](http://en.wikipedia.org/wiki/Don't_repeat_yourself)
 
@@ -29,8 +27,7 @@ Why
 
 
 
-How
----
+### How
 
 1. Compile template using a `model` object into a valid HTML string (with added metadata)
 
@@ -41,10 +38,10 @@ How
 
 
 
-Hello, world
-------------
+### Hello, world
 
-#### `Stage1` is a template compiler:
+
+##### `Stage1` is a template compiler:
 	
 
 	$ jtmpl('Hello, {{who}}', { who: 'server' })
@@ -55,7 +52,7 @@ Hello, world
  
 <br>
 
-#### `Stage2` renders live DOM structure:
+##### `Stage2` renders live DOM structure:
 
 <iframe src="hello.html" style="border:0; border-left:1px dotted black; height:4em"></iframe>
 
@@ -102,8 +99,7 @@ Hello, world
 
 
 
-Specifications
---------------
+### Specifications
 
 * no dependencies
 
@@ -114,8 +110,7 @@ Specifications
 
 
 
-Downloads
----------
+### Downloads
 
 * browse [jtmpl.coffee (master)](https://github.com/atmin/jtmpl/blob/master/src/coffee/jtmpl.coffee), [jtmpl.coffee (dev)](https://github.com/atmin/jtmpl/blob/dev/src/coffee/jtmpl.coffee)
 
@@ -127,10 +122,9 @@ Downloads
 
 
 
-Details
--------
+### Details
 
-### API
+#### API
 
 * `jtmpl('template or "#element-id"', model)`&mdash;compiles template string (or #element-id innerHTML) using `model`
 
@@ -144,7 +138,7 @@ Details
 
 
 
-### Template specifics
+#### Template specifics
 
 * limitation by design is the contents of each [section](http://mustache.github.io/mustache.5.html) must be valid structural HTML, you cannot freely mix Mustache and HTML tags
 
@@ -163,7 +157,7 @@ Details
 
 
 
-### Interpretation of patterns
+#### Interpretation of patterns
 
 * `<tag>{{var}}</tag>`&mdash;Whenever `var` changes, `tag.innerHTML` changes
 
@@ -185,7 +179,7 @@ Details
 
 
 
-### Planned features
+#### Planned features
 
 * comments
 
@@ -228,8 +222,7 @@ Details
 * refactor in "everything is a plugin" style and figure out a plugin system
 
 
-Kitchen Sink
-------------
+### Kitchen Sink
 
 Showcase of all features, tests
 
