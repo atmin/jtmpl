@@ -406,12 +406,12 @@
             for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
               node = _ref1[_i];
               node.innerHTML = '';
-            }
-            _ref2 = this.__values;
-            for (i = _j = 0, _len1 = _ref2.length; _j < _len1; i = ++_j) {
-              item = _ref2[i];
-              node.appendChild(createSectionItem(node, item));
-              bindProp(item, i);
+              _ref2 = this.__values;
+              for (i = _j = 0, _len1 = _ref2.length; _j < _len1; i = ++_j) {
+                item = _ref2[i];
+                node.appendChild(createSectionItem(node, item));
+                bindProp(item, i);
+              }
             }
             this.__addEmpty();
             return result;
