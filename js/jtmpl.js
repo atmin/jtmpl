@@ -652,6 +652,9 @@
                       }
                       if (node.type === 'radio' && node.name) {
                         addEvent('change', node, radioHandler(context, k, v).bind(node));
+                      }
+                      if (node.type === 'text') {
+                        addEvent('input', node, changeHandler(context, k, v).bind(node));
                       } else {
                         addEvent('change', node, changeHandler(context, k, v).bind(node));
                       }

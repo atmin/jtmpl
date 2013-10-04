@@ -640,6 +640,10 @@ root.jtmpl = (target, tpl, model, options) ->
                     if node.type is 'radio' and node.name
                       addEvent('change', node, radioHandler(context, k, v).bind(node))
 
+                    # text input?
+                    if node.type is 'text'
+                      addEvent('input', node, changeHandler(context, k, v).bind(node))
+
                     # other inputs
                     else
                       addEvent('change', node, changeHandler(context, k, v).bind(node))
