@@ -586,7 +586,7 @@ root.jtmpl = (target, tpl, model, options) ->
           if attr = node.getAttribute('data-jt')
 
             # we want the dot first
-            jtProps = attr.trim().split(' ').sort()
+            jtProps = attr.trim().split(' ').reverse()
 
             # iterate bound template tags
             for jt in jtProps
@@ -595,14 +595,18 @@ root.jtmpl = (target, tpl, model, options) ->
               sectionModifier = jt.slice(0, 1)
               if sectionModifier in ['#', '^']
                 section = jt.slice(1)
-                nodeContext = context[section]
-                addSectionBinding(context, node, section, sectionModifier is '^')
+                nodeContext = nodeContext or context[section]
                 if Array.isArray(nodeContext)
+                  addSectionBinding(context, node, section, sectionModifier is '^')
                   bindArrayToNodeChildren(nodeContext, node)
+                else if typeof nodeContext is 'object'
+                  addSectionBinding(nodeContext, node, section, sectionModifier is '^')
+                else
+                  addSectionBinding(context, node, section, sectionModifier is '^')
 
               # section item?
               else if jt is '.'
-                nodeContext = context[itemIndex++] or context
+                nodeContext = context[itemIndex++]
 
               # var
               else
