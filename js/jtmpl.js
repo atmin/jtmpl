@@ -121,7 +121,7 @@
       }
     };
     compile = function(tpl, context, position, openTagName) {
-      var addSectionItem, discardSection, emitSectionTemplate, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectOuterTag, item, lastSectionTag, out, outpart, pos, section, tag, tagName, tagType, val, _i, _len, _ref1;
+      var addSection, addSectionItem, discardSection, emitSectionTemplate, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectOuterTag, item, lastSectionTag, out, outpart, pos, section, tag, tagName, tagType, val, _i, _len, _ref1;
       pos = position || 0;
       out = outpart = '';
       tag = htag = lastSectionTag = null;
@@ -165,6 +165,12 @@
         s = s.trim();
         m = s.match(matchHTMLTag);
         return out += !m ? "<" + options.defaultSectionItem + " data-jt=\".\">" + s + "</" + options.defaultSectionItem + ">" : (p = m[1].length + (m[3] && m[3].length || 0), "" + (s.slice(0, p)) + (!m[3] && ' data-jt="."' || ' .') + (s.slice(p)));
+      };
+      addSection = function(s, hidden) {
+        var m, p;
+        s = s.trim();
+        m = s.match(matchHTMLTag);
+        return out += !m ? "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\"" + (hidden && ' style="display:none"' || '') + ">" + s + "</" + options.defaultSectionItem + ">" : (p = m[1].length, "" + (s.slice(0, p)) + (hidden && ' style="display:none"' || '') + (s.slice(p)));
       };
       while (tag = re.exec(tpl)) {
         _ref1 = parseTag(tag), tagType = _ref1[0], tagName = _ref1[1], fullTag = _ref1[2], fullTagNoDelim = _ref1[3];
@@ -214,7 +220,7 @@
             if (typeof val !== 'object') {
               flush();
               section = compile(tpl, context, pos, tagName);
-              out += val && section || '';
+              addSection(section, !val);
               pos = re.lastIndex;
             } else if (!Array.isArray(val)) {
               flush();
@@ -260,18 +266,19 @@
                 injectOuterTag();
               }
               emitSectionTemplate();
-            }
-            if (!val || Array.isArray(val) && !val.length) {
-              out += compile(tpl, context, pos, tagName);
-              pos = re.lastIndex;
+              if (val.length) {
+                discardSection();
+              } else {
+                out += compile(tpl, context, pos, tagName);
+              }
+              if (!htag && tagName !== lastSectionTag) {
+                out += "</" + options.defaultSection + ">";
+              }
+              lastSectionTag = tagName;
             } else {
-              discardSection(context);
-              pos = re.lastIndex;
+              addSection(compile(tpl, context, pos, tagName), val);
             }
-            if (Array.isArray(val) && !htag && tagName !== lastSectionTag) {
-              out += "</" + options.defaultSection + ">";
-            }
-            lastSectionTag = tagName;
+            pos = re.lastIndex;
         }
       }
       out += tpl.slice(pos);

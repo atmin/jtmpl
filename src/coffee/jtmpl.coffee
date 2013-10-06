@@ -212,6 +212,17 @@ root.jtmpl = (target, tpl, model, options) ->
         p = m[1].length + (m[3] and m[3].length or 0)
         "#{ s.slice(0, p) }#{ not m[3] and ' data-jt="."' or ' .' }#{ s.slice(p) }"
 
+    # inject data-jt attribute on section
+    # expect compiled section as parameter, add to output
+    addSection = (s, hidden) ->
+      s = s.trim()
+      m = s.match(matchHTMLTag)
+      out += if not m
+        "<#{ options.defaultSection } data-jt=\"#{ fullTagNoDelim }\"#{ hidden and ' style="display:none"' or '' }>#{ s }</#{ options.defaultSectionItem }>"
+      else
+        p = m[1].length
+        "#{ s.slice(0, p) }#{ hidden and ' style="display:none"' or '' }#{ s.slice(p) }"
+
     ## Main parsing loop
     while tag = re.exec(tpl)
 
@@ -272,7 +283,7 @@ root.jtmpl = (target, tpl, model, options) ->
           if typeof val isnt 'object'
             flush()
             section = compile(tpl, context, pos, tagName)
-            out += val and section or ''
+            addSection(section, not val)
             pos = re.lastIndex
 
           # context?
@@ -321,16 +332,20 @@ root.jtmpl = (target, tpl, model, options) ->
 
             emitSectionTemplate()
 
-          if not val or Array.isArray(val) and not val.length
-            out += compile(tpl, context, pos, tagName)
-            pos = re.lastIndex
-          else
-            discardSection(context)
-            pos = re.lastIndex
+            if val.length
+              discardSection()
+            else
+              out += compile(tpl, context, pos, tagName)
 
-          if Array.isArray(val) and not htag and tagName isnt lastSectionTag
-            out += "</#{ options.defaultSection }>"
-          lastSectionTag = tagName
+            if not htag and tagName isnt lastSectionTag
+              out += "</#{ options.defaultSection }>"
+            lastSectionTag = tagName
+
+          else
+            addSection(compile(tpl, context, pos, tagName), val)
+
+          pos = re.lastIndex
+
 
     # Remainder
     out += tpl.slice(pos)
