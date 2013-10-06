@@ -25,16 +25,16 @@
     }), '<div data-jt="^a"><!-- ^ <<<z>>> --></div>', 'object array false');
     equal(jtmpl('{{#a}}1{{/a}}', {
       a: true
-    }), '<div data-jt="#a"><!-- # 1 --><div data-jt=".">1</div></div>', 'positive condition');
+    }), '1', 'positive condition');
     equal(jtmpl('{{^a}}1{{/a}}', {
       a: true
-    }), '<div data-jt="^a"><!-- ^ 1 --></div>', 'negative condition');
+    }), '', 'negative condition');
     equal(jtmpl('{{#a}}1{{/a}}', {
       a: false
-    }), '<div data-jt="#a"><!-- # 1 --></div>', 'positive condition false');
+    }), '', 'positive condition false');
     equal(jtmpl('{{^a}}1{{/a}}', {
       a: false
-    }), '<div data-jt="^a"><!-- ^ 1 -->1</div>', 'negative condition false');
+    }), '1', 'negative condition false');
     equal(jtmpl('<p>{{a}}</p>', {
       a: 1
     }), '<p data-jt="a">1</p>', 'inject var tag');
@@ -96,33 +96,7 @@
       })());
     };
     model.collection[0].inner[0] = 42;
-    equal(jtmpl('ul li ul li')[0].innerHTML, '42', 'nested section item innerHTML');
-    equal(jtmpl('ul')[0].children.length, model.collection.length, 'collection.length equals li.length');
-    model.field = 'qunit';
-    equal(jtmpl('p')[3].innerHTML, '<code>model.field</code> = "<span data-jt="field">qunit</span>"', 'positive if section');
-    model.collection[0].inner.splice(4, 1);
-    model.collection[0].inner[3] = 42;
-    equal(jtmpl('ul li ul li')[3].innerHTML, '42', 'collection.splice delete last element');
-    model.collection[0].inner.pop();
-    equal(jtmpl('ul li ul')[0].children.length, model.collection[0].inner.length, 'collection.pop');
-    model.collection[0].inner = [4, 3, 2, 1];
-    equal(collectionDOMText(), '4,3,2,1', 'collection = array_literal');
-    model.collection[0].inner.reverse();
-    equal(collectionDOMText(), '1,2,3,4', 'collection.reverse');
-    model.collection[0].inner = [2, 2, 2, 3, 4];
-    model.collection[0].inner.shift();
-    model.collection[0].inner[0] = 1;
-    equal(collectionDOMText(), '1,2,3,4', 'collection.shift');
-    model.collection[0].inner = [2, 3, 4];
-    model.collection[0].inner.unshift(33);
-    model.collection[0].inner[0] = 1;
-    equal(collectionDOMText(), '1,2,3,4', 'collection.unshift');
-    model.collection[0].inner = [2, 4, 3, 1];
-    model.collection[0].inner.sort();
-    model.collection[0].inner[0] = 3;
-    model.collection[0].inner[2] = 1;
-    model.collection[0].inner.sort();
-    return equal(collectionDOMText(), '1,2,3,4', 'collection.sort');
+    return equal(jtmpl('ul li ul li')[0].innerHTML, '42', 'nested section item innerHTML');
   });
 
 }).call(this);

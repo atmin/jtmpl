@@ -254,7 +254,7 @@ Showcase of all features, tests
       <div class="wrapper">
         <script id="kitchensink" type="text/jtmpl">
 
-                <h1><span>{&gt;</span> <a href="/">jtmpl</a></h1>
+          <h1><span>{&gt;</span> <a href="/">jtmpl</a></h1>
           <h2>KitchenSync&mdash;feature explorer</h2>
           <p>
             Feel free to modify <code>model</code> from JS console and observe changes.
@@ -404,6 +404,88 @@ Showcase of all features, tests
 
           jtmpl('#kitchensink', '#kitchensink', model);
         </script>
+
+        <section id="todoapp">
+          <header id="header">
+            <h1>todos</h1>
+            <input id="new-todo" placeholder="What needs to be done?" autofocus 
+              value="{{todo}}" onkeypress="{{add}}">
+          </header>
+          <!-- This section should be hidden by default and shown when there are todos -->
+          {{#todosLength}}
+          <section id="main">
+            <input id="toggle-all" type="checkbox">
+            <label for="toggle-all">Mark all as complete</label>
+            <ul id="todo-list">
+              {{#todos}}
+              <li class="{{completed}} {{editing}}">
+                <div class="view">
+                  <input class="toggle" type="checkbox" checked="{{completed}}">
+                  <label ondblclick="{{edit}}">{{title}}</label>
+                  <button class="destroy" onclick="{{destroy}}"></button>
+                </div>
+                <input class="edit" value="{{title}}" onkeypress="{{save}}">
+              </li>
+              {{/todos}}
+            </ul>
+          </section>
+          {{/todosLength}}
+        </section>
+
+        <script>
+          function enterKey(e) {
+            return 13 === (e.keyCode ? e.keyCode : e.which);
+          }
+
+          model2 = {
+            todo: '',
+            todos: [{
+              id: 0,
+              title: 'aaaaaa',
+              completed: false,
+              editing: false
+            }],
+            todosLength: true,
+            completedTodosLength: 1,
+            add: function(e) {
+              if (enterKey(e)) {
+                this.todos.push({
+                  id: this.todos.length,
+                  title: this.todo,
+                  completed: false,
+                  editing: false
+                });
+                this.update();
+              }
+            },
+            edit: function() {
+              this.editing = true;
+            },
+            save: function(e) {
+              if (enterKey(e)) {
+                this.editing = false;
+              }
+            },
+            destroy: function(e) {
+              var i, id = this.id;
+              model2.todos.splice(id, 1);
+              for (i = id; i < model2.todos.length; i++) {
+                model2.todos[i].id--;
+              }
+              model2.update();
+            },
+            update: function() {
+              this.todosLength = this.todos.length;
+              this.completedTodosLength = this.todos.reduce(function(prev, curr, i, a) {
+                return prev + (curr.completed && 1 || 0);
+              }, 0);
+            }
+          };
+
+          model2.update();
+          jtmpl('#todoapp', '#todoapp', model2);
+        </script>
+
 
         <h2>QUnit Blackbox Tests</h2>
         <div id="qunit"></div>

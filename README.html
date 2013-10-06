@@ -217,7 +217,7 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
   &lt;div class=&quot;wrapper&quot;&gt;
     &lt;script id=&quot;kitchensink&quot; type=&quot;text/jtmpl&quot;&gt;
 
-            &lt;h1&gt;&lt;span&gt;{&amp;gt;&lt;/span&gt; &lt;a href=&quot;/&quot;&gt;jtmpl&lt;/a&gt;&lt;/h1&gt;
+      &lt;h1&gt;&lt;span&gt;{&amp;gt;&lt;/span&gt; &lt;a href=&quot;/&quot;&gt;jtmpl&lt;/a&gt;&lt;/h1&gt;
       &lt;h2&gt;KitchenSync&amp;mdash;feature explorer&lt;/h2&gt;
       &lt;p&gt;
         Feel free to modify &lt;code&gt;model&lt;/code&gt; from JS console and observe changes.
@@ -367,6 +367,88 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
 
       jtmpl(&#39;#kitchensink&#39;, &#39;#kitchensink&#39;, model);
     &lt;/script&gt;
+
+    &lt;section id=&quot;todoapp&quot;&gt;
+      &lt;header id=&quot;header&quot;&gt;
+        &lt;h1&gt;todos&lt;/h1&gt;
+        &lt;input id=&quot;new-todo&quot; placeholder=&quot;What needs to be done?&quot; autofocus 
+          value=&quot;{{todo}}&quot; onkeypress=&quot;{{add}}&quot;&gt;
+      &lt;/header&gt;
+      &lt;!-- This section should be hidden by default and shown when there are todos --&gt;
+      {{#todosLength}}
+      &lt;section id=&quot;main&quot;&gt;
+        &lt;input id=&quot;toggle-all&quot; type=&quot;checkbox&quot;&gt;
+        &lt;label for=&quot;toggle-all&quot;&gt;Mark all as complete&lt;/label&gt;
+        &lt;ul id=&quot;todo-list&quot;&gt;
+          {{#todos}}
+          &lt;li class=&quot;{{completed}} {{editing}}&quot;&gt;
+            &lt;div class=&quot;view&quot;&gt;
+              &lt;input class=&quot;toggle&quot; type=&quot;checkbox&quot; checked=&quot;{{completed}}&quot;&gt;
+              &lt;label ondblclick=&quot;{{edit}}&quot;&gt;{{title}}&lt;/label&gt;
+              &lt;button class=&quot;destroy&quot; onclick=&quot;{{destroy}}&quot;&gt;&lt;/button&gt;
+            &lt;/div&gt;
+            &lt;input class=&quot;edit&quot; value=&quot;{{title}}&quot; onkeypress=&quot;{{save}}&quot;&gt;
+          &lt;/li&gt;
+          {{/todos}}
+        &lt;/ul&gt;
+      &lt;/section&gt;
+      {{/todosLength}}
+    &lt;/section&gt;
+
+    &lt;script&gt;
+      function enterKey(e) {
+        return 13 === (e.keyCode ? e.keyCode : e.which);
+      }
+
+      model2 = {
+        todo: &#39;&#39;,
+        todos: [{
+          id: 0,
+          title: &#39;aaaaaa&#39;,
+          completed: false,
+          editing: false
+        }],
+        todosLength: true,
+        completedTodosLength: 1,
+        add: function(e) {
+          if (enterKey(e)) {
+            this.todos.push({
+              id: this.todos.length,
+              title: this.todo,
+              completed: false,
+              editing: false
+            });
+            this.update();
+          }
+        },
+        edit: function() {
+          this.editing = true;
+        },
+        save: function(e) {
+          if (enterKey(e)) {
+            this.editing = false;
+          }
+        },
+        destroy: function(e) {
+          var i, id = this.id;
+          model2.todos.splice(id, 1);
+          for (i = id; i &lt; model2.todos.length; i++) {
+            model2.todos[i].id--;
+          }
+          model2.update();
+        },
+        update: function() {
+          this.todosLength = this.todos.length;
+          this.completedTodosLength = this.todos.reduce(function(prev, curr, i, a) {
+            return prev + (curr.completed &amp;&amp; 1 || 0);
+          }, 0);
+        }
+      };
+
+      model2.update();
+      jtmpl(&#39;#todoapp&#39;, &#39;#todoapp&#39;, model2);
+    &lt;/script&gt;
+
 
     &lt;h2&gt;QUnit Blackbox Tests&lt;/h2&gt;
     &lt;div id=&quot;qunit&quot;&gt;&lt;/div&gt;

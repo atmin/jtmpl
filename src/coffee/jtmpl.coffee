@@ -69,15 +69,10 @@ root.jtmpl = (target, tpl, model, options) ->
   # Last opened opening HTML tag
   hre = ///
     (< \s* [\w-_]+ )  # capture HTML tag opening and name \1
-    (?: \s+       # non-capturing group HTML attribute
+    (?: \s+           # non-capturing group HTML attribute
       ([\w-\{\}]*)      # capture last attribute name \2
       (=)?              # capture the = \3
-      (?:               # capture optional last attribute value
-        (   (?: "[^">]*"?) |   # attribute value double quoted (allow unclosed)
-          (?: '[^'>]*'?) |   # single quoted
-          [^\s>]+            # or unquoted \4
-        )
-      )?
+      ("[^">]*"?)?      # capture quoted attribute value \4
     )*?
     \s* (>)?          # capture if tag closed \5
     \s* (?: <!--.*?-->\s*)* $      # whitespace, possibly HTML comments, end of slice
@@ -154,7 +149,10 @@ root.jtmpl = (target, tpl, model, options) ->
     # Strip HTML comments that enclose tags
     tpl = tpl.replace(new RegExp("<!--\\s*(#{ re.source })\\s*-->"), '$1')
 
-    # Strip quotes around html element attributes associated with tags
+    # Strip single quotes around html element attributes associated with tags
+    tpl = tpl.replace(new RegExp("([\\w-_]+)='(#{ re.source })'", 'g'), '$1=$2')
+
+    # Strip double quotes around html element attributes associated with tags
     tpl = tpl.replace(new RegExp("([\\w-_]+)=\"(#{ re.source })\"", 'g'), '$1=$2')
 
     # If tags stand on their own line remove the line, keep the tag only
@@ -186,7 +184,22 @@ root.jtmpl = (target, tpl, model, options) ->
         out = "#{ out.slice(0, p) }#{ m[2].length and ' ' or '' }#{ t }#{ out.slice(p) }"
       else
         out = "#{ out.slice(0, p) } data-jt=\"#{ t }\"#{ out.slice(p) }"
-      ''
+      
+    # emit section template in a HTML comment
+    emitSectionTemplate = () ->
+      # this is an oversimplification and will not work in all cases
+      # breaking case: {{#collection}}{{#collection}}...{{/collection}}{{/collection}}
+      # you cannot extract tree branch with a regular expression
+      # this approximation will work for cases when nested branches are
+      # named differently, than the section we're extracting
+      section = tpl.slice(pos).match(
+        new RegExp('([\\s\\S]*?)' + quoteRE(options.delimiters[0] + '/' + tagName + options.delimiters[1])))
+      if not section
+        throw ":( unclosed section #{ fullTag }"
+      section = section[1].trim()
+        .replace(new RegExp(quoteRE(options.delimiters[0]), 'g'), options.compiledDelimiters[0])
+        .replace(new RegExp(quoteRE(options.delimiters[1]), 'g'), options.compiledDelimiters[1])
+      out += "<!-- #{ tag[2] } #{ section } -->"
 
     # inject data-jt attribute on section item
     # expect compiled section as parameter, add to output
@@ -252,59 +265,71 @@ root.jtmpl = (target, tpl, model, options) ->
               else
                 out += val
 
-        when 'section', 'inverted_section'
-          if not htag
-            if tagName isnt lastSectionTag
-              out += "<#{ options.defaultSection } data-jt=\"#{ fullTagNoDelim }\">"
-          else
-            injectOuterTag()
-
-          # emit section template in a HTML comment
+        when 'section'
           val = context[tagName]
-          # this is an oversimplification and will not work in all cases
-          # breaking case: {{#collection}}{{#collection}}...{{/collection}}{{/collection}}
-          # you cannot extract tree branch with a regular expression
-          # this approximation will work for cases when nested branches are
-          # named differently, than the section we're extracting
-          section = tpl.slice(pos).match(
-            new RegExp('([\\s\\S]*?)' + quoteRE(options.delimiters[0] + '/' + tagName + options.delimiters[1])))
-          if not section
-            throw ":( unclosed section #{ fullTag }"
-          section = section[1].trim()
-            .replace(new RegExp(quoteRE(options.delimiters[0]), 'g'), options.compiledDelimiters[0])
-            .replace(new RegExp(quoteRE(options.delimiters[1]), 'g'), options.compiledDelimiters[1])
-          out += "<!-- #{ tag[2] } #{ section } -->"
 
-          if tagType is 'section'
-            # falsy value or empty collection?
-            if not val or Array.isArray(val) and not val.length
+          # scalar?
+          if typeof val isnt 'object'
+            flush()
+            section = compile(tpl, context, pos, tagName)
+            out += val and section or ''
+            pos = re.lastIndex
+
+          # context?
+          else if not Array.isArray(val)
+            flush()
+            out += compile(tpl, val, pos, tagName)
+            pos = re.lastIndex
+
+          # collection
+          else
+            if not htag
+              if tagName isnt lastSectionTag
+                out += "<#{ options.defaultSection } data-jt=\"#{ fullTagNoDelim }\">"
+            else
+              injectOuterTag()
+
+            emitSectionTemplate()
+
+            # empty collection?
+            if not val.length
               discardSection()
               pos = re.lastIndex
             else
               # output section
-              collection = Array.isArray(val) and val or [val]
-              for item, i in collection
+              for item, i in val
                 flush()
                 addSectionItem(compile(tpl, (if val and typeof val is 'object' then item else context), pos, tagName))
-                if i < collection.length - 1
+                if i < val.length - 1
                   re.lastIndex = pos
               pos = re.lastIndex
 
-          else if tagType is 'inverted_section'
-            # falsy value or empty collection?
-            if not val or Array.isArray(val) and not val.length
-              out += compile(tpl, context, pos, tagName)
-              pos = re.lastIndex
+            if not htag and tagName isnt lastSectionTag
+              out += "</#{ options.defaultSection }>"
+            lastSectionTag = tagName
+
+        when 'inverted_section'
+          val = context[tagName]
+
+          # collection?
+          if Array.isArray(val)
+            if not htag
+              if tagName isnt lastSectionTag
+                out += "<#{ options.defaultSection } data-jt=\"#{ fullTagNoDelim }\">"
             else
-              discardSection(context)
-              pos = re.lastIndex
+              injectOuterTag()
 
+            emitSectionTemplate()
+
+          if not val or Array.isArray(val) and not val.length
+            out += compile(tpl, context, pos, tagName)
+            pos = re.lastIndex
           else
-            throw ':( internal error'
+            discardSection(context)
+            pos = re.lastIndex
 
-          if not htag and tagName isnt lastSectionTag
+          if Array.isArray(val) and not htag and tagName isnt lastSectionTag
             out += "</#{ options.defaultSection }>"
-
           lastSectionTag = tagName
 
     # Remainder
@@ -357,6 +382,8 @@ root.jtmpl = (target, tpl, model, options) ->
       # if typeof context isnt 'object' then return
 
       if not context["__#{ prop }_bindings"]
+
+        # if typeof context isnt 'object' then debugger
 
         Object.defineProperty(context, "__#{ prop }_bindings",
           enumerable: false
@@ -545,7 +572,7 @@ root.jtmpl = (target, tpl, model, options) ->
       initBindings(context, prop)
 
       context["__#{ prop }_bindings"].push(
-        ((node, prop, isNegative) ->
+        ((context, node, prop, isNegative) ->
           (val) ->
             # collection?
             if Array.isArray(val)
@@ -568,9 +595,9 @@ root.jtmpl = (target, tpl, model, options) ->
             # if section
             else
               node.innerHTML = jtmpl(node.getAttribute(if !!val then 'data-jt-1' else 'data-jt-0') or '', this)
-              jtmpl(node, node.innerHTML, val, { rootModel: model })
+              jtmpl(node, node.innerHTML, context, { rootModel: model })
 
-        )(node, prop, isNegative)
+        )(context, node, prop, isNegative)
       )
 
 

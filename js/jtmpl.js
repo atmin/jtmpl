@@ -43,7 +43,7 @@
     options.defaultTargetTag = options.defaultTargetTag || 'div';
     tagRe = /(\{)?(\#|\^|\/)?([\w\.\-_]+)(\})?/;
     re = new RegExp(quoteRE(options.delimiters[0]) + tagRe.source + quoteRE(options.delimiters[1]), 'g');
-    hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?(?:((?:"[^">]*"?)|(?:'[^'>]*'?)|[^\s>]+))?)*?\s*(>)?\s*(?:<!--.*?-->\s*)*$/;
+    hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?("[^">]*"?)?)*?\s*(>)?\s*(?:<!--.*?-->\s*)*$/;
     matchHTMLTag = /^(\s*<([\w-_]+))(?:(\s*data-jt="[^"]*)")?[^>]*>[\s\S]*?<\/\2>\s*$/;
     escapeHTML = function(val) {
       return ((val != null) && val || '').toString().replace(/[&\"<>\\]/g, function(s) {
@@ -121,11 +121,12 @@
       }
     };
     compile = function(tpl, context, position, openTagName) {
-      var addSectionItem, collection, discardSection, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectOuterTag, item, lastSectionTag, out, outpart, pos, section, tag, tagName, tagType, val, _i, _len, _ref1;
+      var addSectionItem, discardSection, emitSectionTemplate, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectOuterTag, item, lastSectionTag, out, outpart, pos, section, tag, tagName, tagType, val, _i, _len, _ref1;
       pos = position || 0;
       out = outpart = '';
       tag = htag = lastSectionTag = null;
       tpl = tpl.replace(new RegExp("<!--\\s*(" + re.source + ")\\s*-->"), '$1');
+      tpl = tpl.replace(new RegExp("([\\w-_]+)='(" + re.source + ")'", 'g'), '$1=$2');
       tpl = tpl.replace(new RegExp("([\\w-_]+)=\"(" + re.source + ")\"", 'g'), '$1=$2');
       tpl = tpl.replace(new RegExp("\\n\\s*(" + re.source + ")\\s*\\n", 'g'), '\n$1\n');
       flush = function() {
@@ -145,11 +146,19 @@
         t = "" + (getPropString(fullTagNoDelim));
         if (m = out.match(new RegExp("[\\s\\S]{" + p + "}(\\sdata-jt=\"([^\"]*))\""))) {
           p = p + m[1].length;
-          out = "" + (out.slice(0, p)) + (m[2].length && ' ' || '') + t + (out.slice(p));
+          return out = "" + (out.slice(0, p)) + (m[2].length && ' ' || '') + t + (out.slice(p));
         } else {
-          out = "" + (out.slice(0, p)) + " data-jt=\"" + t + "\"" + (out.slice(p));
+          return out = "" + (out.slice(0, p)) + " data-jt=\"" + t + "\"" + (out.slice(p));
         }
-        return '';
+      };
+      emitSectionTemplate = function() {
+        var section;
+        section = tpl.slice(pos).match(new RegExp('([\\s\\S]*?)' + quoteRE(options.delimiters[0] + '/' + tagName + options.delimiters[1])));
+        if (!section) {
+          throw ":( unclosed section " + fullTag;
+        }
+        section = section[1].trim().replace(new RegExp(quoteRE(options.delimiters[0]), 'g'), options.compiledDelimiters[0]).replace(new RegExp(quoteRE(options.delimiters[1]), 'g'), options.compiledDelimiters[1]);
+        return out += "<!-- " + tag[2] + " " + section + " -->";
       };
       addSectionItem = function(s) {
         var m, p;
@@ -201,49 +210,65 @@
             }
             break;
           case 'section':
-          case 'inverted_section':
-            if (!htag) {
-              if (tagName !== lastSectionTag) {
-                out += "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\">";
-              }
-            } else {
-              injectOuterTag();
-            }
             val = context[tagName];
-            section = tpl.slice(pos).match(new RegExp('([\\s\\S]*?)' + quoteRE(options.delimiters[0] + '/' + tagName + options.delimiters[1])));
-            if (!section) {
-              throw ":( unclosed section " + fullTag;
-            }
-            section = section[1].trim().replace(new RegExp(quoteRE(options.delimiters[0]), 'g'), options.compiledDelimiters[0]).replace(new RegExp(quoteRE(options.delimiters[1]), 'g'), options.compiledDelimiters[1]);
-            out += "<!-- " + tag[2] + " " + section + " -->";
-            if (tagType === 'section') {
-              if (!val || Array.isArray(val) && !val.length) {
+            if (typeof val !== 'object') {
+              flush();
+              section = compile(tpl, context, pos, tagName);
+              out += val && section || '';
+              pos = re.lastIndex;
+            } else if (!Array.isArray(val)) {
+              flush();
+              out += compile(tpl, val, pos, tagName);
+              pos = re.lastIndex;
+            } else {
+              if (!htag) {
+                if (tagName !== lastSectionTag) {
+                  out += "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\">";
+                }
+              } else {
+                injectOuterTag();
+              }
+              emitSectionTemplate();
+              if (!val.length) {
                 discardSection();
                 pos = re.lastIndex;
               } else {
-                collection = Array.isArray(val) && val || [val];
-                for (i = _i = 0, _len = collection.length; _i < _len; i = ++_i) {
-                  item = collection[i];
+                for (i = _i = 0, _len = val.length; _i < _len; i = ++_i) {
+                  item = val[i];
                   flush();
                   addSectionItem(compile(tpl, (val && typeof val === 'object' ? item : context), pos, tagName));
-                  if (i < collection.length - 1) {
+                  if (i < val.length - 1) {
                     re.lastIndex = pos;
                   }
                 }
                 pos = re.lastIndex;
               }
-            } else if (tagType === 'inverted_section') {
-              if (!val || Array.isArray(val) && !val.length) {
-                out += compile(tpl, context, pos, tagName);
-                pos = re.lastIndex;
-              } else {
-                discardSection(context);
-                pos = re.lastIndex;
+              if (!htag && tagName !== lastSectionTag) {
+                out += "</" + options.defaultSection + ">";
               }
-            } else {
-              throw ':( internal error';
+              lastSectionTag = tagName;
             }
-            if (!htag && tagName !== lastSectionTag) {
+            break;
+          case 'inverted_section':
+            val = context[tagName];
+            if (Array.isArray(val)) {
+              if (!htag) {
+                if (tagName !== lastSectionTag) {
+                  out += "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\">";
+                }
+              } else {
+                injectOuterTag();
+              }
+              emitSectionTemplate();
+            }
+            if (!val || Array.isArray(val) && !val.length) {
+              out += compile(tpl, context, pos, tagName);
+              pos = re.lastIndex;
+            } else {
+              discardSection(context);
+              pos = re.lastIndex;
+            }
+            if (Array.isArray(val) && !htag && tagName !== lastSectionTag) {
               out += "</" + options.defaultSection + ">";
             }
             lastSectionTag = tagName;
@@ -577,7 +602,7 @@
       };
       addSectionBinding = function(context, node, prop, isNegative) {
         initBindings(context, prop);
-        return context["__" + prop + "_bindings"].push((function(node, prop, isNegative) {
+        return context["__" + prop + "_bindings"].push((function(context, node, prop, isNegative) {
           return function(val) {
             var i, item, _i, _len, _results;
             if (Array.isArray(val)) {
@@ -597,12 +622,12 @@
               });
             } else {
               node.innerHTML = jtmpl(node.getAttribute(!!val ? 'data-jt-1' : 'data-jt-0') || '', this);
-              return jtmpl(node, node.innerHTML, val, {
+              return jtmpl(node, node.innerHTML, context, {
                 rootModel: model
               });
             }
           };
-        })(node, prop, isNegative));
+        })(context, node, prop, isNegative));
       };
       itemIndex = 0;
       nodeContext = null;
@@ -612,19 +637,23 @@
         switch (node.nodeType) {
           case node.ELEMENT_NODE:
             if (attr = node.getAttribute('data-jt')) {
-              jtProps = attr.trim().split(' ').sort();
+              jtProps = attr.trim().split(' ').reverse();
               for (_j = 0, _len1 = jtProps.length; _j < _len1; _j++) {
                 jt = jtProps[_j];
                 sectionModifier = jt.slice(0, 1);
                 if (sectionModifier === '#' || sectionModifier === '^') {
                   section = jt.slice(1);
-                  nodeContext = context[section];
-                  addSectionBinding(context, node, section, sectionModifier === '^');
+                  nodeContext = nodeContext || context[section];
                   if (Array.isArray(nodeContext)) {
+                    addSectionBinding(context, node, section, sectionModifier === '^');
                     bindArrayToNodeChildren(nodeContext, node);
+                  } else if (typeof nodeContext === 'object') {
+                    addSectionBinding(nodeContext, node, section, sectionModifier === '^');
+                  } else {
+                    addSectionBinding(context, node, section, sectionModifier === '^');
                   }
                 } else if (jt === '.') {
-                  nodeContext = context[itemIndex++] || context;
+                  nodeContext = context[itemIndex++];
                 } else {
                   _ref2 = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref2[0], k = _ref2[1], v = _ref2[2];
                   if (k && k.indexOf('on') === 0) {
