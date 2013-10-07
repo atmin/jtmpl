@@ -398,12 +398,7 @@ root.jtmpl = (target, tpl, model, options) ->
     # create slots for property value and change reactor functions
     # setter notifies all reactors
     initBindings = (context, prop) ->
-      # if typeof context isnt 'object' then return
-
       if not context["__#{ prop }_bindings"]
-
-        # if typeof context isnt 'object' then debugger
-
         Object.defineProperty(context, "__#{ prop }_bindings",
           enumerable: false
           writable: true
@@ -578,7 +573,7 @@ root.jtmpl = (target, tpl, model, options) ->
           ((node, prop, nodeProp) -> 
             (val) ->
               if nodeProp in ['value', 'checked', 'selected']
-                node[nodeProp] = val
+                if node[nodeProp] isnt val then node[nodeProp] = val
               else
                 if (typeof val is 'boolean' and not val) or val is null
                   node.removeAttribute(nodeProp)

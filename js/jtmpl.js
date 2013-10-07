@@ -596,7 +596,9 @@
           return context["__" + prop + "_bindings"].push((function(node, prop, nodeProp) {
             return function(val) {
               if (nodeProp === 'value' || nodeProp === 'checked' || nodeProp === 'selected') {
-                return node[nodeProp] = val;
+                if (node[nodeProp] !== val) {
+                  return node[nodeProp] = val;
+                }
               } else {
                 if ((typeof val === 'boolean' && !val) || val === null) {
                   return node.removeAttribute(nodeProp);
