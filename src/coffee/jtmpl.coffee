@@ -373,6 +373,11 @@ root.jtmpl = (target, tpl, model, options) ->
 
   # Bind event handlers
   bind = (root, context) ->
+
+    itemIndex = 0
+    nodeContext = null
+
+
     # DOM event handler factories
     changeHandler = (context, k, v) -> -> context[v] = this[k]
 
@@ -613,9 +618,80 @@ root.jtmpl = (target, tpl, model, options) ->
         )(context, node, prop, isNegative)
       )
 
+    bindNode = (node) ->
+      if attr = node.getAttribute('data-jt')
 
-    itemIndex = 0
-    nodeContext = null
+        # we want the dot first
+        jtProps = attr.trim().split(' ').reverse()
+
+        # iterate bound template tags
+        for jt in jtProps
+
+          # section?
+          sectionModifier = jt.slice(0, 1)
+          if sectionModifier in ['#', '^']
+            section = jt.slice(1)
+            nodeContext = nodeContext or context[section]
+            if Array.isArray(nodeContext)
+              addSectionBinding(context, node, section, sectionModifier is '^')
+              bindArrayToNodeChildren(nodeContext, node)
+            else if typeof nodeContext is 'object'
+              addSectionBinding(nodeContext, node, section, sectionModifier is '^')
+            else
+              addSectionBinding(context, node, section, sectionModifier is '^')
+
+          # section item?
+          else if jt is '.'
+            nodeContext = context[itemIndex++]
+
+          # var
+          else
+            [tmp, k, v] = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/)
+
+            # attach event?
+            if k and k.indexOf('on') is 0
+              handler = options.rootModel? and options.rootModel[v] or model[v]
+              if typeof handler is 'function'
+                addEvent(k.slice(2), node, handler.bind(context))
+              else
+                throw ":( #{ v } is not a function, cannot attach event handler"
+
+            # node.innerHTML?
+            else if not v
+              if nodeContext and not Array.isArray(nodeContext)
+                addBinding(nodeContext, node, k)
+              else
+                addBinding(context, node, k)
+
+            # attribute
+            else
+              if nodeContext and not Array.isArray(nodeContext)
+                addBinding(nodeContext, node, v, k)
+              else
+                addBinding(context, node, v, k)
+
+              # monitor DOM onchange event?
+              if k in ['value', 'checked', 'selected']
+                # first select option?
+                if node.nodeName is 'OPTION' and node.parentNode.querySelectorAll('option')[0] is node
+                  addEvent('change', node.parentNode, optionHandler(context, k, v).bind(node.parentNode))
+
+                # radio group?
+                if node.type is 'radio' and node.name
+                  addEvent('change', node, radioHandler(context, k, v).bind(node))
+
+                # text input?
+                if node.type is 'text'
+                  addEvent('input', node, changeHandler(context, k, v).bind(node))
+
+                # other inputs
+                else
+                  addEvent('change', node, changeHandler(context, k, v).bind(node))
+
+
+
+    if root is target
+      bindNode(root, context)
 
     # iterate children
     for node in root.childNodes
@@ -623,75 +699,7 @@ root.jtmpl = (target, tpl, model, options) ->
       switch node.nodeType
 
         when node.ELEMENT_NODE
-          if attr = node.getAttribute('data-jt')
-
-            # we want the dot first
-            jtProps = attr.trim().split(' ').reverse()
-
-            # iterate bound template tags
-            for jt in jtProps
-
-              # section?
-              sectionModifier = jt.slice(0, 1)
-              if sectionModifier in ['#', '^']
-                section = jt.slice(1)
-                nodeContext = nodeContext or context[section]
-                if Array.isArray(nodeContext)
-                  addSectionBinding(context, node, section, sectionModifier is '^')
-                  bindArrayToNodeChildren(nodeContext, node)
-                else if typeof nodeContext is 'object'
-                  addSectionBinding(nodeContext, node, section, sectionModifier is '^')
-                else
-                  addSectionBinding(context, node, section, sectionModifier is '^')
-
-              # section item?
-              else if jt is '.'
-                nodeContext = context[itemIndex++]
-
-              # var
-              else
-                [tmp, k, v] = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/)
-
-                # attach event?
-                if k and k.indexOf('on') is 0
-                  handler = options.rootModel? and options.rootModel[v] or model[v]
-                  if typeof handler is 'function'
-                    addEvent(k.slice(2), node, handler.bind(context))
-                  else
-                    throw ":( #{ v } is not a function, cannot attach event handler"
-
-                # node.innerHTML?
-                else if not v
-                  if nodeContext and not Array.isArray(nodeContext)
-                    addBinding(nodeContext, node, k)
-                  else
-                    addBinding(context, node, k)
-
-                # attribute
-                else
-                  if nodeContext and not Array.isArray(nodeContext)
-                    addBinding(nodeContext, node, v, k)
-                  else
-                    addBinding(context, node, v, k)
-
-                  # monitor DOM onchange event?
-                  if k in ['value', 'checked', 'selected']
-                    # first select option?
-                    if node.nodeName is 'OPTION' and node.parentNode.querySelectorAll('option')[0] is node
-                      addEvent('change', node.parentNode, optionHandler(context, k, v).bind(node.parentNode))
-
-                    # radio group?
-                    if node.type is 'radio' and node.name
-                      addEvent('change', node, radioHandler(context, k, v).bind(node))
-
-                    # text input?
-                    if node.type is 'text'
-                      addEvent('input', node, changeHandler(context, k, v).bind(node))
-
-                    # other inputs
-                    else
-                      addEvent('change', node, changeHandler(context, k, v).bind(node))
-
+          bindNode(node)
           bind(node, typeof nodeContext is 'object' and nodeContext or context)
           nodeContext = null
 
