@@ -269,14 +269,8 @@ Showcase of all features, tests
           <p>
             <label for="field">Enter something</label> <input id="field" value={{field}}>
           </p>
-          <p>
-            {{#field}}
-            <code>model.field</code> = "{{field}}"
-            {{/field}}
-            {{^field}}
-            <code>model.field</code> is empty
-            {{/field}}
-          </p>
+          {{#field}} <p><code>model.field</code> = "{{field}}"</p> {{/field}}
+          {{^field}} <p><code>model.field</code> is empty</p> {{/field}}
 
           <h3>Data binding, toggle class</h3>
           <p>

@@ -232,14 +232,8 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
       &lt;p&gt;
         &lt;label for=&quot;field&quot;&gt;Enter something&lt;/label&gt; &lt;input id=&quot;field&quot; value={{field}}&gt;
       &lt;/p&gt;
-      &lt;p&gt;
-        {{#field}}
-        &lt;code&gt;model.field&lt;/code&gt; = &quot;{{field}}&quot;
-        {{/field}}
-        {{^field}}
-        &lt;code&gt;model.field&lt;/code&gt; is empty
-        {{/field}}
-      &lt;/p&gt;
+      {{#field}} &lt;p&gt;&lt;code&gt;model.field&lt;/code&gt; = &quot;{{field}}&quot;&lt;/p&gt; {{/field}}
+      {{^field}} &lt;p&gt;&lt;code&gt;model.field&lt;/code&gt; is empty&lt;/p&gt; {{/field}}
 
       &lt;h3&gt;Data binding, toggle class&lt;/h3&gt;
       &lt;p&gt;

@@ -221,7 +221,7 @@ root.jtmpl = (target, tpl, model, options) ->
         "<#{ options.defaultSection } data-jt=\"#{ fullTagNoDelim }\"#{ hidden and ' style="display:none"' or '' }>#{ s }</#{ options.defaultSectionItem }>"
       else
         p = m[1].length
-        "#{ s.slice(0, p) }#{ hidden and ' style="display:none"' or '' }#{ s.slice(p) }"
+        "#{ s.slice(0, p) } data-jt=\"#{ fullTagNoDelim }\"#{ hidden and ' style="display:none"' or '' }#{ s.slice(p) }"
 
     ## Main parsing loop
     while tag = re.exec(tpl)
@@ -368,7 +368,6 @@ root.jtmpl = (target, tpl, model, options) ->
 
   # Construct DOM
   target.innerHTML = html
-  target.setAttribute('data-jt', '.')
 
 
 
@@ -609,8 +608,7 @@ root.jtmpl = (target, tpl, model, options) ->
 
             # if section
             else
-              node.innerHTML = jtmpl(node.getAttribute(if !!val then 'data-jt-1' else 'data-jt-0') or '', this)
-              jtmpl(node, node.innerHTML, context, { rootModel: model })
+              node.style.display = !!val is isNegative and 'none' or ''
 
         )(context, node, prop, isNegative)
       )
@@ -694,7 +692,7 @@ root.jtmpl = (target, tpl, model, options) ->
                     else
                       addEvent('change', node, changeHandler(context, k, v).bind(node))
 
-          bind(node, nodeContext or context)
+          bind(node, typeof nodeContext is 'object' and nodeContext or context)
           nodeContext = null
 
         when node.COMMENT_NODE

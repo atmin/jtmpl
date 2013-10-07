@@ -170,7 +170,7 @@
         var m, p;
         s = s.trim();
         m = s.match(matchHTMLTag);
-        return out += !m ? "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\"" + (hidden && ' style="display:none"' || '') + ">" + s + "</" + options.defaultSectionItem + ">" : (p = m[1].length, "" + (s.slice(0, p)) + (hidden && ' style="display:none"' || '') + (s.slice(p)));
+        return out += !m ? "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\"" + (hidden && ' style="display:none"' || '') + ">" + s + "</" + options.defaultSectionItem + ">" : (p = m[1].length, "" + (s.slice(0, p)) + " data-jt=\"" + fullTagNoDelim + "\"" + (hidden && ' style="display:none"' || '') + (s.slice(p)));
       };
       while (tag = re.exec(tpl)) {
         _ref1 = parseTag(tag), tagType = _ref1[0], tagName = _ref1[1], fullTag = _ref1[2], fullTagNoDelim = _ref1[3];
@@ -294,7 +294,6 @@
       target = newTarget;
     }
     target.innerHTML = html;
-    target.setAttribute('data-jt', '.');
     bind = function(root, context) {
       var addBinding, addSectionBinding, attr, bindArrayToNodeChildren, changeHandler, createSectionItem, handler, initBindings, itemIndex, jt, jtProps, k, node, nodeContext, optionHandler, radioHandler, section, sectionModifier, tmp, v, _i, _j, _len, _len1, _ref1, _ref2;
       changeHandler = function(context, k, v) {
@@ -628,10 +627,7 @@
                 rootModel: model
               });
             } else {
-              node.innerHTML = jtmpl(node.getAttribute(!!val ? 'data-jt-1' : 'data-jt-0') || '', this);
-              return jtmpl(node, node.innerHTML, context, {
-                rootModel: model
-              });
+              return node.style.display = !!val === isNegative && 'none' || '';
             }
           };
         })(context, node, prop, isNegative));
@@ -699,7 +695,7 @@
                 }
               }
             }
-            bind(node, nodeContext || context);
+            bind(node, typeof nodeContext === 'object' && nodeContext || context);
             nodeContext = null;
             break;
           case node.COMMENT_NODE:
