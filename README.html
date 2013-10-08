@@ -396,14 +396,7 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
 
       model2 = {
         todo: &#39;&#39;,
-        todos: [{
-          id: 0,
-          title: &#39;aaaaaa&#39;,
-          completed: false,
-          editing: false
-        }],
-        todosLength: true,
-        completedTodosLength: 1,
+        todos: [],
         add: function(e) {
           if (enterKey(e)) {
             this.todos.push({

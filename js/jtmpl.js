@@ -120,15 +120,19 @@
         return el.className = el.className.replace(new RegExp("(\\s|^)" + name + "(\\s|$)"), '').replace(/^\s+|\s+$/g, '');
       }
     };
-    compile = function(tpl, context, position, openTagName) {
+
+    /*
+    Parse template, remove jtmpl tags, add data-jt attrs and structure as HTML comments
+    tpl: template string, context: model object
+    position: template position to start parsing
+    openTagName: remember opening tag on recursion
+    echoMode: return template contents instead of rendering it
+    */
+    compile = function(tpl, context, position, openTagName, echoMode) {
       var addSection, addSectionItem, discardSection, emitSectionTemplate, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectOuterTag, item, lastSectionTag, out, outpart, pos, section, tag, tagName, tagType, val, _i, _len, _ref1;
       pos = position || 0;
       out = outpart = '';
       tag = htag = lastSectionTag = null;
-      tpl = tpl.replace(new RegExp("<!--\\s*(" + re.source + ")\\s*-->"), '$1');
-      tpl = tpl.replace(new RegExp("([\\w-_]+)='(" + re.source + ")'", 'g'), '$1=$2');
-      tpl = tpl.replace(new RegExp("([\\w-_]+)=\"(" + re.source + ")\"", 'g'), '$1=$2');
-      tpl = tpl.replace(new RegExp("\\n\\s*(" + re.source + ")\\s*\\n", 'g'), '\n$1\n');
       flush = function() {
         out += tpl.slice(pos, re.lastIndex - (fullTag || '').length);
         return pos = re.lastIndex;
@@ -138,7 +142,7 @@
         return (htag[3] && !htag[5]) && (htag[2] + htag[3] + quote + val + quote) || val;
       };
       discardSection = function() {
-        return compile(tpl, context, pos, tagName);
+        return compile(tpl, context, pos, tagName, true);
       };
       injectOuterTag = function() {
         var m, p, t;
@@ -152,13 +156,11 @@
         }
       };
       emitSectionTemplate = function() {
-        var section;
-        section = tpl.slice(pos).match(new RegExp('([\\s\\S]*?)' + quoteRE(options.delimiters[0] + '/' + tagName + options.delimiters[1])));
-        if (!section) {
-          throw ":( unclosed section " + fullTag;
-        }
-        section = section[1].trim().replace(new RegExp(quoteRE(options.delimiters[0]), 'g'), options.compiledDelimiters[0]).replace(new RegExp(quoteRE(options.delimiters[1]), 'g'), options.compiledDelimiters[1]);
-        return out += "<!-- " + tag[2] + " " + section + " -->";
+        var lastIndex, section;
+        lastIndex = re.lastIndex;
+        section = compile(tpl, context, pos, tagName, true).trim().replace(new RegExp(quoteRE(options.delimiters[0]), 'g'), options.compiledDelimiters[0]).replace(new RegExp(quoteRE(options.delimiters[1]), 'g'), options.compiledDelimiters[1]);
+        out += "<!-- " + tag[2] + " " + section + " -->";
+        return re.lastIndex = lastIndex;
       };
       addSectionItem = function(s) {
         var m, p;
@@ -185,106 +187,119 @@
             return out;
           case 'var':
           case 'unescaped_var':
-            val = tagName === '.' ? context : context[tagName];
-            escaped = tagType === 'unescaped_var' && val || escapeHTML(val);
-            if (!htag) {
-              out += "<" + options.defaultVar + " data-jt=\"" + fullTagNoDelim + "\">" + escaped + "</" + options.defaultVar + ">";
+            if (echoMode) {
+              out += fullTag;
             } else {
-              injectOuterTag();
-              if (typeof val === 'function') {
-                out = out.replace(/[\w-_]+=$/, '');
+              val = tagName === '.' ? context : context[tagName];
+              escaped = tagType === 'unescaped_var' && val || escapeHTML(val);
+              if (!htag) {
+                out += "<" + options.defaultVar + " data-jt=\"" + fullTagNoDelim + "\">" + escaped + "</" + options.defaultVar + ">";
               } else {
-                if (htag[2] === 'class') {
-                  if (typeof val !== 'boolean') {
-                    throw "" + tagName + " is not boolean";
-                  }
-                  if (val) {
-                    out += tagName;
-                  }
-                } else if (htag[3] && !htag[5]) {
-                  if ((val == null) || val === null) {
-                    out = out.replace(/[\w-_]+=$/, '');
-                  } else if (typeof val === 'boolean') {
-                    out = out.replace(/[\w-_]+=$/, '') + (val && htag[2] || '');
-                  } else {
-                    out += '"' + val + '"';
-                  }
+                injectOuterTag();
+                if (typeof val === 'function') {
+                  out = out.replace(/[\w-_]+=$/, '');
                 } else {
-                  out += val;
+                  if (htag[2] === 'class') {
+                    if (typeof val !== 'boolean') {
+                      throw "" + tagName + " is not boolean";
+                    }
+                    if (val) {
+                      out += tagName;
+                    }
+                  } else if (htag[3] && !htag[5]) {
+                    if ((val == null) || val === null) {
+                      out = out.replace(/[\w-_]+=$/, '');
+                    } else if (typeof val === 'boolean') {
+                      out = out.replace(/[\w-_]+=$/, '') + (val && htag[2] || '');
+                    } else {
+                      out += '"' + val + '"';
+                    }
+                  } else {
+                    out += val;
+                  }
                 }
               }
             }
             break;
           case 'section':
-            val = context[tagName];
-            if (typeof val !== 'object') {
-              flush();
-              section = compile(tpl, context, pos, tagName);
-              addSection(section, !val);
-              pos = re.lastIndex;
-            } else if (!Array.isArray(val)) {
-              flush();
-              out += compile(tpl, val, pos, tagName);
-              pos = re.lastIndex;
+            if (echoMode) {
+              out += "" + fullTag + (compile(tpl, context, pos, tagName, true)) + "{{\/" + tagName + "}}";
             } else {
-              if (!htag) {
-                if (tagName !== lastSectionTag) {
-                  out += "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\">";
+              val = context[tagName];
+              if (typeof val !== 'object') {
+                flush();
+                section = compile(tpl, context, pos, tagName);
+                addSection(section, !val);
+              } else if (!Array.isArray(val)) {
+                flush();
+                out += compile(tpl, val, pos, tagName);
+              } else {
+                if (!htag) {
+                  if (tagName !== lastSectionTag) {
+                    out += "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\">";
+                  }
+                } else {
+                  injectOuterTag();
                 }
-              } else {
-                injectOuterTag();
-              }
-              emitSectionTemplate();
-              if (!val.length) {
-                discardSection();
-                pos = re.lastIndex;
-              } else {
-                for (i = _i = 0, _len = val.length; _i < _len; i = ++_i) {
-                  item = val[i];
-                  flush();
-                  addSectionItem(compile(tpl, (val && typeof val === 'object' ? item : context), pos, tagName));
-                  if (i < val.length - 1) {
-                    re.lastIndex = pos;
+                emitSectionTemplate();
+                if (!val.length) {
+                  discardSection();
+                } else {
+                  for (i = _i = 0, _len = val.length; _i < _len; i = ++_i) {
+                    item = val[i];
+                    flush();
+                    addSectionItem(compile(tpl, (val && typeof val === 'object' ? item : context), pos, tagName));
+                    if (i < val.length - 1) {
+                      re.lastIndex = pos;
+                    }
                   }
                 }
-                pos = re.lastIndex;
+                if (!htag && tagName !== lastSectionTag) {
+                  out += "</" + options.defaultSection + ">";
+                }
+                lastSectionTag = tagName;
               }
-              if (!htag && tagName !== lastSectionTag) {
-                out += "</" + options.defaultSection + ">";
-              }
-              lastSectionTag = tagName;
             }
+            pos = re.lastIndex;
             break;
           case 'inverted_section':
-            val = context[tagName];
-            if (Array.isArray(val)) {
-              if (!htag) {
-                if (tagName !== lastSectionTag) {
-                  out += "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\">";
-                }
-              } else {
-                injectOuterTag();
-              }
-              emitSectionTemplate();
-              if (val.length) {
-                discardSection();
-              } else {
-                out += compile(tpl, context, pos, tagName);
-              }
-              if (!htag && tagName !== lastSectionTag) {
-                out += "</" + options.defaultSection + ">";
-              }
-              lastSectionTag = tagName;
+            if (echoMode) {
+              out += "" + fullTag + (compile(tpl, context, pos, tagName, true)) + "{{\/" + tagName + "}}";
             } else {
-              addSection(compile(tpl, context, pos, tagName), val);
+              val = context[tagName];
+              if (Array.isArray(val)) {
+                if (!htag) {
+                  if (tagName !== lastSectionTag) {
+                    out += "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\">";
+                  }
+                } else {
+                  injectOuterTag();
+                }
+                emitSectionTemplate();
+                if (val.length) {
+                  discardSection();
+                } else {
+                  out += compile(tpl, context, pos, tagName);
+                }
+                if (!htag && tagName !== lastSectionTag) {
+                  out += "</" + options.defaultSection + ">";
+                }
+                lastSectionTag = tagName;
+              } else {
+                addSection(compile(tpl, context, pos, tagName), val);
+              }
             }
             pos = re.lastIndex;
         }
       }
-      out += tpl.slice(pos);
-      return out = out.replace(/data-jt="\.(\s\.)+"/g, 'data-jt="."');
+      return out += tpl.slice(pos);
     };
+    tpl = tpl.replace(new RegExp("<!--\\s*(" + re.source + ")\\s*-->"), '$1');
+    tpl = tpl.replace(new RegExp("([\\w-_]+)='(" + re.source + ")'", 'g'), '$1=$2');
+    tpl = tpl.replace(new RegExp("([\\w-_]+)=\"(" + re.source + ")\"", 'g'), '$1=$2');
+    tpl = tpl.replace(new RegExp("\\n\\s*(" + re.source + ")\\s*\\n", 'g'), '\n$1\n');
     html = compile(tpl, model);
+    html = html.replace(/data-jt="\.(\s\.)+"/g, 'data-jt="."');
     if (target == null) {
       return html;
     }

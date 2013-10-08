@@ -433,14 +433,7 @@ Showcase of all features, tests
 
           model2 = {
             todo: '',
-            todos: [{
-              id: 0,
-              title: 'aaaaaa',
-              completed: false,
-              editing: false
-            }],
-            todosLength: true,
-            completedTodosLength: 1,
+            todos: [],
             add: function(e) {
               if (enterKey(e)) {
                 this.todos.push({
