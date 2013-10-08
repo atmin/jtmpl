@@ -243,7 +243,7 @@ root.jtmpl = (target, tpl, model, options) ->
                 out = out.replace(/[\w-_]+=$/, '')
               else
                 # HTML "class" attribute?
-                if htag[2] is 'class'
+                if htag[2] is 'class' and not htag[5]
                   if typeof val isnt 'boolean'
                     throw "#{ tagName } is not boolean"
                   if val then out += tagName

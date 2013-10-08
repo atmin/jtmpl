@@ -199,7 +199,7 @@
                 if (typeof val === 'function') {
                   out = out.replace(/[\w-_]+=$/, '');
                 } else {
-                  if (htag[2] === 'class') {
+                  if (htag[2] === 'class' && !htag[5]) {
                     if (typeof val !== 'boolean') {
                       throw "" + tagName + " is not boolean";
                     }

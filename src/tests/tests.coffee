@@ -73,6 +73,10 @@ test 'compile', ->
 		'<a data-jt="prop=prop" prop="1">',
 		'output non-null attribute'
 
+	equal jtmpl('{{#links}}<a href="{{href}}" class="{{selected}}">{{title}}</a>{{/links}}',
+		{ links: [{ href: '/', selected: true, title: 'root'}]}),
+		'<div data-jt="#links"><!-- # <a href=<<<href>>> class=<<<selected>>>><<<title>>></a> --><a data-jt="href=href class=selected ." href="/" class=selected><span data-jt="title">root</span></a></div>',
+		'array of links with many bound attributes'
 
 
 
