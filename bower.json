@@ -1,10 +1,9 @@
 {
   "name": "jtmpl",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "main": "[\"js/jtmpl.min.js\", \"js/jtmpl.js\"]",
   "dependencies": {},
   "devDependencies": {
-    "baseline": "0.6.2",
     "highlightjs": "7.3.0",
     "qunit": "1.12.0"
   },
