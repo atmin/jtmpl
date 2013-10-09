@@ -181,6 +181,8 @@ There's never need to touch the DOM directly, `model` is the [single source of t
 
 #### Planned features
 
+(in random order)
+
 * comments
 
 * partials (template include)
@@ -218,6 +220,21 @@ There's never need to touch the DOM directly, `model` is the [single source of t
     ```
 
     _Syntax inspired by [Dust](http://akdubya.github.io/dustjs/)_
+
+* computed properties
+
+    ```
+    var template = '{{fullName}}';
+    var model = {
+      firstName: 'Random',
+      lastName: 'Number',
+      fullName: function(firstName, lastName) {
+        return firstName + ' ' + lastName;
+      }
+    }
+    ```
+
+    Function will be called whenever any of the argument fields change. Actual field values provided as parameters.
 
 * refactor in "everything is a plugin" style and figure out a plugin system
 
