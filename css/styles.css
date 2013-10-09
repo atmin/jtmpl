@@ -20,16 +20,26 @@ footer {
   margin: 64px 0 10px;
 }
 .wrapper {
-  width: 70%;
-  min-width: 600px;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2%;
+  margin: 1em auto;
+  padding: 0 4%;
+}
+.text-center {
+  text-align: center;
 }
 .btn,
 .btn:visited {
-  padding: 8px 16px;
+  padding: 16px 24px;
   color: #fff;
+  margin: 1em 1em 0 0;
+  width: 100%;
+  display: inline-block;
+  border: 1px solid #DDD;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+}
+.btn i {
+  margin-right: 8px;
 }
 .btn-readme {
   background-color: #dc322f;
@@ -48,6 +58,14 @@ footer {
 }
 .btn-min {
   background-color: #268bd2;
+}
+/* apply a natural box layout model to all elements */
+*,
+*:before,
+*:after {
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
 }
 /*
 	* Gridless version 2.0
@@ -103,7 +121,8 @@ video {
 	* To add a background to the WRAPPER, set it in the 'body' element
 */
 html {
-  height: 100%;
+  /*height: 100%;*/
+
   font-size: 100%;
   overflow-y: scroll;
   /* Force a scrollbar in non-IE */
@@ -123,7 +142,7 @@ button,
 input,
 select,
 textarea {
-  font-family: sans;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
   color: #586e75;
 }
 /* Add and/or remove tags as your baseline grid needs */
@@ -157,35 +176,36 @@ hr {
 /*
 	* Font sizes are based on the golden ratio of 16
 	* See this for the modular scale: ow.ly/5jGl6
-	* Line-heights and margins are adjusted to keep a 26px (1.625em) vertical rhythm across elements 
+	* Line-heights and margins are adjusted to keep a 26px (1.625em) vertical rhfont-family: "Lucida Console", "Lucida Sans Typewriter", Monaco, "Bitstream Vera Sans Mono", monospace;ythm across elements 
 */
 h1,
 h2,
 h3,
 h4,
 h5 {
-  font-family: monospace;
+  font-family: Monaco, Consolas, "Lucida Console", monospace;
+  margin-top: 2em;
 }
 h1 {
   font-size: 4.25em;
   /* 68px */
 
   line-height: 1.1471em;
-  margin: 0 0 0.3824em;
+  margin: 2em 0 0.3824em;
 }
 h2 {
   font-size: 2.625em;
   /* 42px */
 
   line-height: 1.2381em;
-  margin: 0 0 0.619em;
+  margin: 2em 0 0.619em;
 }
 h3 {
   font-size: 1.625em;
   /* 26px */
 
   line-height: 1em;
-  margin: 0 0 1em;
+  margin: 2em 0 1em;
 }
 small {
   font-size: 0.625em;
@@ -302,15 +322,16 @@ blockquote > p {
 }
 /* Lists
 ---------------------------------------- */
-ul,
-ol {
-  list-style-position: inside;
-  padding: 0;
+/*
+ul, ol {
+	list-style-position: inside;
+	padding: 0;
 }
-li ul,
-li ol {
-  margin: 0 1.625em;
+
+li ul, li ol {
+	margin: 0 1.625em;
 }
+*/
 dl dd {
   margin-left: 1.625em;
 }
@@ -434,13 +455,19 @@ sub {
 ---------------------------------------- */
 /* The media queries included in here are only placeholder. Modify them as your content requires */
 @media only screen and (min-width: 480px) {
-  /* Wide mobile (480px+) styles go here */
+  .wrapper {
+    padding: 0 8%;
+  }
 }
 @media only screen and (min-width: 768px) {
-  /* Tablets/netbooks (768px+) styles go here */
+  .btn {
+    width: 12em;
+  }
 }
 @media only screen and (min-width: 1024px) {
-  /* Desktops (1024px+) styles go here */
+  .wrapper {
+    width: 960px;
+  }
 }
 /* Print styles
 ---------------------------------------- */

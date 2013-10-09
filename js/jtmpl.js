@@ -43,7 +43,7 @@
     options.defaultTargetTag = options.defaultTargetTag || 'div';
     tagRe = /(\{)?(\#|\^|\/)?([\w\.\-_]+)(\})?/;
     re = new RegExp(quoteRE(options.delimiters[0]) + tagRe.source + quoteRE(options.delimiters[1]), 'g');
-    hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?(?:((?:"[^">]*"?)|(?:'[^'>]*'?)|[^\s>]+))?)*?\s*(>)?\s*(?:<!--.*?-->\s*)*$/;
+    hre = /(<\s*[\w-_]+)(?:\s+([\w-\{\}]*)(=)?("[^">]*"?)?)*?\s*(>)?\s*(?:<!--.*?-->\s*)*$/;
     matchHTMLTag = /^(\s*<([\w-_]+))(?:(\s*data-jt="[^"]*)")?[^>]*>[\s\S]*?<\/\2>\s*$/;
     escapeHTML = function(val) {
       return ((val != null) && val || '').toString().replace(/[&\"<>\\]/g, function(s) {
@@ -120,14 +120,19 @@
         return el.className = el.className.replace(new RegExp("(\\s|^)" + name + "(\\s|$)"), '').replace(/^\s+|\s+$/g, '');
       }
     };
-    compile = function(tpl, context, position, openTagName) {
-      var addSectionItem, collection, discardSection, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectOuterTag, item, lastSectionTag, out, outpart, pos, section, tag, tagName, tagType, val, _i, _len, _ref1;
+
+    /*
+    Parse template, remove jtmpl tags, add data-jt attrs and structure as HTML comments
+    tpl: template string, context: model object
+    position: template position to start parsing
+    openTagName: remember opening tag on recursion
+    echoMode: return template contents instead of rendering it
+    */
+    compile = function(tpl, context, position, openTagName, echoMode) {
+      var addSection, addSectionItem, discardSection, emitSectionTemplate, escaped, flush, fullTag, fullTagNoDelim, getPropString, htag, i, injectOuterTag, item, lastSectionTag, out, outpart, pos, section, tag, tagName, tagType, val, _i, _len, _ref1;
       pos = position || 0;
       out = outpart = '';
       tag = htag = lastSectionTag = null;
-      tpl = tpl.replace(new RegExp("<!--\\s*(" + re.source + ")\\s*-->"), '$1');
-      tpl = tpl.replace(new RegExp("([\\w-_]+)=\"(" + re.source + ")\"", 'g'), '$1=$2');
-      tpl = tpl.replace(new RegExp("\\n\\s*(" + re.source + ")\\s*\\n", 'g'), '\n$1\n');
       flush = function() {
         out += tpl.slice(pos, re.lastIndex - (fullTag || '').length);
         return pos = re.lastIndex;
@@ -137,7 +142,7 @@
         return (htag[3] && !htag[5]) && (htag[2] + htag[3] + quote + val + quote) || val;
       };
       discardSection = function() {
-        return compile(tpl, context, pos, tagName);
+        return compile(tpl, context, pos, tagName, true);
       };
       injectOuterTag = function() {
         var m, p, t;
@@ -145,17 +150,29 @@
         t = "" + (getPropString(fullTagNoDelim));
         if (m = out.match(new RegExp("[\\s\\S]{" + p + "}(\\sdata-jt=\"([^\"]*))\""))) {
           p = p + m[1].length;
-          out = "" + (out.slice(0, p)) + (m[2].length && ' ' || '') + t + (out.slice(p));
+          return out = "" + (out.slice(0, p)) + (m[2].length && ' ' || '') + t + (out.slice(p));
         } else {
-          out = "" + (out.slice(0, p)) + " data-jt=\"" + t + "\"" + (out.slice(p));
+          return out = "" + (out.slice(0, p)) + " data-jt=\"" + t + "\"" + (out.slice(p));
         }
-        return '';
+      };
+      emitSectionTemplate = function() {
+        var lastIndex, section;
+        lastIndex = re.lastIndex;
+        section = compile(tpl, context, pos, tagName, true).trim().replace(new RegExp(quoteRE(options.delimiters[0]), 'g'), options.compiledDelimiters[0]).replace(new RegExp(quoteRE(options.delimiters[1]), 'g'), options.compiledDelimiters[1]);
+        out += "<!-- " + tag[2] + " " + section + " -->";
+        return re.lastIndex = lastIndex;
       };
       addSectionItem = function(s) {
         var m, p;
         s = s.trim();
         m = s.match(matchHTMLTag);
         return out += !m ? "<" + options.defaultSectionItem + " data-jt=\".\">" + s + "</" + options.defaultSectionItem + ">" : (p = m[1].length + (m[3] && m[3].length || 0), "" + (s.slice(0, p)) + (!m[3] && ' data-jt="."' || ' .') + (s.slice(p)));
+      };
+      addSection = function(s, hidden) {
+        var m, p;
+        s = s.trim();
+        m = s.match(matchHTMLTag);
+        return out += !m ? "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\"" + (hidden && ' style="display:none"' || '') + ">" + s + "</" + options.defaultSectionItem + ">" : (p = m[1].length, "" + (s.slice(0, p)) + " data-jt=\"" + fullTagNoDelim + "\"" + (hidden && ' style="display:none"' || '') + (s.slice(p)));
       };
       while (tag = re.exec(tpl)) {
         _ref1 = parseTag(tag), tagType = _ref1[0], tagName = _ref1[1], fullTag = _ref1[2], fullTagNoDelim = _ref1[3];
@@ -170,89 +187,119 @@
             return out;
           case 'var':
           case 'unescaped_var':
-            val = tagName === '.' ? context : context[tagName];
-            escaped = tagType === 'unescaped_var' && val || escapeHTML(val);
-            if (!htag) {
-              out += "<" + options.defaultVar + " data-jt=\"" + fullTagNoDelim + "\">" + escaped + "</" + options.defaultVar + ">";
+            if (echoMode) {
+              out += fullTag;
             } else {
-              injectOuterTag();
-              if (typeof val === 'function') {
-                out = out.replace(/[\w-_]+=$/, '');
+              val = tagName === '.' ? context : context[tagName];
+              escaped = tagType === 'unescaped_var' && val || escapeHTML(val);
+              if (!htag) {
+                out += "<" + options.defaultVar + " data-jt=\"" + fullTagNoDelim + "\">" + escaped + "</" + options.defaultVar + ">";
               } else {
-                if (htag[2] === 'class') {
-                  if (typeof val !== 'boolean') {
-                    throw "" + tagName + " is not boolean";
-                  }
-                  if (val) {
-                    out += tagName;
-                  }
-                } else if (htag[3] && !htag[5]) {
-                  if ((val == null) || val === null) {
-                    out = out.replace(/[\w-_]+=$/, '');
-                  } else if (typeof val === 'boolean') {
-                    out = out.replace(/[\w-_]+=$/, '') + (val && htag[2] || '');
-                  } else {
-                    out += '"' + val + '"';
-                  }
+                injectOuterTag();
+                if (typeof val === 'function') {
+                  out = out.replace(/[\w-_]+=$/, '');
                 } else {
-                  out += val;
+                  if (htag[2] === 'class' && !htag[5]) {
+                    if (typeof val !== 'boolean') {
+                      throw "" + tagName + " is not boolean";
+                    }
+                    if (val) {
+                      out += tagName;
+                    }
+                  } else if (htag[3] && !htag[5]) {
+                    if ((val == null) || val === null) {
+                      out = out.replace(/[\w-_]+=$/, '');
+                    } else if (typeof val === 'boolean') {
+                      out = out.replace(/[\w-_]+=$/, '') + (val && htag[2] || '');
+                    } else {
+                      out += '"' + val + '"';
+                    }
+                  } else {
+                    out += val;
+                  }
                 }
               }
             }
             break;
           case 'section':
-          case 'inverted_section':
-            if (!htag) {
-              if (tagName !== lastSectionTag) {
-                out += "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\">";
-              }
+            if (echoMode) {
+              out += "" + fullTag + (compile(tpl, context, pos, tagName, true)) + "{{\/" + tagName + "}}";
             } else {
-              injectOuterTag();
-            }
-            val = context[tagName];
-            section = tpl.slice(pos).match(new RegExp('([\\s\\S]*?)' + quoteRE(options.delimiters[0] + '/' + tagName + options.delimiters[1])));
-            if (!section) {
-              throw ":( unclosed section " + fullTag;
-            }
-            section = section[1].trim().replace(new RegExp(quoteRE(options.delimiters[0]), 'g'), options.compiledDelimiters[0]).replace(new RegExp(quoteRE(options.delimiters[1]), 'g'), options.compiledDelimiters[1]);
-            out += "<!-- " + tag[2] + " " + section + " -->";
-            if (tagType === 'section') {
-              if (!val || Array.isArray(val) && !val.length) {
-                discardSection();
-                pos = re.lastIndex;
+              val = context[tagName];
+              if (typeof val !== 'object') {
+                flush();
+                section = compile(tpl, context, pos, tagName);
+                addSection(section, !val);
+              } else if (!Array.isArray(val)) {
+                flush();
+                out += compile(tpl, val, pos, tagName);
               } else {
-                collection = Array.isArray(val) && val || [val];
-                for (i = _i = 0, _len = collection.length; _i < _len; i = ++_i) {
-                  item = collection[i];
-                  flush();
-                  addSectionItem(compile(tpl, (val && typeof val === 'object' ? item : context), pos, tagName));
-                  if (i < collection.length - 1) {
-                    re.lastIndex = pos;
+                if (!htag) {
+                  if (tagName !== lastSectionTag) {
+                    out += "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\">";
+                  }
+                } else {
+                  injectOuterTag();
+                }
+                emitSectionTemplate();
+                if (!val.length) {
+                  discardSection();
+                } else {
+                  for (i = _i = 0, _len = val.length; _i < _len; i = ++_i) {
+                    item = val[i];
+                    flush();
+                    addSectionItem(compile(tpl, (val && typeof val === 'object' ? item : context), pos, tagName));
+                    if (i < val.length - 1) {
+                      re.lastIndex = pos;
+                    }
                   }
                 }
-                pos = re.lastIndex;
+                if (!htag && tagName !== lastSectionTag) {
+                  out += "</" + options.defaultSection + ">";
+                }
+                lastSectionTag = tagName;
               }
-            } else if (tagType === 'inverted_section') {
-              if (!val || Array.isArray(val) && !val.length) {
-                out += compile(tpl, context, pos, tagName);
-                pos = re.lastIndex;
-              } else {
-                discardSection(context);
-                pos = re.lastIndex;
-              }
+            }
+            pos = re.lastIndex;
+            break;
+          case 'inverted_section':
+            if (echoMode) {
+              out += "" + fullTag + (compile(tpl, context, pos, tagName, true)) + "{{\/" + tagName + "}}";
             } else {
-              throw ':( internal error';
+              val = context[tagName];
+              if (Array.isArray(val)) {
+                if (!htag) {
+                  if (tagName !== lastSectionTag) {
+                    out += "<" + options.defaultSection + " data-jt=\"" + fullTagNoDelim + "\">";
+                  }
+                } else {
+                  injectOuterTag();
+                }
+                emitSectionTemplate();
+                if (val.length) {
+                  discardSection();
+                } else {
+                  out += compile(tpl, context, pos, tagName);
+                }
+                if (!htag && tagName !== lastSectionTag) {
+                  out += "</" + options.defaultSection + ">";
+                }
+                lastSectionTag = tagName;
+              } else {
+                addSection(compile(tpl, context, pos, tagName), val);
+              }
             }
-            if (!htag && tagName !== lastSectionTag) {
-              out += "</" + options.defaultSection + ">";
-            }
-            lastSectionTag = tagName;
+            pos = re.lastIndex;
         }
       }
-      out += tpl.slice(pos);
-      return out = out.replace(/data-jt="\.(\s\.)+"/g, 'data-jt="."');
+      return out += tpl.slice(pos);
     };
+    tpl = tpl.replace(new RegExp("<!--\\s*(" + re.source + ")\\s*-->"), '$1');
+    tpl = tpl.replace(new RegExp("([\\w-_]+)='(" + re.source + ")'", 'g'), '$1=$2');
+    tpl = tpl.replace(new RegExp("([\\w-_]+)=\"(" + re.source + ")\"", 'g'), '$1=$2');
+    tpl = tpl.replace(new RegExp("\\n\\s*(" + re.source + ")\\s*\\n", 'g'), '\n$1\n');
     html = compile(tpl, model);
+    html = html.replace(/data-jt="\.(\s\.)+"/g, 'data-jt="."');
     if (target == null) {
       return html;
     }
@@ -262,9 +309,10 @@
       target = newTarget;
     }
     target.innerHTML = html;
-    target.setAttribute('data-jt', '.');
     bind = function(root, context) {
-      var addBinding, addSectionBinding, attr, bindArrayToNodeChildren, changeHandler, createSectionItem, handler, initBindings, itemIndex, jt, jtProps, k, node, nodeContext, optionHandler, radioHandler, section, sectionModifier, tmp, v, _i, _j, _len, _len1, _ref1, _ref2;
+      var addBinding, addSectionBinding, bindArrayToNodeChildren, bindNode, changeHandler, createSectionItem, initBindings, itemIndex, node, nodeContext, optionHandler, radioHandler, section, _i, _len, _ref1;
+      itemIndex = 0;
+      nodeContext = null;
       changeHandler = function(context, k, v) {
         return function() {
           return context[v] = this[k];
@@ -406,12 +454,12 @@
             for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
               node = _ref1[_i];
               node.innerHTML = '';
-            }
-            _ref2 = this.__values;
-            for (i = _j = 0, _len1 = _ref2.length; _j < _len1; i = ++_j) {
-              item = _ref2[i];
-              node.appendChild(createSectionItem(node, item));
-              bindProp(item, i);
+              _ref2 = this.__values;
+              for (i = _j = 0, _len1 = _ref2.length; _j < _len1; i = ++_j) {
+                item = _ref2[i];
+                node.appendChild(createSectionItem(node, item));
+                bindProp(item, i);
+              }
             }
             this.__addEmpty();
             return result;
@@ -563,7 +611,9 @@
           return context["__" + prop + "_bindings"].push((function(node, prop, nodeProp) {
             return function(val) {
               if (nodeProp === 'value' || nodeProp === 'checked' || nodeProp === 'selected') {
-                return node[nodeProp] = val;
+                if (node[nodeProp] !== val) {
+                  return node[nodeProp] = val;
+                }
               } else {
                 if ((typeof val === 'boolean' && !val) || val === null) {
                   return node.removeAttribute(nodeProp);
@@ -577,7 +627,7 @@
       };
       addSectionBinding = function(context, node, prop, isNegative) {
         initBindings(context, prop);
-        return context["__" + prop + "_bindings"].push((function(node, prop, isNegative) {
+        return context["__" + prop + "_bindings"].push((function(context, node, prop, isNegative) {
           return function(val) {
             var i, item, _i, _len, _results;
             if (Array.isArray(val)) {
@@ -596,71 +646,84 @@
                 rootModel: model
               });
             } else {
-              node.innerHTML = jtmpl(node.getAttribute(!!val ? 'data-jt-1' : 'data-jt-0') || '', this);
-              return jtmpl(node, node.innerHTML, val, {
-                rootModel: model
-              });
+              return node.style.display = !!val === isNegative && 'none' || '';
             }
           };
-        })(node, prop, isNegative));
+        })(context, node, prop, isNegative));
       };
-      itemIndex = 0;
-      nodeContext = null;
+      bindNode = function(node) {
+        var attr, handler, jt, jtProps, k, section, sectionModifier, tmp, v, _i, _len, _ref1, _results;
+        if (attr = node.getAttribute('data-jt')) {
+          jtProps = attr.trim().split(' ').reverse();
+          _results = [];
+          for (_i = 0, _len = jtProps.length; _i < _len; _i++) {
+            jt = jtProps[_i];
+            sectionModifier = jt.slice(0, 1);
+            if (sectionModifier === '#' || sectionModifier === '^') {
+              section = jt.slice(1);
+              nodeContext = nodeContext || context[section];
+              if (Array.isArray(nodeContext)) {
+                addSectionBinding(context, node, section, sectionModifier === '^');
+                _results.push(bindArrayToNodeChildren(nodeContext, node));
+              } else if (typeof nodeContext === 'object') {
+                _results.push(addSectionBinding(nodeContext, node, section, sectionModifier === '^'));
+              } else {
+                _results.push(addSectionBinding(context, node, section, sectionModifier === '^'));
+              }
+            } else if (jt === '.') {
+              _results.push(nodeContext = context[itemIndex++]);
+            } else {
+              _ref1 = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref1[0], k = _ref1[1], v = _ref1[2];
+              if (k && k.indexOf('on') === 0) {
+                handler = (options.rootModel != null) && options.rootModel[v] || model[v];
+                if (typeof handler === 'function') {
+                  _results.push(addEvent(k.slice(2), node, handler.bind(context)));
+                } else {
+                  throw ":( " + v + " is not a function, cannot attach event handler";
+                }
+              } else if (!v) {
+                if (nodeContext && !Array.isArray(nodeContext)) {
+                  _results.push(addBinding(nodeContext, node, k));
+                } else {
+                  _results.push(addBinding(context, node, k));
+                }
+              } else {
+                if (nodeContext && !Array.isArray(nodeContext)) {
+                  addBinding(nodeContext, node, v, k);
+                } else {
+                  addBinding(context, node, v, k);
+                }
+                if (k === 'value' || k === 'checked' || k === 'selected') {
+                  if (node.nodeName === 'OPTION' && node.parentNode.querySelectorAll('option')[0] === node) {
+                    addEvent('change', node.parentNode, optionHandler(context, k, v).bind(node.parentNode));
+                  }
+                  if (node.type === 'radio' && node.name) {
+                    addEvent('change', node, radioHandler(context, k, v).bind(node));
+                  }
+                  if (node.type === 'text') {
+                    _results.push(addEvent('input', node, changeHandler(context, k, v).bind(node)));
+                  } else {
+                    _results.push(addEvent('change', node, changeHandler(context, k, v).bind(node)));
+                  }
+                } else {
+                  _results.push(void 0);
+                }
+              }
+            }
+          }
+          return _results;
+        }
+      };
+      if (root === target) {
+        bindNode(root, context);
+      }
       _ref1 = root.childNodes;
       for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
         node = _ref1[_i];
         switch (node.nodeType) {
           case node.ELEMENT_NODE:
-            if (attr = node.getAttribute('data-jt')) {
-              jtProps = attr.trim().split(' ').sort();
-              for (_j = 0, _len1 = jtProps.length; _j < _len1; _j++) {
-                jt = jtProps[_j];
-                sectionModifier = jt.slice(0, 1);
-                if (sectionModifier === '#' || sectionModifier === '^') {
-                  section = jt.slice(1);
-                  nodeContext = context[section];
-                  addSectionBinding(context, node, section, sectionModifier === '^');
-                  if (Array.isArray(nodeContext)) {
-                    bindArrayToNodeChildren(nodeContext, node);
-                  }
-                } else if (jt === '.') {
-                  nodeContext = context[itemIndex++] || context;
-                } else {
-                  _ref2 = jt.match(/(?:\/|#)?([\w-.]+)(?:\=([\w-.]+))?/), tmp = _ref2[0], k = _ref2[1], v = _ref2[2];
-                  if (k && k.indexOf('on') === 0) {
-                    handler = (options.rootModel != null) && options.rootModel[v] || model[v];
-                    if (typeof handler === 'function') {
-                      addEvent(k.slice(2), node, handler.bind(context));
-                    } else {
-                      throw ":( " + v + " is not a function, cannot attach event handler";
-                    }
-                  } else if (!v) {
-                    if (nodeContext && !Array.isArray(nodeContext)) {
-                      addBinding(nodeContext, node, k);
-                    } else {
-                      addBinding(context, node, k);
-                    }
-                  } else {
-                    if (nodeContext && !Array.isArray(nodeContext)) {
-                      addBinding(nodeContext, node, v, k);
-                    } else {
-                      addBinding(context, node, v, k);
-                    }
-                    if (k === 'value' || k === 'checked' || k === 'selected') {
-                      if (node.nodeName === 'OPTION' && node.parentNode.querySelectorAll('option')[0] === node) {
-                        addEvent('change', node.parentNode, optionHandler(context, k, v).bind(node.parentNode));
-                      }
-                      if (node.type === 'radio' && node.name) {
-                        addEvent('change', node, radioHandler(context, k, v).bind(node));
-                      } else {
-                        addEvent('change', node, changeHandler(context, k, v).bind(node));
-                      }
-                    }
-                  }
-                }
-              }
-            }
-            bind(node, nodeContext || context);
+            bindNode(node);
+            bind(node, typeof nodeContext === 'object' && nodeContext || context);
             nodeContext = null;
             break;
           case node.COMMENT_NODE:

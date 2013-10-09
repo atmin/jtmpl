@@ -25,16 +25,16 @@
     }), '<div data-jt="^a"><!-- ^ <<<z>>> --></div>', 'object array false');
     equal(jtmpl('{{#a}}1{{/a}}', {
       a: true
-    }), '<div data-jt="#a"><!-- # 1 --><div data-jt=".">1</div></div>', 'positive condition');
+    }), '<div data-jt="#a">1</div>', 'positive condition');
     equal(jtmpl('{{^a}}1{{/a}}', {
       a: true
-    }), '<div data-jt="^a"><!-- ^ 1 --></div>', 'negative condition');
+    }), '<div data-jt="^a" style="display:none">1</div>', 'negative condition');
     equal(jtmpl('{{#a}}1{{/a}}', {
       a: false
-    }), '<div data-jt="#a"><!-- # 1 --></div>', 'positive condition false');
+    }), '<div data-jt="#a" style="display:none">1</div>', 'positive condition false');
     equal(jtmpl('{{^a}}1{{/a}}', {
       a: false
-    }), '<div data-jt="^a"><!-- ^ 1 -->1</div>', 'negative condition false');
+    }), '<div data-jt=\"^a\">1</div>', 'negative condition false');
     equal(jtmpl('<p>{{a}}</p>', {
       a: 1
     }), '<p data-jt="a">1</p>', 'inject var tag');
@@ -75,9 +75,18 @@
     equal(jtmpl('<a prop="{{prop}}">', {
       prop: null
     }), '<a data-jt="prop=prop" >', 'output null attribute');
-    return equal(jtmpl('<a prop="{{prop}}">', {
+    equal(jtmpl('<a prop="{{prop}}">', {
       prop: 1
     }), '<a data-jt="prop=prop" prop="1">', 'output non-null attribute');
+    return equal(jtmpl('{{#links}}<a href="{{href}}" class="{{selected}}">{{title}}</a>{{/links}}', {
+      links: [
+        {
+          href: '/',
+          selected: true,
+          title: 'root'
+        }
+      ]
+    }), '<div data-jt="#links"><!-- # <a href=<<<href>>> class=<<<selected>>>><<<title>>></a> --><a data-jt="href=href class=selected ." href="/" class=selected><span data-jt="title">root</span></a></div>', 'array of links with many bound attributes');
   });
 
   test('bind', function() {

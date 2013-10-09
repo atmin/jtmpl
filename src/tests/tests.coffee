@@ -20,19 +20,19 @@ test 'compile', ->
 		'object array false'
 
 	equal jtmpl('{{#a}}1{{/a}}', { a: true }),
-		'<div data-jt="#a"><!-- # 1 --><div data-jt=".">1</div></div>',
+		'<div data-jt="#a">1</div>',
 		'positive condition'
 
 	equal jtmpl('{{^a}}1{{/a}}', { a: true }), 
-		'<div data-jt="^a"><!-- ^ 1 --></div>',
+		'<div data-jt="^a" style="display:none">1</div>',
 		'negative condition'
 
 	equal jtmpl('{{#a}}1{{/a}}', { a: false }), 
-		'<div data-jt="#a"><!-- # 1 --></div>', 
+		'<div data-jt="#a" style="display:none">1</div>',
 		'positive condition false'
 
 	equal jtmpl('{{^a}}1{{/a}}', { a: false }),
-		'<div data-jt="^a"><!-- ^ 1 -->1</div>',
+		'<div data-jt=\"^a\">1</div>',
 		'negative condition false'
 
 	equal jtmpl('<p>{{a}}</p>', { a: 1}),
@@ -73,6 +73,10 @@ test 'compile', ->
 		'<a data-jt="prop=prop" prop="1">',
 		'output non-null attribute'
 
+	equal jtmpl('{{#links}}<a href="{{href}}" class="{{selected}}">{{title}}</a>{{/links}}',
+		{ links: [{ href: '/', selected: true, title: 'root'}]}),
+		'<div data-jt="#links"><!-- # <a href=<<<href>>> class=<<<selected>>>><<<title>>></a> --><a data-jt="href=href class=selected ." href="/" class=selected><span data-jt="title">root</span></a></div>',
+		'array of links with many bound attributes'
 
 
 
