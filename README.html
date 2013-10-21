@@ -187,15 +187,16 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
 <p>  <em>Syntax inspired by <a href="http://akdubya.github.io/dustjs/">Dust</a></em></p>
 </li>
 <li><p>computed properties</p>
-<pre><code>  var template = &#39;{{fullName}}&#39;;
-  var model = {
+<pre><code>  var model = {
     firstName: &#39;Random&#39;,
     lastName: &#39;Number&#39;,
-    fullName: function(firstName, lastName) {
-      return firstName + &#39; &#39; + lastName;
+    fullName: function() {
+      return this(&#39;firstName&#39;) + &#39; &#39; + this(&#39;lastName&#39;);
     }
-  }</code></pre>
-<p>  Function will be called whenever any of the argument fields change. Actual field values provided as parameters.</p>
+  }
+  jtmpl(&#39;{{fullName}}&#39;, model)
+  // Random Number</code></pre>
+<p>  <code>fullName</code> will be called whenever any of the dependent fields changes. A function, that takes care of dependency tracking and returns property value is passed via the <code>this</code> context.</p>
 </li>
 <li><p>refactor in &quot;everything is a plugin&quot; style and figure out a plugin system</p>
 </li>

@@ -224,17 +224,18 @@ There's never need to touch the DOM directly, `model` is the [single source of t
 * computed properties
 
     ```
-    var template = '{{fullName}}';
     var model = {
       firstName: 'Random',
       lastName: 'Number',
-      fullName: function(firstName, lastName) {
-        return firstName + ' ' + lastName;
+      fullName: function() {
+        return this('firstName') + ' ' + this('lastName');
       }
     }
+    jtmpl('{{fullName}}', model)
+    // Random Number
     ```
 
-    Function will be called whenever any of the argument fields change. Actual field values provided as parameters.
+    `fullName` will be called whenever any of the dependent fields changes. A function, that takes care of dependency tracking and returns property value is passed via the `this` context.
 
 * refactor in "everything is a plugin" style and figure out a plugin system
 
