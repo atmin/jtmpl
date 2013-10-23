@@ -1,5 +1,5 @@
 (function() {
-  var RE_ANYTHING, RE_IDENTIFIER, RE_NODE_ID, ap, appop, appush, apreverse, apshift, apslice, apsort, apunshift, bindArrayToNodeChildren, bindRules, compose, createSectionItem, curry, escapeHTML, escapeRE, initBindings, jtmpl, regexp;
+  var RE_ANYTHING, RE_IDENTIFIER, RE_NODE_ID, RE_SPACE, ap, appop, appush, apreverse, apshift, apslice, apsort, apunshift, bindArrayToNodeChildren, bindRules, compose, createSectionItem, curry, escapeHTML, escapeRE, initBindings, jtmpl, regexp;
 
   jtmpl = function(target, template, model, options) {
     var html, _ref;
@@ -21,7 +21,9 @@
     if (model == null) {
       throw ':( no model';
     }
-    template = template.match && template.match(RE_NODE_ID) ? document.getElementById(template.substring(1)).innerHTML : void 0;
+    if (template.match && template.match(RE_NODE_ID)) {
+      template = document.getElementById(template.substring(1)).innerHTML;
+    }
     options = options || {};
     options.delimiters = (options.delimiters || '{{ }}').split(' ');
     options.compiledDelimiters = (options.compiledDelimiters || '<<< >>>').split(' ');
@@ -29,6 +31,7 @@
     options.defaultSectionItem = options.defaultSectionItem || 'div';
     options.defaultVar = options.defaultVar || 'span';
     options.defaultTargetTag = options.defaultTargetTag || 'div';
+    template = template.replace(regexp("<!-- " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " -->", options), '$1').replace(regexp("(" + RE_IDENTIFIER + ")='({{ " + RE_IDENTIFIER + " }})'", options), '$1=$2').replace(regexp("(" + RE_IDENTIFIER + ")=\"({{ " + RE_IDENTIFIER + " }})\"", options), '$1=$2').replace(regexp("\\n " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " \\n", options), '\n$1\n');
     return html = jtmpl.compile(template, model, null, false, options);
   };
 
@@ -39,6 +42,8 @@
   RE_NODE_ID = '^#[\\w\\.\\-]+$';
 
   RE_ANYTHING = '[\\s\\S]*?';
+
+  RE_SPACE = '\\s*';
 
   jtmpl.compileRules = [
     {
@@ -196,25 +201,42 @@
   ];
 
   jtmpl.compile = function(template, model, openTag, echoMode, options) {
-    var match, pos, result, rule, slice, tmpl, token, tokenizer, _i, _ref;
+    var contents, match, pos, replaceWith, result, rule, slice, tmpl, token, tokenizer, wrapperAttrs, _i, _ref, _ref1, _ref2;
     tokenizer = regexp("{{ (\/?) (" + RE_ANYTHING + ") }}", options);
     result = '';
     pos = 0;
     while ((token = tokenizer.exec(template))) {
-      slice = template.slice(pos, tokenizer.lastIndex);
       if (token[1]) {
         if (token[2] !== openTag) {
           throw openTag && (":( expected {{/" + openTag + "}}, got {{" + token[2] + "}}") || (":( unexpected {{/" + token[2] + "}}");
         }
         return result;
       }
-      _ref = jtmpl.compileRules;
-      for (_i = _ref.length - 1; _i >= 0; _i += -1) {
-        rule = _ref[_i];
-        match = regexp(rule.pattern, options).exec(slice);
-        result += match ? slice.slice(pos, tokenizer.lastIndex - match[0].length) + (rule.replaceWith != null ? rule.replaceWith.apply(null, match.slice(1).concat([model])) : (tmpl = jtmpl.compile(template.slice(tokenizer.lastIndex), model, match[1], true, options), tokenizer.lastIndex = tokenizer.lastIndex + tmpl.length, rule.contents(tmpl, model, match[1]))) : '';
+      if (echoMode) {
+        result += template.slice(pos, tokenizer.lastIndex);
+        pos = tokenizer.lastIndex;
+      } else {
+        slice = template.slice(pos, tokenizer.lastIndex);
+        _ref = jtmpl.compileRules;
+        for (_i = _ref.length - 1; _i >= 0; _i += -1) {
+          rule = _ref[_i];
+          match = regexp(rule.pattern, options).exec(slice);
+          if (match) {
+            result += slice.slice(pos, tokenizer.lastIndex - match[0].length);
+            if (rule.replaceWith != null) {
+              _ref1 = rule.replaceWith.apply(null, match.slice(1).concat([model])), replaceWith = _ref1[0], wrapperAttrs = _ref1[1];
+              result += replaceWith;
+            } else {
+              tmpl = jtmpl.compile(template.slice(tokenizer.lastIndex), model, match[1], true, options);
+              tokenizer.lastIndex = pos = tokenizer.lastIndex + tmpl.length;
+              _ref2 = rule.contents(tmpl, model, match[1]), contents = _ref2[0], wrapperAttrs = _ref2[1];
+              result += contents;
+            }
+          }
+        }
       }
     }
+    return result;
   };
 
   ap = Array.prototype;

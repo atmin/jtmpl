@@ -44,10 +44,9 @@ void jtmpl(DOMElement target, String template, AnyType model)
       if not model?
         throw ':( no model'
 
-      # `jtmpl('#template-id', ...)` or `jtmpl(element, '#template-id', ...)`
-      template =
-        if template.match and template.match(RE_NODE_ID)
-          document.getElementById(template.substring(1)).innerHTML 
+      # `jtmpl('#template-id', ...)` or `jtmpl(element, '#template-id', ...)`      
+      if template.match and template.match(RE_NODE_ID)
+        template = document.getElementById(template.substring(1)).innerHTML
 
       # options
       options = options or {}
@@ -68,6 +67,16 @@ void jtmpl(DOMElement target, String template, AnyType model)
       # default target tag
       options.defaultTargetTag = options.defaultTargetTag or 'div'
 
+      ## Preprocess template
+      template = template
+        # Strip HTML comments that enclose tokens
+        .replace(regexp("<!-- #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } -->", options), '$1')
+        # Strip single quotes around html element attributes associated with tokens
+        .replace(regexp("(#{ RE_IDENTIFIER })='({{ #{ RE_IDENTIFIER } }})'", options), '$1=$2')
+        # Strip double quotes around html element attributes associated with tags
+        .replace(regexp("(#{ RE_IDENTIFIER })=\"({{ #{ RE_IDENTIFIER } }})\"", options), '$1=$2')
+        # If tags stand on their own line remove the line, keep the tag only
+        .replace(regexp("\\n #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } \\n", options), '\n$1\n')
 
       # Compile template
       html = jtmpl.compile(template, model, null, false, options)
@@ -99,6 +108,7 @@ Used in various matchers
     RE_IDENTIFIER = '[\\w\\.\\-]+'
     RE_NODE_ID = '^#[\\w\\.\\-]+$'
     RE_ANYTHING = '[\\s\\S]*?'
+    RE_SPACE = '\\s*'
 
 
 
@@ -316,8 +326,6 @@ Tokenize template and apply each rule
 
       while (token = tokenizer.exec(template))
 
-        slice = template.slice(pos, tokenizer.lastIndex)
-
         # End block?
         if token[1]
           if token[2] isnt openTag
@@ -328,25 +336,38 @@ Tokenize template and apply each rule
           # Exit recursion
           return result
 
-        # Process rules in reverse order, most specific to least specific
-        for rule in jtmpl.compileRules by -1
+        if echoMode
+          result += template.slice(pos, tokenizer.lastIndex)
+          pos = tokenizer.lastIndex
 
-          match = regexp(rule.pattern, options).exec(slice)
-          result +=
+        else
+          slice = template.slice(pos, tokenizer.lastIndex)
+
+          # Process rules in reverse order, most specific to least specific
+          for rule in jtmpl.compileRules by -1
+
+            match = regexp(rule.pattern, options).exec(slice)
             if match
-              slice.slice(pos, tokenizer.lastIndex - match[0].length) +
-                # inline tag or section?
-                if rule.replaceWith? 
+              result += slice.slice(pos, tokenizer.lastIndex - match[0].length)
+
+              # inline tag or section?
+              if rule.replaceWith? 
+                [replaceWith, wrapperAttrs] =
                   rule.replaceWith.apply(null, match.slice(1).concat([model]))
-                else
-                  tmpl = jtmpl.compile(
-                    template.slice(tokenizer.lastIndex), 
-                    model, match[1], true, options)
+                result += replaceWith
 
-                  tokenizer.lastIndex = tokenizer.lastIndex + tmpl.length
+              else
+                tmpl = jtmpl.compile(
+                  template.slice(tokenizer.lastIndex), 
+                  model, match[1], true, options)
 
-                  rule.contents(tmpl, model, match[1])
-            else ''
+                tokenizer.lastIndex = pos = tokenizer.lastIndex + tmpl.length
+
+                [contents, wrapperAttrs] = rule.contents(tmpl, model, match[1])
+                result += contents
+
+      # Accumulated output
+      result
 
 
 
@@ -490,15 +511,23 @@ Setter notifies all reactors.
 
 
 
+
 void bindArrayToNodeChildren(Array array, DOMElement node)
 
 Bind an array to DOM node, 
-so when array is modified, node children are updated accordingly
+so when array is modified, node children are updated accordingly.
+
+Array is augmented by attaching listeners on existing indices
+and setting a proxy for each mutable operation. 
+`createSectionItem` is used for creating new items.
+
 
     bindArrayToNodeChildren = (array, node) ->
-      # node not already augmented?
+
+      # array already augmented?
       if not array.__garbageCollectNodes
-        # proxy mutable array operations
+
+        # it's possible for a referenced node to be destroyed. free the reference
         array.__garbageCollectNodes = ->
           i = this.__nodes.length
           while --i
@@ -510,6 +539,8 @@ so when array is modified, node children are updated accordingly
 
         array.__addEmpty = ->
           if not this.length then node.innerHTML = jtmpl(node.getAttribute('data-jt-0') or '', {})
+
+        # Mutable array operations
 
         array.pop = ->
           this.__removeEmpty()
@@ -592,6 +623,7 @@ so when array is modified, node children are updated accordingly
           apsplice.apply(this.__values, arguments)
           this.__addEmpty()
 
+        # Bind property
         bindProp = (item, i) ->
           array.__values[i] = item
           Object.defineProperty(array, i, 
