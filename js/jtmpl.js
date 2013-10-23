@@ -1,5 +1,5 @@
 (function() {
-  var RE_ANYTHING, RE_IDENTIFIER, ap, apslice, bindArrayToNodeChildren, bindRules, compose, curry, escapeHTML, escapeRE, jtmpl, regexp;
+  var RE_ANYTHING, RE_IDENTIFIER, RE_NODE_ID, ap, appop, appush, apreverse, apshift, apslice, apsort, apunshift, bindArrayToNodeChildren, bindRules, compose, createSectionItem, curry, escapeHTML, escapeRE, initBindings, jtmpl, regexp;
 
   jtmpl = function(target, template, model, options) {
     var html, _ref;
@@ -15,13 +15,13 @@
       template = target;
       target = void 0;
     }
-    if (typeof target === 'string' && target.match(RE_IDENTIFIER)) {
+    if (typeof target === 'string' && target.match(RE_NODE_ID)) {
       target = document.getElementById(target.substring(1));
     }
     if (model == null) {
       throw ':( no model';
     }
-    template = template.match && template.match(RE_IDENTIFIER) ? document.getElementById(template.substring(1)).innerHTML : void 0;
+    template = template.match && template.match(RE_NODE_ID) ? document.getElementById(template.substring(1)).innerHTML : void 0;
     options = options || {};
     options.delimiters = (options.delimiters || '{{ }}').split(' ');
     options.compiledDelimiters = (options.compiledDelimiters || '<<< >>>').split(' ');
@@ -36,24 +36,26 @@
 
   RE_IDENTIFIER = '[\\w\\.\\-]+';
 
+  RE_NODE_ID = '^#[\\w\\.\\-]+$';
+
   RE_ANYTHING = '[\\s\\S]*?';
 
   jtmpl.compileRules = [
     {
       pattern: "{{ (" + RE_IDENTIFIER + ") }}",
-      defaultWrapper: 'defaultVar',
+      wrapper: 'defaultVar',
       replaceWith: function(prop, model) {
         return [escapeHTML(model[prop]), []];
       }
     }, {
       pattern: "{{ & (" + RE_IDENTIFIER + ") }}",
-      defaultWrapper: 'defaultVar',
+      wrapper: 'defaultVar',
       replaceWith: function(prop, model) {
         return [model[prop], []];
       }
     }, {
       pattern: "{{ \\# (" + RE_IDENTIFIER + ") }}",
-      defaultWrapper: 'defaultSection',
+      wrapper: 'defaultSection',
       contents: function(template, model, section) {
         var item, val;
         val = model[section];
@@ -77,7 +79,7 @@
       }
     }, {
       pattern: "{{ \\^ (" + RE_IDENTIFIER + ") }}",
-      defaultWrapper: 'defaultSection',
+      wrapper: 'defaultSection',
       contents: function(template, model, section) {
         var val;
         val = model[section];
@@ -86,6 +88,24 @@
         } else {
           return [jtmpl(template, model), val ? ['style', 'display:none'] : []];
         }
+      }
+    }, {
+      pattern: "(" + RE_IDENTIFIER + ") = {{ (" + RE_IDENTIFIER + ") }}",
+      replaceWith: function(attr, prop, model) {
+        var val;
+        val = model[prop];
+        if ((val == null) || val === null) {
+          return ['', []];
+        } else if (typeof val === 'boolean') {
+          return [(val ? attr : ''), []];
+        } else {
+          return ["" + attr + "=\"" + val + "\"", []];
+        }
+      }
+    }, {
+      pattern: "on" + RE_IDENTIFIER + " = {{ " + RE_IDENTIFIER + " }}",
+      replaceWith: function() {
+        return ['', []];
       }
     }, {
       pattern: "(class=\"? " + RE_ANYTHING + ") {{ (" + RE_IDENTIFIER + ") }}",
@@ -176,34 +196,42 @@
   ];
 
   jtmpl.compile = function(template, model, openTag, echoMode, options) {
-    var match, pos, result, rule, slice, token, tokenizer, _results;
-    tokenizer = regexp("{{ (" + RE_ANYTHING + ") }}", options);
+    var match, pos, result, rule, slice, tmpl, token, tokenizer, _i, _ref;
+    tokenizer = regexp("{{ (\/?) (" + RE_ANYTHING + ") }}", options);
     result = '';
     pos = 0;
-    return;
-    _results = [];
     while ((token = tokenizer.exec(template))) {
       slice = template.slice(pos, tokenizer.lastIndex);
-      _results.push((function() {
-        var _i, _ref, _results1;
-        _ref = jtmpl.compileRules;
-        _results1 = [];
-        for (_i = _ref.length - 1; _i >= 0; _i += -1) {
-          rule = _ref[_i];
-          match = slice.match(regexp(rule.pattern, options));
-          _results1.push(result += match ? slice.slice(pos, tokenizer.lastIndex - match[0].length) + rule.replaceWith.apply(null, match.slice(1).concat([model, context])) : '');
+      if (token[1]) {
+        if (token[2] !== openTag) {
+          throw openTag && (":( expected {{/" + openTag + "}}, got {{" + token[2] + "}}") || (":( unexpected {{/" + token[2] + "}}");
         }
-        return _results1;
-      })());
+        return result;
+      }
+      _ref = jtmpl.compileRules;
+      for (_i = _ref.length - 1; _i >= 0; _i += -1) {
+        rule = _ref[_i];
+        match = regexp(rule.pattern, options).exec(slice);
+        result += match ? slice.slice(pos, tokenizer.lastIndex - match[0].length) + (rule.replaceWith != null ? rule.replaceWith.apply(null, match.slice(1).concat([model])) : (tmpl = jtmpl.compile(template.slice(tokenizer.lastIndex), model, match[1], true, options), tokenizer.lastIndex = tokenizer.lastIndex + tmpl.length, rule.contents(tmpl, model, match[1]))) : '';
+      }
     }
-    return _results;
   };
 
   ap = Array.prototype;
 
-  apslice = function() {
-    return ap.slice;
-  };
+  apslice = ap.slice;
+
+  appop = ap.pop;
+
+  appush = ap.push;
+
+  apreverse = ap.reverse;
+
+  apshift = ap.shift;
+
+  apunshift = ap.unshift;
+
+  apsort = ap.sort;
 
   curry = function() {
     var args;
@@ -226,7 +254,7 @@
   };
 
   regexp = function(src, options) {
-    return new RegExp(src.replace('{{{', escapeRE(options.delimiters[0]) + '&').replace('}}}', escapeRE(options.delimiters[1])).replace('{{', escapeRE(options.delimiters[0])).replace('}}', escapeRE(options.delimiters[1])).replace(/\s+/g, ''));
+    return new RegExp(src.replace('{{{', escapeRE(options.delimiters[0]) + '&').replace('}}}', escapeRE(options.delimiters[1])).replace('{{', escapeRE(options.delimiters[0])).replace('}}', escapeRE(options.delimiters[1])).replace(/\s+/g, ''), 'g');
   };
 
   escapeHTML = function(val) {
@@ -246,6 +274,48 @@
           return s;
       }
     });
+  };
+
+  createSectionItem = function(parent, context) {
+    var element;
+    element = document.createElement('body');
+    element.innerHTML = jtmpl(parent.getAttribute('data-jt-1') || '', context);
+    element = element.children[0];
+    jtmpl(element, element.innerHTML, context, {
+      rootModel: model
+    });
+    return element;
+  };
+
+  initBindings = function(context, prop) {
+    if (!context["__" + prop + "_bindings"]) {
+      Object.defineProperty(context, "__" + prop + "_bindings", {
+        enumerable: false,
+        writable: true,
+        value: []
+      });
+      Object.defineProperty(context, "__" + prop, {
+        enumerable: false,
+        writable: true,
+        value: context[prop]
+      });
+      return Object.defineProperty(context, prop, {
+        get: function() {
+          return this["__" + prop];
+        },
+        set: function(val) {
+          var reactor, _i, _len, _ref, _results;
+          this["__" + prop] = val;
+          _ref = this["__" + prop + "_bindings"];
+          _results = [];
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            reactor = _ref[_i];
+            _results.push(reactor.call(this, val));
+          }
+          return _results;
+        }
+      });
+    }
   };
 
   bindArrayToNodeChildren = function(array, node) {
@@ -283,8 +353,8 @@
           node = _ref[_i];
           node.removeChild(node.children[node.children.length - 1]);
         }
-        AP.pop.apply(this, arguments);
-        AP.pop.apply(this.__values, arguments);
+        appop.apply(this, arguments);
+        appop.apply(this.__values, arguments);
         return this.__addEmpty();
       };
       array.push = function(item) {
@@ -296,9 +366,9 @@
           node = _ref[_i];
           node.appendChild(createSectionItem(node, item));
         }
-        AP.push.apply(this, arguments);
+        appush.apply(this, arguments);
         len = this.__values.length;
-        result = AP.push.apply(this.__values, arguments);
+        result = appush.apply(this.__values, arguments);
         bindProp(item, len);
         return result;
       };
@@ -306,7 +376,7 @@
         var i, item, result, _i, _j, _len, _len1, _ref, _ref1;
         this.__removeEmpty();
         this.__garbageCollectNodes();
-        result = AP.reverse.apply(this.__values, arguments);
+        result = apreverse.apply(this.__values, arguments);
         _ref = this.__nodes;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           node = _ref[_i];
@@ -325,8 +395,8 @@
         var i, item, result, _i, _j, _len, _len1, _ref, _ref1;
         this.__removeEmpty();
         this.__garbageCollectNodes();
-        AP.shift.apply(this, arguments);
-        result = AP.shift.apply(this.__values, arguments);
+        apshift.apply(this, arguments);
+        result = apshift.apply(this.__values, arguments);
         _ref = this.__nodes;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           node = _ref[_i];
@@ -344,7 +414,7 @@
         var i, item, result, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
         this.__removeEmpty();
         this.__garbageCollectNodes();
-        _ref = AP.slice.call(arguments).reverse();
+        _ref = apslice.call(arguments).reverse();
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           item = _ref[_i];
           _ref1 = this.__nodes;
@@ -353,8 +423,8 @@
             node.insertBefore(createSectionItem(node, item), node.children[0]);
           }
         }
-        AP.unshift.apply(this, arguments);
-        result = AP.unshift.apply(this.__values, arguments);
+        apunshift.apply(this, arguments);
+        result = apunshift.apply(this.__values, arguments);
         _ref2 = this.__values;
         for (i = _k = 0, _len2 = _ref2.length; _k < _len2; i = ++_k) {
           item = _ref2[i];
@@ -367,8 +437,8 @@
         var i, item, result, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
         this.__removeEmpty();
         this.__garbageCollectNodes();
-        AP.sort.apply(this, arguments);
-        result = AP.sort.apply(this.__values, arguments);
+        apsort.apply(this, arguments);
+        result = apsort.apply(this.__values, arguments);
         _ref = this.__nodes;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           node = _ref[_i];
@@ -396,15 +466,15 @@
           for (i = _j = 0; 0 <= howMany ? _j < howMany : _j > howMany; i = 0 <= howMany ? ++_j : --_j) {
             node.removeChild(node.children[index]);
           }
-          _ref1 = AP.slice.call(arguments, 2);
+          _ref1 = apslice.call(arguments, 2);
           for (_k = 0, _len1 = _ref1.length; _k < _len1; _k++) {
             item = _ref1[_k];
             node.insertBefore(createSectionItem(node, item), node.children[index]);
             bindProp(item, index);
           }
         }
-        AP.splice.apply(this, arguments);
-        AP.splice.apply(this.__values, arguments);
+        apsplice.apply(this, arguments);
+        apsplice.apply(this.__values, arguments);
         return this.__addEmpty();
       };
       bindProp = function(item, i) {

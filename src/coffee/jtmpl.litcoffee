@@ -1,3 +1,6 @@
+<span>{></span> [jtmpl](/) <sup>0.2.0</sup>
+===========================================
+
 ## Interface
 
 ### Compile:
@@ -35,7 +38,7 @@ void jtmpl(DOMElement target, String template, AnyType model)
         target = undefined
 
       # `jtmpl('#element-id', ...)`?
-      if typeof target is 'string' and target.match(RE_IDENTIFIER)
+      if typeof target is 'string' and target.match(RE_NODE_ID)
         target = document.getElementById(target.substring(1))
       
       if not model?
@@ -43,7 +46,7 @@ void jtmpl(DOMElement target, String template, AnyType model)
 
       # `jtmpl('#template-id', ...)` or `jtmpl(element, '#template-id', ...)`
       template =
-        if template.match and template.match(RE_IDENTIFIER)
+        if template.match and template.match(RE_NODE_ID)
           document.getElementById(template.substring(1)).innerHTML 
 
       # options
@@ -94,6 +97,7 @@ Both stages can be extended with new rules:
 Used in various matchers
 
     RE_IDENTIFIER = '[\\w\\.\\-]+'
+    RE_NODE_ID = '^#[\\w\\.\\-]+$'
     RE_ANYTHING = '[\\s\\S]*?'
 
 
@@ -117,21 +121,21 @@ Signatures:
 
       { # {{var}}
         pattern: "{{ (#{ RE_IDENTIFIER }) }}"
-        defaultWrapper: 'defaultVar'
+        wrapper: 'defaultVar'
         replaceWith: (prop, model) -> [escapeHTML(model[prop]), []]
       }
 
 
       { # {{unescaped_var}}
         pattern: "{{ & (#{ RE_IDENTIFIER }) }}"
-        defaultWrapper: 'defaultVar'
+        wrapper: 'defaultVar'
         replaceWith: (prop, model) -> [model[prop], []]
       }
 
 
       { # {{#section}}
         pattern: "{{ \\# (#{ RE_IDENTIFIER }) }}"
-        defaultWrapper: 'defaultSection'
+        wrapper: 'defaultSection'
         contents: (template, model, section) ->
           val = model[section]
           # Sequence?
@@ -161,7 +165,7 @@ Signatures:
 
       { # {{^block}}
         pattern: "{{ \\^ (#{ RE_IDENTIFIER }) }}"
-        defaultWrapper: 'defaultSection'
+        wrapper: 'defaultSection'
         contents: (template, model, section) ->
           val = model[section]
 
@@ -183,7 +187,29 @@ Signatures:
       }
 
 
-      { # class="...{{booleanVar}}
+      { # attr={{prop}}
+        pattern: "(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}"
+        replaceWith: (attr, prop, model) ->
+          val = model[prop]
+          # null?
+          if not val? or val is null
+            ['', []]
+          # boolean?
+          else if typeof val is 'boolean'
+            [(if val then attr else ''), []]
+          # quoted value
+          else
+            ["#{ attr }=\"#{ val }\"", []]
+      }
+
+
+      { # onevent={{func}}
+        pattern: "on#{ RE_IDENTIFIER } = {{ #{ RE_IDENTIFIER } }}"
+        replaceWith: -> ['', []]
+      }
+
+
+      { # class={{booleanVar}}
         pattern: "(class=\"? #{ RE_ANYTHING }) {{ (#{ RE_IDENTIFIER }) }}"
         replaceWith: (pre, prop, model) ->
           val = model[prop]
@@ -203,9 +229,9 @@ Signatures:
 
 Matching is done on tokenized data-jt items
 
-Signatures:
+`react` signature:
 
-Function AnyType (AnyType val) `react`
+Function void (AnyType val) `react`
 (DOMElement node, String for each pattern group, AnyType model)
 
 
@@ -284,26 +310,44 @@ Tokenize template and apply each rule
 
     jtmpl.compile = (template, model, openTag, echoMode, options) ->
 
-      tokenizer = regexp("{{ (#{ RE_ANYTHING }) }}", options)
+      tokenizer = regexp("{{ (\/?) (#{ RE_ANYTHING }) }}", options)
       result = ''
       pos = 0
-
-      return
 
       while (token = tokenizer.exec(template))
 
         slice = template.slice(pos, tokenizer.lastIndex)
 
+        # End block?
+        if token[1]
+          if token[2] isnt openTag
+            throw (openTag and
+              ":( expected {{/#{ openTag }}}, got {{#{ token[2] }}}" or
+              ":( unexpected {{/#{ token[2] }}}")
+              
+          # Exit recursion
+          return result
+
         # Process rules in reverse order, most specific to least specific
         for rule in jtmpl.compileRules by -1
 
-          match = slice.match(regexp(rule.pattern, options))
+          match = regexp(rule.pattern, options).exec(slice)
           result +=
             if match
               slice.slice(pos, tokenizer.lastIndex - match[0].length) +
-              rule.replaceWith.apply(null, match.slice(1).concat([model, context]))
-            else
-              ''              
+                # inline tag or section?
+                if rule.replaceWith? 
+                  rule.replaceWith.apply(null, match.slice(1).concat([model]))
+                else
+                  tmpl = jtmpl.compile(
+                    template.slice(tokenizer.lastIndex), 
+                    model, match[1], true, options)
+
+                  tokenizer.lastIndex = tokenizer.lastIndex + tmpl.length
+
+                  rule.contents(tmpl, model, match[1])
+            else ''
+
 
 
 
@@ -324,7 +368,13 @@ Walk DOM and setup reactors between model and nodes.
 ### Array shortcuts
 
     ap = Array.prototype
-    apslice = -> ap.slice
+    apslice = ap.slice
+    appop = ap.pop
+    appush = ap.push
+    apreverse = ap.reverse
+    apshift = ap.shift
+    apunshift = ap.unshift
+    apsort = ap.sort
 
 
     
@@ -371,7 +421,7 @@ Replace mustaches with current delimiters, strip whitespace, return RegExp
         .replace('{{',  escapeRE(options.delimiters[0]))
         .replace('}}',  escapeRE(options.delimiters[1]))
         .replace(/\s+/g, '')
-      )
+      , 'g')
 
 
 
@@ -397,12 +447,53 @@ Replace HTML special characters
 
 
 
+### DOM utilities
+
+DOMElement createSectionItem (DOMElement parent, AnyType context)
+
+    createSectionItem = (parent, context) ->
+      element = document.createElement('body')
+      element.innerHTML = jtmpl(parent.getAttribute('data-jt-1') or '', context)
+      element = element.children[0]
+      jtmpl(element, element.innerHTML, context, { rootModel: model })
+      element
+
+
+
+
 
 ### Binding utilities
 
+void initBindings(Object context, String prop)
+
+Create slots for property value and change reactor functions.
+Setter notifies all reactors.
+
+    initBindings = (context, prop) ->
+      if not context["__#{ prop }_bindings"]
+        Object.defineProperty(context, "__#{ prop }_bindings",
+          enumerable: false
+          writable: true
+          value: []
+        )
+        Object.defineProperty(context, "__#{ prop }",
+          enumerable: false
+          writable: true
+          value: context[prop]
+        )
+        Object.defineProperty(context, prop, 
+          get: -> this["__#{ prop }"]
+          set: (val) -> 
+            this["__#{ prop }"] = val
+            reactor.call(this, val) for reactor in this["__#{ prop }_bindings"]
+        )
+
+
+
+void bindArrayToNodeChildren(Array array, DOMElement node)
+
 Bind an array to DOM node, 
 so when array is modified, node children are updated accordingly
-
 
     bindArrayToNodeChildren = (array, node) ->
       # node not already augmented?
@@ -424,24 +515,24 @@ so when array is modified, node children are updated accordingly
           this.__removeEmpty()
           this.__garbageCollectNodes()
           node.removeChild(node.children[node.children.length - 1]) for node in this.__nodes
-          AP.pop.apply(this, arguments)
-          AP.pop.apply(this.__values, arguments)
+          appop.apply(this, arguments)
+          appop.apply(this.__values, arguments)
           this.__addEmpty()
 
         array.push = (item) ->
           this.__removeEmpty()
           this.__garbageCollectNodes()
           node.appendChild(createSectionItem(node, item)) for node in this.__nodes
-          AP.push.apply(this, arguments)
+          appush.apply(this, arguments)
           len = this.__values.length
-          result = AP.push.apply(this.__values, arguments)
+          result = appush.apply(this.__values, arguments)
           bindProp(item, len)
           result
 
         array.reverse = ->
           this.__removeEmpty()
           this.__garbageCollectNodes()
-          result = AP.reverse.apply(this.__values, arguments)
+          result = apreverse.apply(this.__values, arguments)
           for node in this.__nodes
             node.innerHTML = ''
             for item, i in this.__values
@@ -453,8 +544,8 @@ so when array is modified, node children are updated accordingly
         array.shift = ->
           this.__removeEmpty()
           this.__garbageCollectNodes()
-          AP.shift.apply(this, arguments)
-          result = AP.shift.apply(this.__values, arguments)
+          apshift.apply(this, arguments)
+          result = apshift.apply(this.__values, arguments)
           for node in this.__nodes
             node.removeChild(node.children[0])
           for item, i in this.__values
@@ -465,11 +556,11 @@ so when array is modified, node children are updated accordingly
         array.unshift = ->
           this.__removeEmpty()
           this.__garbageCollectNodes()
-          for item in AP.slice.call(arguments).reverse()
+          for item in apslice.call(arguments).reverse()
             for node in this.__nodes
               node.insertBefore(createSectionItem(node, item), node.children[0])
-          AP.unshift.apply(this, arguments)
-          result = AP.unshift.apply(this.__values, arguments)
+          apunshift.apply(this, arguments)
+          result = apunshift.apply(this.__values, arguments)
           for item, i in this.__values
             bindProp(item, i)
           this.__addEmpty()
@@ -478,8 +569,8 @@ so when array is modified, node children are updated accordingly
         array.sort = ->
           this.__removeEmpty()
           this.__garbageCollectNodes()
-          AP.sort.apply(this, arguments)
-          result = AP.sort.apply(this.__values, arguments)
+          apsort.apply(this, arguments)
+          result = apsort.apply(this.__values, arguments)
           for node in this.__nodes
             node.innerHTML = ''
             for item, i in array
@@ -494,11 +585,11 @@ so when array is modified, node children are updated accordingly
           for node in this.__nodes
             for i in [0...howMany]
               node.removeChild(node.children[index])
-            for item in AP.slice.call(arguments, 2)
+            for item in apslice.call(arguments, 2)
               node.insertBefore(createSectionItem(node, item), node.children[index])
               bindProp(item, index)
-          AP.splice.apply(this, arguments)
-          AP.splice.apply(this.__values, arguments)
+          apsplice.apply(this, arguments)
+          apsplice.apply(this.__values, arguments)
           this.__addEmpty()
 
         bindProp = (item, i) ->
