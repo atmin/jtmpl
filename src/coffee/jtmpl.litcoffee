@@ -23,14 +23,14 @@ void jtmpl(DOMElement target, String template, AnyType model)
       if (target is null or typeof target is 'string') and not template?
 
         if not document?
-          throw ':( this API is only available in a browser'
+          throw new Error(':( this API is only available in a browser')
 
         return apslice.call(document.querySelectorAll(target))
 
       # `jtmpl(template, model)`?
       if typeof target is 'string' and
           typeof template in ['number', 'string', 'boolean', 'object'] and
-          model is undefined
+          (model is undefined or typeof model is 'object')
 
         options = model
         model = template
@@ -42,7 +42,7 @@ void jtmpl(DOMElement target, String template, AnyType model)
         target = document.getElementById(target.substring(1))
       
       if not model?
-        throw ':( no model'
+        throw new Error(':( no model')
 
       # `jtmpl('#template-id', ...)` or `jtmpl(element, '#template-id', ...)`      
       if template.match and template.match(RE_NODE_ID)
@@ -67,19 +67,21 @@ void jtmpl(DOMElement target, String template, AnyType model)
       # default target tag
       options.defaultTargetTag = options.defaultTargetTag or 'div'
 
+      delimiters = options.delimiters
+
       ## Preprocess template
-      template = template
+      template = ('' + template)
         # Strip HTML comments that enclose tokens
-        .replace(regexp("<!-- #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } -->", options), '$1')
+        .replace(regexp("<!-- #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } -->", delimiters), '$1')
         # Strip single quotes around html element attributes associated with tokens
-        .replace(regexp("(#{ RE_IDENTIFIER })='({{ #{ RE_IDENTIFIER } }})'", options), '$1=$2')
+        .replace(regexp("(#{ RE_IDENTIFIER })='({{ #{ RE_IDENTIFIER } }})'", delimiters), '$1=$2')
         # Strip double quotes around html element attributes associated with tags
-        .replace(regexp("(#{ RE_IDENTIFIER })=\"({{ #{ RE_IDENTIFIER } }})\"", options), '$1=$2')
+        .replace(regexp("(#{ RE_IDENTIFIER })=\"({{ #{ RE_IDENTIFIER } }})\"", delimiters), '$1=$2')
         # If tags stand on their own line remove the line, keep the tag only
-        .replace(regexp("\\n #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } \\n", options), '\n$1\n')
+        .replace(regexp("\\n #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } \\n", delimiters), '\n$1\n')
 
       # Compile template
-      html = jtmpl.compile(template, model, null, false, options)
+      html = jtmpl.compile(template, model, null, false, delimiters, options.asArrayItem)
 
     this.jtmpl = jtmpl
 
@@ -109,6 +111,7 @@ Used in various matchers
     RE_NODE_ID = '^#[\\w\\.\\-]+$'
     RE_ANYTHING = '[\\s\\S]*?'
     RE_SPACE = '\\s*'
+    RE_DATA_JT = '(?: ( \\s* data-jt = " [^"]* )" )?'
 
 
 
@@ -132,14 +135,14 @@ Signatures:
       { # {{var}}
         pattern: "{{ (#{ RE_IDENTIFIER }) }}"
         wrapper: 'defaultVar'
-        replaceWith: (prop, model) -> [escapeHTML(model[prop]), []]
+        replaceWith: (prop, model) -> [escapeHTML(prop is '.' and model or model[prop]), []]
       }
 
 
       { # {{unescaped_var}}
         pattern: "{{ & (#{ RE_IDENTIFIER }) }}"
         wrapper: 'defaultVar'
-        replaceWith: (prop, model) -> [model[prop], []]
+        replaceWith: (prop, model) -> [prop is '.' and model or model[prop], []]
       }
 
 
@@ -151,11 +154,9 @@ Signatures:
           # Sequence?
           if Array.isArray(val)
             [ # template as HTML comment
-              "<!-- # #{ template } -->"
-              +
+              "<!-- # #{ template } -->" +
               # Render body for each item
-              (jtmpl(template, item) for item in val).join('')
-              ,
+              (jtmpl(template, item, { asArrayItem: true }) for item in val).join(''),
               []
             ]
 
@@ -182,7 +183,7 @@ Signatures:
           # Sequence?
           if Array.isArray(val)
             [ # template as HTML comment
-              "<!-- # #{ template } -->"
+              "<!-- ^ #{ template } -->"
               +
               # Render body if array empty
               if not val.length then jtmpl(template, model) else ''
@@ -315,12 +316,21 @@ Function void (AnyType val) `react`
 
 ## Compile rules processor
 
+### Compile routine
+
 Tokenize template and apply each rule
 
+String  template
+AnyType model
+String  openTag
+Boolean echoMode
+Array   delimiters
+Boolean asArrayItem
 
-    jtmpl.compile = (template, model, openTag, echoMode, options) ->
 
-      tokenizer = regexp("{{ (\/?) (#{ RE_ANYTHING }) }}", options)
+    jtmpl.compile = (template, model, openTag, echoMode, delimiters, asArrayItem) ->
+
+      tokenizer = regexp("{{ (\/?) (#{ RE_ANYTHING }) }}", delimiters)
       result = ''
       pos = 0
 
@@ -329,46 +339,97 @@ Tokenize template and apply each rule
         # End block?
         if token[1]
           if token[2] isnt openTag
-            throw (openTag and
+            throw new Error(openTag and
               ":( expected {{/#{ openTag }}}, got {{#{ token[2] }}}" or
               ":( unexpected {{/#{ token[2] }}}")
               
           # Exit recursion
-          return result
+          return result + template.slice(pos, tokenizer.lastIndex - token[0].length)
 
-        if echoMode
-          result += template.slice(pos, tokenizer.lastIndex)
-          pos = tokenizer.lastIndex
+        slice = template.slice(pos, tokenizer.lastIndex)
 
-        else
-          slice = template.slice(pos, tokenizer.lastIndex)
+        # Process rules in reverse order, most specific to least specific
+        for rule in jtmpl.compileRules by -1
 
-          # Process rules in reverse order, most specific to least specific
-          for rule in jtmpl.compileRules by -1
+          match = regexp(rule.pattern, delimiters).exec(slice)
+          if match
+            result += slice.slice(pos, tokenizer.lastIndex - match[0].length)
 
-            match = regexp(rule.pattern, options).exec(slice)
-            if match
-              result += slice.slice(pos, tokenizer.lastIndex - match[0].length)
-
-              # inline tag or section?
-              if rule.replaceWith? 
+            # inline tag or section?
+            if rule.replaceWith? 
+              if echoMode
+                result += match[0]
+              else
                 [replaceWith, wrapperAttrs] =
-                  rule.replaceWith.apply(null, match.slice(1).concat([model]))
+                  rule.replaceWith(match.slice(1).concat([model])...)
                 result += replaceWith
 
+              pos = tokenizer.lastIndex
+
+            else
+              # Recursively get nested template (echoMode=on)
+              tmpl = jtmpl.compile(
+                template.slice(tokenizer.lastIndex), 
+                model, match[1], true, delimiters)
+
+              # Skip block contents
+              tokenizer.lastIndex += tmpl.length
+
+              # Match close block token
+              closing = tokenizer.exec(template)
+              pos = tokenizer.lastIndex
+
+              if echoMode
+                result += token[0] + tmpl + closing[0]
               else
-                tmpl = jtmpl.compile(
-                  template.slice(tokenizer.lastIndex), 
-                  model, match[1], true, options)
-
-                tokenizer.lastIndex = pos = tokenizer.lastIndex + tmpl.length
-
                 [contents, wrapperAttrs] = rule.contents(tmpl, model, match[1])
                 result += contents
 
-      # Accumulated output
-      result
+              # Match was found, skip other rules
+            break
 
+      # Return accumulated output
+      result + template.slice(pos)
+
+
+
+
+### Compiling phase supporting utilities
+
+String addTagBinding(String, String)
+
+Inject token in HTML element data-jt attribute.
+Create attribute if not existent.
+
+    injectTagBinding = (template, token) ->
+      # group 1: capture 'data-jt' inject position
+      # group 2: capture token inject position, if attribute exists
+      match = template.match(regexp("^(< #{ RE_IDENTIFIER }) (#{ RE_ANYTHING }) #{ RE_DATA_JT } [^>]* >"))
+      attrLen = (match[3] or '').length
+      pos = match[1].length + match[2].length + attrLen
+      # inject
+      template.slice(0, pos) + ' ' + (attrLen and token or 'data-jt="' + token + '"') + template.slice(pos)
+
+
+
+Int lastOpenedHTMLTag(String)
+
+Return index of the last opening, maybe opened (no close brace), HTML tag
+followed by end of string, or -1, if no such exists
+
+    lastOpenedHTMLTag = (template) ->
+      template.trimRight().search(regexp("< #{ RE_IDENTIFIER } [^>]*? >?$"))
+
+
+
+Boolean isValidHTMLTag(String)
+
+Check if contents is properly formatted closed HTML tag
+
+    isValidHTMLTag = (contents) ->
+      !!contents.trim().match(regexp("<(#{ RE_IDENTIFIER }) #{ RE_SPACE }
+        [^>]*? > #{ RE_ANYTHING } </\\1> | < [^>]*? />")
+      )
 
 
 
@@ -432,16 +493,18 @@ Escape regular expression characters
 
 RegExp regexp(String src, Object options)
 
-Replace mustaches with current delimiters, strip whitespace, return RegExp
+Replace mustaches with given delimiters, strip whitespace, return RegExp
 
-    regexp = (src, options) ->
-      new RegExp(src
+    regexp = (src, delimiters) ->
+      # strip whitespace
+      src = src.replace(/\s+/g, '')
+      new RegExp((if delimiters then src
         # triple mustache to alt non-escaped var output
-        .replace('{{{', escapeRE(options.delimiters[0]) + '&')
-        .replace('}}}', escapeRE(options.delimiters[1]))
-        .replace('{{',  escapeRE(options.delimiters[0]))
-        .replace('}}',  escapeRE(options.delimiters[1]))
-        .replace(/\s+/g, '')
+        .replace('{{{', escapeRE(delimiters[0]) + '&')
+        .replace('}}}', escapeRE(delimiters[1]))
+        .replace('{{',  escapeRE(delimiters[0]))
+        .replace('}}',  escapeRE(delimiters[1]))
+        else src)
       , 'g')
 
 

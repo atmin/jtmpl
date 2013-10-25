@@ -1,15 +1,15 @@
 (function() {
-  var RE_ANYTHING, RE_IDENTIFIER, RE_NODE_ID, RE_SPACE, ap, appop, appush, apreverse, apshift, apslice, apsort, apunshift, bindArrayToNodeChildren, bindRules, compose, createSectionItem, curry, escapeHTML, escapeRE, initBindings, jtmpl, regexp;
+  var RE_ANYTHING, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_SPACE, ap, appop, appush, apreverse, apshift, apslice, apsort, apunshift, bindArrayToNodeChildren, bindRules, compose, createSectionItem, curry, escapeHTML, escapeRE, initBindings, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, regexp;
 
   jtmpl = function(target, template, model, options) {
-    var html, _ref;
+    var delimiters, html, _ref;
     if ((target === null || typeof target === 'string') && (template == null)) {
       if (typeof document === "undefined" || document === null) {
-        throw ':( this API is only available in a browser';
+        throw new Error(':( this API is only available in a browser');
       }
       return apslice.call(document.querySelectorAll(target));
     }
-    if (typeof target === 'string' && ((_ref = typeof template) === 'number' || _ref === 'string' || _ref === 'boolean' || _ref === 'object') && model === void 0) {
+    if (typeof target === 'string' && ((_ref = typeof template) === 'number' || _ref === 'string' || _ref === 'boolean' || _ref === 'object') && (model === void 0 || typeof model === 'object')) {
       options = model;
       model = template;
       template = target;
@@ -19,7 +19,7 @@
       target = document.getElementById(target.substring(1));
     }
     if (model == null) {
-      throw ':( no model';
+      throw new Error(':( no model');
     }
     if (template.match && template.match(RE_NODE_ID)) {
       template = document.getElementById(template.substring(1)).innerHTML;
@@ -31,8 +31,9 @@
     options.defaultSectionItem = options.defaultSectionItem || 'div';
     options.defaultVar = options.defaultVar || 'span';
     options.defaultTargetTag = options.defaultTargetTag || 'div';
-    template = template.replace(regexp("<!-- " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " -->", options), '$1').replace(regexp("(" + RE_IDENTIFIER + ")='({{ " + RE_IDENTIFIER + " }})'", options), '$1=$2').replace(regexp("(" + RE_IDENTIFIER + ")=\"({{ " + RE_IDENTIFIER + " }})\"", options), '$1=$2').replace(regexp("\\n " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " \\n", options), '\n$1\n');
-    return html = jtmpl.compile(template, model, null, false, options);
+    delimiters = options.delimiters;
+    template = ('' + template).replace(regexp("<!-- " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " -->", delimiters), '$1').replace(regexp("(" + RE_IDENTIFIER + ")='({{ " + RE_IDENTIFIER + " }})'", delimiters), '$1=$2').replace(regexp("(" + RE_IDENTIFIER + ")=\"({{ " + RE_IDENTIFIER + " }})\"", delimiters), '$1=$2').replace(regexp("\\n " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " \\n", delimiters), '\n$1\n');
+    return html = jtmpl.compile(template, model, null, false, delimiters, options.asArrayItem);
   };
 
   this.jtmpl = jtmpl;
@@ -45,18 +46,20 @@
 
   RE_SPACE = '\\s*';
 
+  RE_DATA_JT = '(?: ( \\s* data-jt = " [^"]* )" )?';
+
   jtmpl.compileRules = [
     {
       pattern: "{{ (" + RE_IDENTIFIER + ") }}",
       wrapper: 'defaultVar',
       replaceWith: function(prop, model) {
-        return [escapeHTML(model[prop]), []];
+        return [escapeHTML(prop === '.' && model || model[prop]), []];
       }
     }, {
       pattern: "{{ & (" + RE_IDENTIFIER + ") }}",
       wrapper: 'defaultVar',
       replaceWith: function(prop, model) {
-        return [model[prop], []];
+        return [prop === '.' && model || model[prop], []];
       }
     }, {
       pattern: "{{ \\# (" + RE_IDENTIFIER + ") }}",
@@ -66,12 +69,14 @@
         val = model[section];
         if (Array.isArray(val)) {
           return [
-            "<!-- # " + template + " -->", +((function() {
+            ("<!-- # " + template + " -->") + ((function() {
               var _i, _len, _results;
               _results = [];
               for (_i = 0, _len = val.length; _i < _len; _i++) {
                 item = val[_i];
-                _results.push(jtmpl(template, item));
+                _results.push(jtmpl(template, item, {
+                  asArrayItem: true
+                }));
               }
               return _results;
             })()).join(''), []
@@ -89,7 +94,7 @@
         var val;
         val = model[section];
         if (Array.isArray(val)) {
-          return ["<!-- # " + template + " -->", +(!val.length ? jtmpl(template, model) : ''), []];
+          return ["<!-- ^ " + template + " -->", +(!val.length ? jtmpl(template, model) : ''), []];
         } else {
           return [jtmpl(template, model), val ? ['style', 'display:none'] : []];
         }
@@ -200,43 +205,66 @@
     }
   ];
 
-  jtmpl.compile = function(template, model, openTag, echoMode, options) {
-    var contents, match, pos, replaceWith, result, rule, slice, tmpl, token, tokenizer, wrapperAttrs, _i, _ref, _ref1, _ref2;
-    tokenizer = regexp("{{ (\/?) (" + RE_ANYTHING + ") }}", options);
+  jtmpl.compile = function(template, model, openTag, echoMode, delimiters, asArrayItem) {
+    var closing, contents, match, pos, replaceWith, result, rule, slice, tmpl, token, tokenizer, wrapperAttrs, _i, _ref, _ref1, _ref2;
+    tokenizer = regexp("{{ (\/?) (" + RE_ANYTHING + ") }}", delimiters);
     result = '';
     pos = 0;
     while ((token = tokenizer.exec(template))) {
       if (token[1]) {
         if (token[2] !== openTag) {
-          throw openTag && (":( expected {{/" + openTag + "}}, got {{" + token[2] + "}}") || (":( unexpected {{/" + token[2] + "}}");
+          throw new Error(openTag && (":( expected {{/" + openTag + "}}, got {{" + token[2] + "}}") || (":( unexpected {{/" + token[2] + "}}"));
         }
-        return result;
+        return result + template.slice(pos, tokenizer.lastIndex - token[0].length);
       }
-      if (echoMode) {
-        result += template.slice(pos, tokenizer.lastIndex);
-        pos = tokenizer.lastIndex;
-      } else {
-        slice = template.slice(pos, tokenizer.lastIndex);
-        _ref = jtmpl.compileRules;
-        for (_i = _ref.length - 1; _i >= 0; _i += -1) {
-          rule = _ref[_i];
-          match = regexp(rule.pattern, options).exec(slice);
-          if (match) {
-            result += slice.slice(pos, tokenizer.lastIndex - match[0].length);
-            if (rule.replaceWith != null) {
-              _ref1 = rule.replaceWith.apply(null, match.slice(1).concat([model])), replaceWith = _ref1[0], wrapperAttrs = _ref1[1];
-              result += replaceWith;
+      slice = template.slice(pos, tokenizer.lastIndex);
+      _ref = jtmpl.compileRules;
+      for (_i = _ref.length - 1; _i >= 0; _i += -1) {
+        rule = _ref[_i];
+        match = regexp(rule.pattern, delimiters).exec(slice);
+        if (match) {
+          result += slice.slice(pos, tokenizer.lastIndex - match[0].length);
+          if (rule.replaceWith != null) {
+            if (echoMode) {
+              result += match[0];
             } else {
-              tmpl = jtmpl.compile(template.slice(tokenizer.lastIndex), model, match[1], true, options);
-              tokenizer.lastIndex = pos = tokenizer.lastIndex + tmpl.length;
+              _ref1 = rule.replaceWith.apply(rule, match.slice(1).concat([model])), replaceWith = _ref1[0], wrapperAttrs = _ref1[1];
+              result += replaceWith;
+            }
+            pos = tokenizer.lastIndex;
+          } else {
+            tmpl = jtmpl.compile(template.slice(tokenizer.lastIndex), model, match[1], true, delimiters);
+            tokenizer.lastIndex += tmpl.length;
+            closing = tokenizer.exec(template);
+            pos = tokenizer.lastIndex;
+            if (echoMode) {
+              result += token[0] + tmpl + closing[0];
+            } else {
               _ref2 = rule.contents(tmpl, model, match[1]), contents = _ref2[0], wrapperAttrs = _ref2[1];
               result += contents;
             }
           }
+          break;
         }
       }
     }
-    return result;
+    return result + template.slice(pos);
+  };
+
+  injectTagBinding = function(template, token) {
+    var attrLen, match, pos;
+    match = template.match(regexp("^(< " + RE_IDENTIFIER + ") (" + RE_ANYTHING + ") " + RE_DATA_JT + " [^>]* >"));
+    attrLen = (match[3] || '').length;
+    pos = match[1].length + match[2].length + attrLen;
+    return template.slice(0, pos) + ' ' + (attrLen && token || 'data-jt="' + token + '"') + template.slice(pos);
+  };
+
+  lastOpenedHTMLTag = function(template) {
+    return template.trimRight().search(regexp("< " + RE_IDENTIFIER + " [^>]*? >?$"));
+  };
+
+  isValidHTMLTag = function(contents) {
+    return !!contents.trim().match(regexp("<(" + RE_IDENTIFIER + ") " + RE_SPACE + "        [^>]*? > " + RE_ANYTHING + " </\\1> | < [^>]*? />"));
   };
 
   ap = Array.prototype;
@@ -275,8 +303,9 @@
     return (s + '').replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
   };
 
-  regexp = function(src, options) {
-    return new RegExp(src.replace('{{{', escapeRE(options.delimiters[0]) + '&').replace('}}}', escapeRE(options.delimiters[1])).replace('{{', escapeRE(options.delimiters[0])).replace('}}', escapeRE(options.delimiters[1])).replace(/\s+/g, ''), 'g');
+  regexp = function(src, delimiters) {
+    src = src.replace(/\s+/g, '');
+    return new RegExp((delimiters ? src.replace('{{{', escapeRE(delimiters[0]) + '&').replace('}}}', escapeRE(delimiters[1])).replace('{{', escapeRE(delimiters[0])).replace('}}', escapeRE(delimiters[1])) : src), 'g');
   };
 
   escapeHTML = function(val) {
