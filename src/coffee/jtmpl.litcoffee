@@ -30,9 +30,8 @@ void jtmpl(DOMElement target, String template, AnyType model)
       # `jtmpl(template, model)`?
       if typeof target is 'string' and
           typeof template in ['number', 'string', 'boolean', 'object'] and
-          (model is undefined or typeof model is 'object')
+          (model is undefined or model is null)
 
-        options = model
         model = template
         template = target
         target = undefined
@@ -71,6 +70,8 @@ void jtmpl(DOMElement target, String template, AnyType model)
 
       ## Preprocess template
       template = ('' + template)
+        # Convert triple mustache (output unescaped var) to alt form
+        .replace(regexp("{{{ (#{ RE_IDENTIFIER }) }}}"), delimiters[0] + '&$1' + delimiters[1])
         # Strip HTML comments that enclose tokens
         .replace(regexp("<!-- #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } -->", delimiters), '$1')
         # Strip single quotes around html element attributes associated with tokens
@@ -81,7 +82,7 @@ void jtmpl(DOMElement target, String template, AnyType model)
         .replace(regexp("\\n #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } \\n", delimiters), '\n$1\n')
 
       # Compile template
-      html = jtmpl.compile(template, model, null, false, delimiters, options.asArrayItem)
+      html = jtmpl.compile(template, model, null, false, options)
 
     this.jtmpl = jtmpl
 
@@ -94,10 +95,12 @@ void jtmpl(DOMElement target, String template, AnyType model)
 jtmpl is a processor of rules. There are two sequences,
 one for each stage, compilation and binding.
 
-Rules in each sequence are in increasing specificity order.
+Rules in each sequence are in increasing generality order. It's just like 
+[Haskell pattern matching](http://learnyouahaskell.com/syntax-in-functions).
 
-Both stages can be extended with new rules:
-`jtmpl.compileRules.push({ ... })`, `jtmpl.bindRules.push({ ... })`
+Both stages can be extended with new rules, put them at the beginning:
+`jtmpl.compileRules.unshift({ new compile rule... })`,
+`jtmpl.bindRules.unshift({ new binding rule... })`
 
 
 
@@ -127,74 +130,31 @@ Signatures:
 
 [String, Array] `replaceWith` (String for each group in pattern, AnyType model)
 
-[String, Array] `contents` (String template, AnyType model, String section)
+String `bindingToken` (String for each group in pattern)
+
+[String, Array] `contents` (String template, AnyType model, String section, Object options)
+
 
 
     jtmpl.compileRules = [
 
-      { # {{var}}
-        pattern: "{{ (#{ RE_IDENTIFIER }) }}"
-        wrapper: 'defaultVar'
-        replaceWith: (prop, model) -> [escapeHTML(prop is '.' and model or model[prop]), []]
+      { # class={{booleanVar}}
+        pattern: "(class=\"? #{ RE_ANYTHING }) {{ (#{ RE_IDENTIFIER }) }}"
+        replaceWith: (pre, prop, model) ->
+          val = model[prop]
+          [ # Emit match, and class name if booleanVar
+            pre + (typeof val is 'boolean' and val and prop or '')
+            ,
+            []
+          ]
+        bindingToken: (pre, prop) -> "class=#{ prop }"
       }
 
 
-      { # {{unescaped_var}}
-        pattern: "{{ & (#{ RE_IDENTIFIER }) }}"
-        wrapper: 'defaultVar'
-        replaceWith: (prop, model) -> [prop is '.' and model or model[prop], []]
-      }
-
-
-      { # {{#section}}
-        pattern: "{{ \\# (#{ RE_IDENTIFIER }) }}"
-        wrapper: 'defaultSection'
-        contents: (template, model, section) ->
-          val = model[section]
-          # Sequence?
-          if Array.isArray(val)
-            [ # template as HTML comment
-              "<!-- # #{ template } -->" +
-              # Render body for each item
-              (jtmpl(template, item, { asArrayItem: true }) for item in val).join(''),
-              []
-            ]
-
-          # Context?
-          else if typeof val is 'object'
-            # Render body using context
-            [ jtmpl(template, val),
-              []
-            ]
-
-          else
-            [ jtmpl(template, model),
-              if not val then ['style', 'display:none'] else []
-            ]
-      }
-
-
-      { # {{^block}}
-        pattern: "{{ \\^ (#{ RE_IDENTIFIER }) }}"
-        wrapper: 'defaultSection'
-        contents: (template, model, section) ->
-          val = model[section]
-
-          # Sequence?
-          if Array.isArray(val)
-            [ # template as HTML comment
-              "<!-- ^ #{ template } -->"
-              +
-              # Render body if array empty
-              if not val.length then jtmpl(template, model) else ''
-              ,
-              []
-            ]
-
-          else
-            [ jtmpl(template, model),
-              if val then ['style', 'display:none'] else []
-            ]
+      { # onevent={{func}}
+        pattern: "on(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}"
+        replaceWith: -> ['', []]
+        bindingToken: (event, handler) -> "on#{ event }=#{ handler }"
       }
 
 
@@ -211,25 +171,79 @@ Signatures:
           # quoted value
           else
             ["#{ attr }=\"#{ val }\"", []]
+        bindingToken: (attr, prop) -> "#{ attr }=#{ prop }"
       }
 
 
-      { # onevent={{func}}
-        pattern: "on#{ RE_IDENTIFIER } = {{ #{ RE_IDENTIFIER } }}"
-        replaceWith: -> ['', []]
+      { # {{^inverted_section}}
+        pattern: "{{ \\^ (#{ RE_IDENTIFIER }) }}"
+        wrapper: 'defaultSection'
+        contents: (template, model, section, options) ->
+          val = model[section]
+
+          # Sequence?
+          if Array.isArray(val)
+            [ # template as HTML comment
+              "<!-- ^ #{ multiReplace(template, options.delimiters, options.compiledDelimiters) } -->"
+              +
+              # Render body if array empty
+              if not val.length then jtmpl(template, model) else ''
+              ,
+              []
+            ]
+
+          else
+            [ jtmpl(template, model),
+              if val then [['style', 'display:none']] else []
+            ]
+        bindingToken: (section) -> "^#{ section }"
+      }
+
+      
+      { # {{#section}}
+        pattern: "{{ \\# (#{ RE_IDENTIFIER }) }}"
+        wrapper: 'defaultSection'
+        contents: (template, model, section, options) ->
+          val = model[section]
+          # Sequence?
+          if Array.isArray(val)
+            [ # template as HTML comment
+              "<!-- # #{ multiReplace(template, options.delimiters, options.compiledDelimiters) } -->" +
+              # Render body for each item
+              (jtmpl(template, item, null, { asArrayItem: true }) for item in val).join(''),
+              []
+            ]
+
+          # Context?
+          else if typeof val is 'object'
+            # Render body using context
+            [ jtmpl(template, val),
+              []
+            ]
+
+          else
+            [ jtmpl(template, model),
+              if not val then [['style', 'display:none']] else []
+            ]
+        bindingToken: (section) -> "##{ section }"
       }
 
 
-      { # class={{booleanVar}}
-        pattern: "(class=\"? #{ RE_ANYTHING }) {{ (#{ RE_IDENTIFIER }) }}"
-        replaceWith: (pre, prop, model) ->
-          val = model[prop]
-          [ # Emit match, and class name if true
-            pre + (typeof val is 'boolean' and val and prop or '')
-            ,
-            []
-          ]
+      { # {{&unescaped_var}}
+        pattern: "{{ & (#{ RE_IDENTIFIER }) }}"
+        wrapper: 'defaultVar'
+        replaceWith: (prop, model) -> [prop is '.' and model or model[prop], []]
+        bindingToken: (prop) -> prop
       }
+
+
+      { # {{var}}
+        pattern: "{{ (#{ RE_IDENTIFIER }) }}"
+        wrapper: 'defaultVar'
+        replaceWith: (prop, model) -> [escapeHTML(prop is '.' and model or model[prop]), []]
+        bindingToken: (prop) -> prop
+      }
+
     ]
 
 
@@ -248,27 +262,6 @@ Function void (AnyType val) `react`
 
 
     bindRules = [
-
-      { # var
-        pattern: "#{ RE_IDENTIFIER }",
-        react: (node) ->
-          (val) -> node.innerHTML = val
-      }
-
-
-      { # attr=var
-        pattern: "(#{ RE_IDENTIFIER }) = #{ RE_IDENTIFIER }",
-        react: (node, attr) ->
-          (val) -> if node[attr] isnt val then node[attr] = val
-      }
-
-
-      { # class=var
-        pattern: "class = (#{ RE_IDENTIFIER })",
-        react: (node, prop, model) ->
-          (val) -> (val and addClass or removeClass)(node, prop)
-      }
-
 
       { # value/checked/selected=var
         pattern: "(value | checked | selected) = (#{ RE_IDENTIFIER })",
@@ -308,6 +301,26 @@ Function void (AnyType val) `react`
       }
 
 
+      { # class=var
+        pattern: "class = (#{ RE_IDENTIFIER })",
+        react: (node, prop, model) ->
+          (val) -> (val and addClass or removeClass)(node, prop)
+      }
+
+
+      { # attr=var
+        pattern: "(#{ RE_IDENTIFIER }) = #{ RE_IDENTIFIER }",
+        react: (node, attr) ->
+          (val) -> if node[attr] isnt val then node[attr] = val
+      }
+
+
+      { # var
+        pattern: "#{ RE_IDENTIFIER }",
+        react: (node) ->
+          (val) -> node.innerHTML = val
+      }
+
     ]
 
 
@@ -318,7 +331,9 @@ Function void (AnyType val) `react`
 
 ### Compile routine
 
-Tokenize template and apply each rule
+Tokenize template and apply each rule on tokens.
+Rules can be inline or recursive, end block is hardcoded as "{{/block}}".
+Current delimiters are respected.
 
 String  template
 AnyType model
@@ -328,9 +343,9 @@ Array   delimiters
 Boolean asArrayItem
 
 
-    jtmpl.compile = (template, model, openTag, echoMode, delimiters, asArrayItem) ->
+    jtmpl.compile = (template, model, openTag, echoMode, options, asArrayItem) ->
 
-      tokenizer = regexp("{{ (\/?) (#{ RE_ANYTHING }) }}", delimiters)
+      tokenizer = regexp("{{ (\/?) (#{ RE_ANYTHING }) }}", options.delimiters)
       result = ''
       pos = 0
 
@@ -348,21 +363,33 @@ Boolean asArrayItem
 
         slice = template.slice(pos, tokenizer.lastIndex)
 
-        # Process rules in reverse order, most specific to least specific
-        for rule in jtmpl.compileRules by -1
+        # Process rules
+        for rule in jtmpl.compileRules
 
-          match = regexp(rule.pattern, delimiters).exec(slice)
+          match = regexp(rule.pattern, options.delimiters).exec(slice)
           if match
-            result += slice.slice(pos, tokenizer.lastIndex - match[0].length)
+            # accumulate output
+            result += template.slice(pos, tokenizer.lastIndex - match[0].length)
+
+            # inject token in data-jt attr
+            htagPos = lastOpenedHTMLTag(result)
+            bindingToken = rule.bindingToken(match.slice(1)...)
 
             # inline tag or section?
-            if rule.replaceWith? 
+            if rule.replaceWith?
               if echoMode
                 result += match[0]
               else
                 [replaceWith, wrapperAttrs] =
                   rule.replaceWith(match.slice(1).concat([model])...)
-                result += replaceWith
+
+                if htagPos is -1 and rule.wrapper?
+                  # wrapping needed
+                  tag = options[rule.wrapper]
+                  result += injectTagBinding("<#{ tag }>#{ replaceWith }</#{ tag }>", bindingToken, wrapperAttrs)
+                else
+                  result += replaceWith
+                  result = result.slice(0, htagPos) + injectTagBinding(result.slice(htagPos), bindingToken, wrapperAttrs)
 
               pos = tokenizer.lastIndex
 
@@ -370,7 +397,7 @@ Boolean asArrayItem
               # Recursively get nested template (echoMode=on)
               tmpl = jtmpl.compile(
                 template.slice(tokenizer.lastIndex), 
-                model, match[1], true, delimiters)
+                model, match[1], true, options)
 
               # Skip block contents
               tokenizer.lastIndex += tmpl.length
@@ -382,39 +409,70 @@ Boolean asArrayItem
               if echoMode
                 result += token[0] + tmpl + closing[0]
               else
-                [contents, wrapperAttrs] = rule.contents(tmpl, model, match[1])
-                result += contents
+                [contents, wrapperAttrs] = rule.contents(tmpl, model, match[1], options)
+                if htagPos is -1
+                  tag = options[rule.wrapper]
+                  result += injectTagBinding("<#{ tag }>#{ contents }</#{ tag }>", bindingToken, wrapperAttrs)
+                else
+                  result = (
+                    result.slice(0, htagPos) + 
+                    injectTagBinding(result.slice(htagPos), bindingToken, wrapperAttrs) +
+                    contents.trim()
+                  )
 
-              # Match was found, skip other rules
+
+            # Match was found, skip other rules
             break
 
+      result += template.slice(pos)
+
       # Return accumulated output
-      result + template.slice(pos)
+      if options.asArrayItem
+
+        # enclose in defaultSectionItem HTML tag if needed
+        if isValidHTMLTag(result)
+          result 
+        else
+          tag = options.defaultSectionItem
+          "<#{ tag }>#{ result }</#{ tag }>"
+
+      else
+        result
 
 
 
 
-### Compiling phase supporting utilities
+### Compiling stage supporting utilities
 
 String addTagBinding(String, String)
 
 Inject token in HTML element data-jt attribute.
 Create attribute if not existent.
 
-    injectTagBinding = (template, token) ->
+    injectTagBinding = (template, token, wrapperAttrs) ->
       # group 1: capture 'data-jt' inject position
       # group 2: capture token inject position, if attribute exists
-      match = template.match(regexp("^(< #{ RE_IDENTIFIER }) (#{ RE_ANYTHING }) #{ RE_DATA_JT } [^>]* >"))
+      match = regexp("^ (#{ RE_SPACE } < #{ RE_IDENTIFIER }) (#{ RE_ANYTHING }) #{ RE_DATA_JT }").exec(template)
       attrLen = (match[3] or '').length
       pos = match[1].length + match[2].length + attrLen
-      # inject
-      template.slice(0, pos) + ' ' + (attrLen and token or 'data-jt="' + token + '"') + template.slice(pos)
+      # inject, return result
+      (
+        template.slice(0, pos) +
+        (if token
+          (if attrLen
+            (if match[3].trim() is 'data-jt="' then '' else ' ') + token
+          else ' data-jt="' + token + '"'
+          )
+        else '') +
+        (" #{ pair[0] }=\"#{ pair[1] }\"" for pair in wrapperAttrs).join('') +
+        template.slice(pos)
+      )
 
 
 
 Int lastOpenedHTMLTag(String)
 
-Return index of the last opening, maybe opened (no close brace), HTML tag
+Return index of the last opening, maybe opened (no close bracket), HTML tag
 followed by end of string, or -1, if no such exists
 
     lastOpenedHTMLTag = (template) ->
@@ -427,8 +485,8 @@ Boolean isValidHTMLTag(String)
 Check if contents is properly formatted closed HTML tag
 
     isValidHTMLTag = (contents) ->
-      !!contents.trim().match(regexp("<(#{ RE_IDENTIFIER }) #{ RE_SPACE }
-        [^>]*? > #{ RE_ANYTHING } </\\1> | < [^>]*? />")
+      !!contents.trim().match(regexp("^<(#{ RE_IDENTIFIER }) #{ RE_SPACE }
+        [^>]*? > #{ RE_ANYTHING } </\\1>$ | < [^>]*? />$")
       )
 
 
@@ -499,9 +557,6 @@ Replace mustaches with given delimiters, strip whitespace, return RegExp
       # strip whitespace
       src = src.replace(/\s+/g, '')
       new RegExp((if delimiters then src
-        # triple mustache to alt non-escaped var output
-        .replace('{{{', escapeRE(delimiters[0]) + '&')
-        .replace('}}}', escapeRE(delimiters[1]))
         .replace('{{',  escapeRE(delimiters[0]))
         .replace('}}',  escapeRE(delimiters[1]))
         else src)
@@ -519,14 +574,27 @@ Replace HTML special characters
     escapeHTML = (val) ->
       (val? and val or '')
         .toString()
-        .replace /[&\"<>\\]/g, (s) ->
-          switch s
-            when '&' then '&amp;'
-            when '\\'then '\\\\'
-            when '"' then '\"'
-            when '<' then '&lt;'
-            when '>' then '&gt;'
-            else s
+        .replace /[&"<>\\]/g, (s) -> { 
+            '&': '&amp;'
+            '\\': '\\\\'
+            '"': '\"'
+            '<': '&lt;'
+            '>': '&gt;'
+          }[s]
+
+
+
+
+String multiReplace(String template, Array from, Array to)
+
+Replace `from` literal strings with `to` strings in template
+
+    multiReplace = (template, from, to) ->
+      for find, i in from
+        template = template.replace(regexp(escapeRE(find)), escapeRE(to[i]))
+      template
+
+
 
 
 

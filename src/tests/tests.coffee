@@ -12,7 +12,7 @@ test 'compile', ->
 		'empty array'
 
 	equal jtmpl('{{#a}}{{z}}{{/a}}', { a: [{z:1}]}),
-		'<div data-jt="#a"><!-- # <<<z>>> --><span data-jt="z .">1</span></div>',
+		'<div data-jt="#a"><!-- # <<<z>>> --><span data-jt="z">1</span></div>',
 		'object array'
 
 	equal jtmpl('{{^a}}{{z}}{{/a}}', { a: [{z:1}]}), 
@@ -49,12 +49,12 @@ test 'compile', ->
 
 	equal jtmpl('<div>{{#outer}}<div>{{#inner}}{{.}}{{/inner}}</div>{{/outer}}</div>', 
 			{ outer: [{ inner: [1, 2, 3] }, { inner: [1, 2] }, { inner: [1] }] }),
-		'<div data-jt="#outer"><!-- # <div><<<#inner>>><<<.>>><<</inner>>></div> --><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span></div></div>',
+		'<div data-jt="#outer"><!-- # <div><<<#inner>>><<<.>>><<</inner>>></div> --><div data-jt="#inner"><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner"><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner"><!-- # <<<.>>> --><span data-jt=".">1</span></div></div>',
 		'nested sections'
 
 	equal jtmpl('{{#outer}}{{#inner}}{{.}}{{/inner}}{{/outer}}', 
 			{ outer: [{ inner: [1, 2, 3] }, { inner: [1, 2] }, { inner: [1] }] }),
-		'<div data-jt="#outer"><!-- # <<<#inner>>><<<.>>><<</inner>>> --><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span></div></div>',
+		'<div data-jt="#outer"><!-- # <<<#inner>>><<<.>>><<</inner>>> --><div data-jt="#inner"><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner"><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner"><!-- # <<<.>>> --><span data-jt=".">1</span></div></div>',
 		'nested sections no divs'
 
 	equal jtmpl('<a class="some-class {{bound-class}}">', {'bound-class': true}),
@@ -75,7 +75,7 @@ test 'compile', ->
 
 	equal jtmpl('{{#links}}<a href="{{href}}" class="{{selected}}">{{title}}</a>{{/links}}',
 		{ links: [{ href: '/', selected: true, title: 'root'}]}),
-		'<div data-jt="#links"><!-- # <a href=<<<href>>> class=<<<selected>>>><<<title>>></a> --><a data-jt="href=href class=selected ." href="/" class=selected><span data-jt="title">root</span></a></div>',
+		'<div data-jt="#links"><!-- # <a href=<<<href>>> class=<<<selected>>>><<<title>>></a> --><a data-jt="href=href class=selected title" href="/" class=selected>root</a></div>',
 		'array of links with many bound attributes'
 
 

@@ -1,5 +1,5 @@
 (function() {
-  var RE_ANYTHING, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_SPACE, ap, appop, appush, apreverse, apshift, apslice, apsort, apunshift, bindArrayToNodeChildren, bindRules, compose, createSectionItem, curry, escapeHTML, escapeRE, initBindings, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, regexp;
+  var RE_ANYTHING, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_SPACE, ap, appop, appush, apreverse, apshift, apslice, apsort, apunshift, bindArrayToNodeChildren, bindRules, compose, createSectionItem, curry, escapeHTML, escapeRE, initBindings, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, regexp;
 
   jtmpl = function(target, template, model, options) {
     var delimiters, html, _ref;
@@ -9,8 +9,7 @@
       }
       return apslice.call(document.querySelectorAll(target));
     }
-    if (typeof target === 'string' && ((_ref = typeof template) === 'number' || _ref === 'string' || _ref === 'boolean' || _ref === 'object') && (model === void 0 || typeof model === 'object')) {
-      options = model;
+    if (typeof target === 'string' && ((_ref = typeof template) === 'number' || _ref === 'string' || _ref === 'boolean' || _ref === 'object') && (model === void 0 || model === null)) {
       model = template;
       template = target;
       target = void 0;
@@ -32,8 +31,8 @@
     options.defaultVar = options.defaultVar || 'span';
     options.defaultTargetTag = options.defaultTargetTag || 'div';
     delimiters = options.delimiters;
-    template = ('' + template).replace(regexp("<!-- " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " -->", delimiters), '$1').replace(regexp("(" + RE_IDENTIFIER + ")='({{ " + RE_IDENTIFIER + " }})'", delimiters), '$1=$2').replace(regexp("(" + RE_IDENTIFIER + ")=\"({{ " + RE_IDENTIFIER + " }})\"", delimiters), '$1=$2').replace(regexp("\\n " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " \\n", delimiters), '\n$1\n');
-    return html = jtmpl.compile(template, model, null, false, delimiters, options.asArrayItem);
+    template = ('' + template).replace(regexp("{{{ (" + RE_IDENTIFIER + ") }}}"), delimiters[0] + '&$1' + delimiters[1]).replace(regexp("<!-- " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " -->", delimiters), '$1').replace(regexp("(" + RE_IDENTIFIER + ")='({{ " + RE_IDENTIFIER + " }})'", delimiters), '$1=$2').replace(regexp("(" + RE_IDENTIFIER + ")=\"({{ " + RE_IDENTIFIER + " }})\"", delimiters), '$1=$2').replace(regexp("\\n " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " \\n", delimiters), '\n$1\n');
+    return html = jtmpl.compile(template, model, null, false, options);
   };
 
   this.jtmpl = jtmpl;
@@ -50,54 +49,22 @@
 
   jtmpl.compileRules = [
     {
-      pattern: "{{ (" + RE_IDENTIFIER + ") }}",
-      wrapper: 'defaultVar',
-      replaceWith: function(prop, model) {
-        return [escapeHTML(prop === '.' && model || model[prop]), []];
-      }
-    }, {
-      pattern: "{{ & (" + RE_IDENTIFIER + ") }}",
-      wrapper: 'defaultVar',
-      replaceWith: function(prop, model) {
-        return [prop === '.' && model || model[prop], []];
-      }
-    }, {
-      pattern: "{{ \\# (" + RE_IDENTIFIER + ") }}",
-      wrapper: 'defaultSection',
-      contents: function(template, model, section) {
-        var item, val;
-        val = model[section];
-        if (Array.isArray(val)) {
-          return [
-            ("<!-- # " + template + " -->") + ((function() {
-              var _i, _len, _results;
-              _results = [];
-              for (_i = 0, _len = val.length; _i < _len; _i++) {
-                item = val[_i];
-                _results.push(jtmpl(template, item, {
-                  asArrayItem: true
-                }));
-              }
-              return _results;
-            })()).join(''), []
-          ];
-        } else if (typeof val === 'object') {
-          return [jtmpl(template, val), []];
-        } else {
-          return [jtmpl(template, model), !val ? ['style', 'display:none'] : []];
-        }
-      }
-    }, {
-      pattern: "{{ \\^ (" + RE_IDENTIFIER + ") }}",
-      wrapper: 'defaultSection',
-      contents: function(template, model, section) {
+      pattern: "(class=\"? " + RE_ANYTHING + ") {{ (" + RE_IDENTIFIER + ") }}",
+      replaceWith: function(pre, prop, model) {
         var val;
-        val = model[section];
-        if (Array.isArray(val)) {
-          return ["<!-- ^ " + template + " -->", +(!val.length ? jtmpl(template, model) : ''), []];
-        } else {
-          return [jtmpl(template, model), val ? ['style', 'display:none'] : []];
-        }
+        val = model[prop];
+        return [pre + (typeof val === 'boolean' && val && prop || ''), []];
+      },
+      bindingToken: function(pre, prop) {
+        return "class=" + prop;
+      }
+    }, {
+      pattern: "on(" + RE_IDENTIFIER + ") = {{ (" + RE_IDENTIFIER + ") }}",
+      replaceWith: function() {
+        return ['', []];
+      },
+      bindingToken: function(event, handler) {
+        return "on" + event + "=" + handler;
       }
     }, {
       pattern: "(" + RE_IDENTIFIER + ") = {{ (" + RE_IDENTIFIER + ") }}",
@@ -111,47 +78,77 @@
         } else {
           return ["" + attr + "=\"" + val + "\"", []];
         }
+      },
+      bindingToken: function(attr, prop) {
+        return "" + attr + "=" + prop;
       }
     }, {
-      pattern: "on" + RE_IDENTIFIER + " = {{ " + RE_IDENTIFIER + " }}",
-      replaceWith: function() {
-        return ['', []];
-      }
-    }, {
-      pattern: "(class=\"? " + RE_ANYTHING + ") {{ (" + RE_IDENTIFIER + ") }}",
-      replaceWith: function(pre, prop, model) {
+      pattern: "{{ \\^ (" + RE_IDENTIFIER + ") }}",
+      wrapper: 'defaultSection',
+      contents: function(template, model, section, options) {
         var val;
-        val = model[prop];
-        return [pre + (typeof val === 'boolean' && val && prop || ''), []];
+        val = model[section];
+        if (Array.isArray(val)) {
+          return ["<!-- ^ " + (multiReplace(template, options.delimiters, options.compiledDelimiters)) + " -->", +(!val.length ? jtmpl(template, model) : ''), []];
+        } else {
+          return [jtmpl(template, model), val ? [['style', 'display:none']] : []];
+        }
+      },
+      bindingToken: function(section) {
+        return "^" + section;
+      }
+    }, {
+      pattern: "{{ \\# (" + RE_IDENTIFIER + ") }}",
+      wrapper: 'defaultSection',
+      contents: function(template, model, section, options) {
+        var item, val;
+        val = model[section];
+        if (Array.isArray(val)) {
+          return [
+            ("<!-- # " + (multiReplace(template, options.delimiters, options.compiledDelimiters)) + " -->") + ((function() {
+              var _i, _len, _results;
+              _results = [];
+              for (_i = 0, _len = val.length; _i < _len; _i++) {
+                item = val[_i];
+                _results.push(jtmpl(template, item, null, {
+                  asArrayItem: true
+                }));
+              }
+              return _results;
+            })()).join(''), []
+          ];
+        } else if (typeof val === 'object') {
+          return [jtmpl(template, val), []];
+        } else {
+          return [jtmpl(template, model), !val ? [['style', 'display:none']] : []];
+        }
+      },
+      bindingToken: function(section) {
+        return "#" + section;
+      }
+    }, {
+      pattern: "{{ & (" + RE_IDENTIFIER + ") }}",
+      wrapper: 'defaultVar',
+      replaceWith: function(prop, model) {
+        return [prop === '.' && model || model[prop], []];
+      },
+      bindingToken: function(prop) {
+        return prop;
+      }
+    }, {
+      pattern: "{{ (" + RE_IDENTIFIER + ") }}",
+      wrapper: 'defaultVar',
+      replaceWith: function(prop, model) {
+        return [escapeHTML(prop === '.' && model || model[prop]), []];
+      },
+      bindingToken: function(prop) {
+        return prop;
       }
     }
   ];
 
   bindRules = [
     {
-      pattern: "" + RE_IDENTIFIER,
-      react: function(node) {
-        return function(val) {
-          return node.innerHTML = val;
-        };
-      }
-    }, {
-      pattern: "(" + RE_IDENTIFIER + ") = " + RE_IDENTIFIER,
-      react: function(node, attr) {
-        return function(val) {
-          if (node[attr] !== val) {
-            return node[attr] = val;
-          }
-        };
-      }
-    }, {
-      pattern: "class = (" + RE_IDENTIFIER + ")",
-      react: function(node, prop, model) {
-        return function(val) {
-          return (val && addClass || removeClass)(node, prop);
-        };
-      }
-    }, {
       pattern: "(value | checked | selected) = (" + RE_IDENTIFIER + ")",
       react: function(node, attr, prop, model) {
         if (node.nodeName === 'OPTION' && node.parentNode.querySelector('option') === node) {
@@ -202,12 +199,35 @@
           }
         };
       }
+    }, {
+      pattern: "class = (" + RE_IDENTIFIER + ")",
+      react: function(node, prop, model) {
+        return function(val) {
+          return (val && addClass || removeClass)(node, prop);
+        };
+      }
+    }, {
+      pattern: "(" + RE_IDENTIFIER + ") = " + RE_IDENTIFIER,
+      react: function(node, attr) {
+        return function(val) {
+          if (node[attr] !== val) {
+            return node[attr] = val;
+          }
+        };
+      }
+    }, {
+      pattern: "" + RE_IDENTIFIER,
+      react: function(node) {
+        return function(val) {
+          return node.innerHTML = val;
+        };
+      }
     }
   ];
 
-  jtmpl.compile = function(template, model, openTag, echoMode, delimiters, asArrayItem) {
-    var closing, contents, match, pos, replaceWith, result, rule, slice, tmpl, token, tokenizer, wrapperAttrs, _i, _ref, _ref1, _ref2;
-    tokenizer = regexp("{{ (\/?) (" + RE_ANYTHING + ") }}", delimiters);
+  jtmpl.compile = function(template, model, openTag, echoMode, options, asArrayItem) {
+    var bindingToken, closing, contents, htagPos, match, pos, replaceWith, result, rule, slice, tag, tmpl, token, tokenizer, wrapperAttrs, _i, _len, _ref, _ref1, _ref2;
+    tokenizer = regexp("{{ (\/?) (" + RE_ANYTHING + ") }}", options.delimiters);
     result = '';
     pos = 0;
     while ((token = tokenizer.exec(template))) {
@@ -219,44 +239,75 @@
       }
       slice = template.slice(pos, tokenizer.lastIndex);
       _ref = jtmpl.compileRules;
-      for (_i = _ref.length - 1; _i >= 0; _i += -1) {
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         rule = _ref[_i];
-        match = regexp(rule.pattern, delimiters).exec(slice);
+        match = regexp(rule.pattern, options.delimiters).exec(slice);
         if (match) {
-          result += slice.slice(pos, tokenizer.lastIndex - match[0].length);
+          result += template.slice(pos, tokenizer.lastIndex - match[0].length);
+          htagPos = lastOpenedHTMLTag(result);
+          bindingToken = rule.bindingToken.apply(rule, match.slice(1));
           if (rule.replaceWith != null) {
             if (echoMode) {
               result += match[0];
             } else {
               _ref1 = rule.replaceWith.apply(rule, match.slice(1).concat([model])), replaceWith = _ref1[0], wrapperAttrs = _ref1[1];
-              result += replaceWith;
+              if (htagPos === -1 && (rule.wrapper != null)) {
+                tag = options[rule.wrapper];
+                result += injectTagBinding("<" + tag + ">" + replaceWith + "</" + tag + ">", bindingToken, wrapperAttrs);
+              } else {
+                result += replaceWith;
+                result = result.slice(0, htagPos) + injectTagBinding(result.slice(htagPos), bindingToken, wrapperAttrs);
+              }
             }
             pos = tokenizer.lastIndex;
           } else {
-            tmpl = jtmpl.compile(template.slice(tokenizer.lastIndex), model, match[1], true, delimiters);
+            tmpl = jtmpl.compile(template.slice(tokenizer.lastIndex), model, match[1], true, options);
             tokenizer.lastIndex += tmpl.length;
             closing = tokenizer.exec(template);
             pos = tokenizer.lastIndex;
             if (echoMode) {
               result += token[0] + tmpl + closing[0];
             } else {
-              _ref2 = rule.contents(tmpl, model, match[1]), contents = _ref2[0], wrapperAttrs = _ref2[1];
-              result += contents;
+              _ref2 = rule.contents(tmpl, model, match[1], options), contents = _ref2[0], wrapperAttrs = _ref2[1];
+              if (htagPos === -1) {
+                tag = options[rule.wrapper];
+                result += injectTagBinding("<" + tag + ">" + contents + "</" + tag + ">", bindingToken, wrapperAttrs);
+              } else {
+                result = result.slice(0, htagPos) + injectTagBinding(result.slice(htagPos), bindingToken, wrapperAttrs) + contents.trim();
+              }
             }
           }
           break;
         }
       }
     }
-    return result + template.slice(pos);
+    result += template.slice(pos);
+    if (options.asArrayItem) {
+      if (isValidHTMLTag(result)) {
+        return result;
+      } else {
+        tag = options.defaultSectionItem;
+        return "<" + tag + ">" + result + "</" + tag + ">";
+      }
+    } else {
+      return result;
+    }
   };
 
-  injectTagBinding = function(template, token) {
-    var attrLen, match, pos;
-    match = template.match(regexp("^(< " + RE_IDENTIFIER + ") (" + RE_ANYTHING + ") " + RE_DATA_JT + " [^>]* >"));
+  injectTagBinding = function(template, token, wrapperAttrs) {
+    var attrLen, match, pair, pos;
+    match = regexp("^ (" + RE_SPACE + " < " + RE_IDENTIFIER + ") (" + RE_ANYTHING + ") " + RE_DATA_JT).exec(template);
     attrLen = (match[3] || '').length;
     pos = match[1].length + match[2].length + attrLen;
-    return template.slice(0, pos) + ' ' + (attrLen && token || 'data-jt="' + token + '"') + template.slice(pos);
+    return template.slice(0, pos) + (token ? (attrLen ? (match[3].trim() === 'data-jt="' ? '' : ' ') + token : ' data-jt="' + token + '"') : '') + ((function() {
+      var _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = wrapperAttrs.length; _i < _len; _i++) {
+        pair = wrapperAttrs[_i];
+        _results.push(" " + pair[0] + "=\"" + pair[1] + "\"");
+      }
+      return _results;
+    })()).join('') + template.slice(pos);
   };
 
   lastOpenedHTMLTag = function(template) {
@@ -264,7 +315,7 @@
   };
 
   isValidHTMLTag = function(contents) {
-    return !!contents.trim().match(regexp("<(" + RE_IDENTIFIER + ") " + RE_SPACE + "        [^>]*? > " + RE_ANYTHING + " </\\1> | < [^>]*? />"));
+    return !!contents.trim().match(regexp("^<(" + RE_IDENTIFIER + ") " + RE_SPACE + "        [^>]*? > " + RE_ANYTHING + " </\\1>$ | < [^>]*? />$"));
   };
 
   ap = Array.prototype;
@@ -305,26 +356,28 @@
 
   regexp = function(src, delimiters) {
     src = src.replace(/\s+/g, '');
-    return new RegExp((delimiters ? src.replace('{{{', escapeRE(delimiters[0]) + '&').replace('}}}', escapeRE(delimiters[1])).replace('{{', escapeRE(delimiters[0])).replace('}}', escapeRE(delimiters[1])) : src), 'g');
+    return new RegExp((delimiters ? src.replace('{{', escapeRE(delimiters[0])).replace('}}', escapeRE(delimiters[1])) : src), 'g');
   };
 
   escapeHTML = function(val) {
-    return ((val != null) && val || '').toString().replace(/[&\"<>\\]/g, function(s) {
-      switch (s) {
-        case '&':
-          return '&amp;';
-        case '\\':
-          return '\\\\';
-        case '"':
-          return '\"';
-        case '<':
-          return '&lt;';
-        case '>':
-          return '&gt;';
-        default:
-          return s;
-      }
+    return ((val != null) && val || '').toString().replace(/[&"<>\\]/g, function(s) {
+      return {
+        '&': '&amp;',
+        '\\': '\\\\',
+        '"': '\"',
+        '<': '&lt;',
+        '>': '&gt;'
+      }[s];
     });
+  };
+
+  multiReplace = function(template, from, to) {
+    var find, i, _i, _len;
+    for (i = _i = 0, _len = from.length; _i < _len; i = ++_i) {
+      find = from[i];
+      template = template.replace(regexp(escapeRE(find)), escapeRE(to[i]));
+    }
+    return template;
   };
 
   createSectionItem = function(parent, context) {
