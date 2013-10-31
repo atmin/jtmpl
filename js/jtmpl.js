@@ -49,17 +49,24 @@
 
   jtmpl.compileRules = [
     {
-      pattern: "(class=\"? " + RE_ANYTHING + ") {{ (" + RE_IDENTIFIER + ") }}",
+      pattern: "(class=\"? [\\w \\. \\- \\s {{}}]*) {{ (" + RE_IDENTIFIER + ") }}$",
       replaceWith: function(pre, prop, model) {
         var val;
         val = model[prop];
-        return [pre + (typeof val === 'boolean' && val && prop || ''), []];
+        return [(pre.search('{') === -1 && pre || ' ') + (typeof val === 'boolean' && val && prop || ''), []];
+      },
+      echoReplaceWith: function(pre, prop) {
+        if (pre.search('{') > -1) {
+          return " {{" + prop + "}}";
+        } else {
+          return null;
+        }
       },
       bindingToken: function(pre, prop) {
         return "class=" + prop;
       }
     }, {
-      pattern: "on(" + RE_IDENTIFIER + ") = {{ (" + RE_IDENTIFIER + ") }}",
+      pattern: "on(" + RE_IDENTIFIER + ") = {{ (" + RE_IDENTIFIER + ") }}$",
       replaceWith: function() {
         return ['', []];
       },
@@ -67,7 +74,7 @@
         return "on" + event + "=" + handler;
       }
     }, {
-      pattern: "(" + RE_IDENTIFIER + ") = {{ (" + RE_IDENTIFIER + ") }}",
+      pattern: "(" + RE_IDENTIFIER + ") = {{ (" + RE_IDENTIFIER + ") }}$",
       replaceWith: function(attr, prop, model) {
         var val;
         val = model[prop];
@@ -83,7 +90,7 @@
         return "" + attr + "=" + prop;
       }
     }, {
-      pattern: "{{ \\^ (" + RE_IDENTIFIER + ") }}",
+      pattern: "{{ \\^ (" + RE_IDENTIFIER + ") }}$",
       wrapper: 'defaultSection',
       contents: function(template, model, section, options) {
         var val;
@@ -98,7 +105,7 @@
         return "^" + section;
       }
     }, {
-      pattern: "{{ \\# (" + RE_IDENTIFIER + ") }}",
+      pattern: "{{ \\# (" + RE_IDENTIFIER + ") }}$",
       wrapper: 'defaultSection',
       contents: function(template, model, section, options) {
         var item, val;
@@ -127,7 +134,7 @@
         return "#" + section;
       }
     }, {
-      pattern: "{{ & (" + RE_IDENTIFIER + ") }}",
+      pattern: "{{ & (" + RE_IDENTIFIER + ") }}$",
       wrapper: 'defaultVar',
       replaceWith: function(prop, model) {
         return [prop === '.' && model || model[prop], []];
@@ -136,7 +143,7 @@
         return prop;
       }
     }, {
-      pattern: "{{ (" + RE_IDENTIFIER + ") }}",
+      pattern: "{{ (" + RE_IDENTIFIER + ") }}$",
       wrapper: 'defaultVar',
       replaceWith: function(prop, model) {
         return [escapeHTML(prop === '.' && model || model[prop]), []];
@@ -237,7 +244,7 @@
         }
         return result + template.slice(pos, tokenizer.lastIndex - token[0].length);
       }
-      slice = template.slice(pos, tokenizer.lastIndex);
+      slice = template.slice(Math.max(0, pos - 128), tokenizer.lastIndex);
       _ref = jtmpl.compileRules;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         rule = _ref[_i];
@@ -248,7 +255,7 @@
           bindingToken = rule.bindingToken.apply(rule, match.slice(1));
           if (rule.replaceWith != null) {
             if (echoMode) {
-              result += match[0];
+              result += (typeof rule.echoReplaceWith === "function" ? rule.echoReplaceWith.apply(rule, match.slice(1)) : void 0) || match[0];
             } else {
               _ref1 = rule.replaceWith.apply(rule, match.slice(1).concat([model])), replaceWith = _ref1[0], wrapperAttrs = _ref1[1];
               if (htagPos === -1 && (rule.wrapper != null)) {
@@ -316,6 +323,22 @@
 
   isValidHTMLTag = function(contents) {
     return !!contents.trim().match(regexp("^<(" + RE_IDENTIFIER + ") " + RE_SPACE + "        [^>]*? > " + RE_ANYTHING + " </\\1>$ | < [^>]*? />$"));
+  };
+
+  jtmpl.bind = function(root, model) {
+    var itemIndex, node, nodeContext, _i, _len, _ref;
+    itemIndex = 0;
+    nodeContext = null;
+    _ref = root.childNodes;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      node = _ref[_i];
+      switch (node.nodeType) {
+        case node.ELEMENT_NODE:
+          break;
+        case node.COMMENT_NODE:
+      }
+    }
+    return node;
   };
 
   ap = Array.prototype;

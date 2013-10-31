@@ -138,28 +138,31 @@ String `bindingToken` (String for each group in pattern)
 
     jtmpl.compileRules = [
 
-      { # class={{booleanVar}}
-        pattern: "(class=\"? #{ RE_ANYTHING }) {{ (#{ RE_IDENTIFIER }) }}"
+      { # class="whatever, maybe other bindings... {{booleanVar}}
+        pattern: "(class=\"? [\\w \\. \\- \\s {{}}]*) {{ (#{ RE_IDENTIFIER }) }}$"
         replaceWith: (pre, prop, model) ->
           val = model[prop]
           [ # Emit match, and class name if booleanVar
-            pre + (typeof val is 'boolean' and val and prop or '')
+            (pre.search('{') is -1 and pre or ' ') +
+            (typeof val is 'boolean' and val and prop or '')
             ,
             []
           ]
+        echoReplaceWith: (pre, prop) ->
+          if pre.search('{') > - 1 then " {{#{ prop }}}" else null
         bindingToken: (pre, prop) -> "class=#{ prop }"
       }
 
 
       { # onevent={{func}}
-        pattern: "on(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}"
+        pattern: "on(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}$"
         replaceWith: -> ['', []]
         bindingToken: (event, handler) -> "on#{ event }=#{ handler }"
       }
 
 
       { # attr={{prop}}
-        pattern: "(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}"
+        pattern: "(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}$"
         replaceWith: (attr, prop, model) ->
           val = model[prop]
           # null?
@@ -176,7 +179,7 @@ String `bindingToken` (String for each group in pattern)
 
 
       { # {{^inverted_section}}
-        pattern: "{{ \\^ (#{ RE_IDENTIFIER }) }}"
+        pattern: "{{ \\^ (#{ RE_IDENTIFIER }) }}$"
         wrapper: 'defaultSection'
         contents: (template, model, section, options) ->
           val = model[section]
@@ -201,7 +204,7 @@ String `bindingToken` (String for each group in pattern)
 
       
       { # {{#section}}
-        pattern: "{{ \\# (#{ RE_IDENTIFIER }) }}"
+        pattern: "{{ \\# (#{ RE_IDENTIFIER }) }}$"
         wrapper: 'defaultSection'
         contents: (template, model, section, options) ->
           val = model[section]
@@ -230,7 +233,7 @@ String `bindingToken` (String for each group in pattern)
 
 
       { # {{&unescaped_var}}
-        pattern: "{{ & (#{ RE_IDENTIFIER }) }}"
+        pattern: "{{ & (#{ RE_IDENTIFIER }) }}$"
         wrapper: 'defaultVar'
         replaceWith: (prop, model) -> [prop is '.' and model or model[prop], []]
         bindingToken: (prop) -> prop
@@ -238,7 +241,7 @@ String `bindingToken` (String for each group in pattern)
 
 
       { # {{var}}
-        pattern: "{{ (#{ RE_IDENTIFIER }) }}"
+        pattern: "{{ (#{ RE_IDENTIFIER }) }}$"
         wrapper: 'defaultVar'
         replaceWith: (prop, model) -> [escapeHTML(prop is '.' and model or model[prop]), []]
         bindingToken: (prop) -> prop
@@ -361,7 +364,7 @@ Boolean asArrayItem
           # Exit recursion
           return result + template.slice(pos, tokenizer.lastIndex - token[0].length)
 
-        slice = template.slice(pos, tokenizer.lastIndex)
+        slice = template.slice(Math.max(0, pos - 128), tokenizer.lastIndex)
 
         # Process rules
         for rule in jtmpl.compileRules
@@ -378,7 +381,7 @@ Boolean asArrayItem
             # inline tag or section?
             if rule.replaceWith?
               if echoMode
-                result += match[0]
+                result += rule.echoReplaceWith?(match.slice(1)...) or match[0]
               else
                 [replaceWith, wrapperAttrs] =
                   rule.replaceWith(match.slice(1).concat([model])...)
@@ -456,14 +459,16 @@ Create attribute if not existent.
       attrLen = (match[3] or '').length
       pos = match[1].length + match[2].length + attrLen
       # inject, return result
-      (
-        template.slice(0, pos) +
-        (if token
-          (if attrLen
-            (if match[3].trim() is 'data-jt="' then '' else ' ') + token
-          else ' data-jt="' + token + '"'
-          )
-        else '') +
+      ( template.slice(0, pos) +
+        ( if token
+            ( if attrLen
+                (if match[3].trim() is 'data-jt="' then '' else ' ') + token
+              else
+                ' data-jt="' + token + '"'
+            )
+          else
+            ''
+        ) +
         (" #{ pair[0] }=\"#{ pair[1] }\"" for pair in wrapperAttrs).join('') +
         template.slice(pos)
       )
@@ -493,9 +498,32 @@ Check if contents is properly formatted closed HTML tag
 
 
 
+
 ## Bind rules processor
 
-Walk DOM and setup reactors between model and nodes.
+void `bind` (DOMElement root, AnyType model)
+
+Walk DOM and setup reactors on model and nodes.
+
+
+    jtmpl.bind = (root, model) ->
+
+      itemIndex = 0
+      nodeContext = null
+
+      # iterate children
+      for node in root.childNodes
+
+        switch node.nodeType
+
+          when node.ELEMENT_NODE
+            ;
+
+          when node.COMMENT_NODE
+            ;
+
+      # return node
+      node
 
 
 

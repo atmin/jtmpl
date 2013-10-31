@@ -83,6 +83,7 @@ test 'compile', ->
 
 
 test 'bind', ->
+	return
 	collectionDOMText = -> 
 		"#{ parseInt(node.innerHTML) for node in jtmpl('ul li ul')[0].children }"
 

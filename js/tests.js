@@ -91,6 +91,7 @@
 
   test('bind', function() {
     var collectionDOMText;
+    return;
     collectionDOMText = function() {
       var node;
       return "" + ((function() {
