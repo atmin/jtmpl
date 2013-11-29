@@ -1,5 +1,5 @@
-<span>{></span> [jtmpl](/) <sup>0.1.2</sup>
-==========================================
+<span>{<span>&rsaquo;</span></span> [jtmpl](/) <sup>0.1.2</sup>
+===============================================================
 
 
 ### What
@@ -14,7 +14,7 @@ There's never need to touch the DOM directly, `model` is the [single source of t
 
 * embrace [KISS](http://en.wikipedia.org/wiki/Keep_it_simple) and [DRY](http://en.wikipedia.org/wiki/Don't_repeat_yourself)
 
-* write least amount of code possible, enjoy conceptual simplicity
+* [write least amount of code possible](http://www.codinghorror.com/blog/2007/12/size-is-the-enemy.html), enjoy conceptual simplicity
 
 * ideas by humans, automation by computers
 
@@ -41,7 +41,7 @@ There's never need to touch the DOM directly, `model` is the [single source of t
 ### Hello, world
 
 
-#### `Stage1` is a template compiler:
+`Stage1` is a template compiler:
     
 
     $ jtmpl('Hello, {{who}}', { who: 'server' })
@@ -52,7 +52,7 @@ There's never need to touch the DOM directly, `model` is the [single source of t
  
 <br>
 
-#### `Stage2` renders live DOM structure:
+`Stage2` renders live DOM structure:
 
 <iframe src="hello.html" style="border:0; border-left:1px dotted black; height:4em"></iframe>
 

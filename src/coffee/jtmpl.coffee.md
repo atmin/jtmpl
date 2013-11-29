@@ -1,11 +1,17 @@
-<span>{></span> [jtmpl](/) <sup>0.2.0</sup>
-===========================================
+<span>{<span>&rsaquo;</span></span> [jtmpl](/) <sup>0.2.0</sup>
+===============================================================
+
+
 
 ## Interface
+
+
 
 ### Compile:
 
 String jtmpl(String template, AnyType model)
+
+
 
 ### Compile and bind (browser only):
 
@@ -13,11 +19,14 @@ void jtmpl(DOMElement target, String template, AnyType model)
 
 `target` and `template` can be Strings in the format "#element-id".
 
+
+
+
 ### Main function
 
+Target NodeJS and browser
 
-
-    jtmpl = (target, template, model, options) ->
+    jtmpl = (exports ? this).jtmpl = (target, template, model, options) ->
 
       # Deprecated. `jtmpl(selector)`?
       if (target is null or typeof target is 'string') and not template?
@@ -84,7 +93,20 @@ void jtmpl(DOMElement target, String template, AnyType model)
       # Compile template
       html = jtmpl.compile(template, model, null, false, options)
 
-    this.jtmpl = jtmpl
+      # Done?
+      if not target then return html
+
+      if target.nodeName is 'SCRIPT'
+        newTarget = document.createElement(options.defaultTargetTag)
+        target.parentNode.replaceChild(newTarget, target)
+        target = newTarget
+
+      # Construct DOM
+      target.innerHTML = html
+
+      # Bind recursively using data-jt attributes
+      jtmpl.bind(target, model)
+
 
 
 
@@ -92,14 +114,15 @@ void jtmpl(DOMElement target, String template, AnyType model)
 
 ## Rules
 
-jtmpl is a processor of rules. There are two sequences,
-one for each stage, compilation and binding.
+jtmpl is a processor of rules. 
 
-Rules in each sequence are in increasing generality order. It's just like 
+Rules in sequences are in increasing generality order. It's just like 
 [Haskell pattern matching](http://learnyouahaskell.com/syntax-in-functions).
 
-Both stages can be extended with new rules, put them at the beginning:
-`jtmpl.compileRules.unshift({ new compile rule... })`,
+Compilation and binding stages can be extended with new rules,
+put them at the beginning:
+
+`jtmpl.compileRules.unshift({ new compile rule... })`  
 `jtmpl.bindRules.unshift({ new binding rule... })`
 
 
@@ -116,6 +139,22 @@ Used in various matchers
     RE_SPACE = '\\s*'
     RE_DATA_JT = '(?: ( \\s* data-jt = " [^"]* )" )?'
 
+
+
+
+### Pre-processing rules
+
+Transformations to clean up template for easier matching
+
+
+    jtmpl.preprocessingRules = [
+
+      { pattern: "", replaceWith: "" }
+
+      { pattern: "", replaceWith: "" }
+
+      { pattern: "", replaceWith: "" }
+    ]
 
 
 
@@ -451,10 +490,12 @@ String addTagBinding(String, String)
 
 Inject token in HTML element data-jt attribute.
 Create attribute if not existent.
+wrapperAttrs is array of pairs [attribute, value] to inject in element
 
     injectTagBinding = (template, token, wrapperAttrs) ->
-      # group 1: capture 'data-jt' inject position
-      # group 2: capture token inject position, if attribute exists
+      # group 1: 'data-jt' inject position
+      # group 2: token inject position, if attribute exists
+      # group 3 (RE_DATA_JT): existing 'data-jt' value
       match = regexp("^ (#{ RE_SPACE } < #{ RE_IDENTIFIER }) (#{ RE_ANYTHING }) #{ RE_DATA_JT }").exec(template)
       attrLen = (match[3] or '').length
       pos = match[1].length + match[2].length + attrLen
@@ -562,6 +603,17 @@ Function curry(Function f, AnyType frozenArg1, AnyType frozenArg2, ...)
 Function compose(Function f, Function g)
 
     compose = (f, g) -> -> f(g.apply(@, apslice.call(arguments)))
+
+
+
+### Object utilities
+
+Extend an object with given properties
+
+    extend = (obj, props) ->
+      for k, v of props
+        obj[k] = v
+      obj
 
 
 

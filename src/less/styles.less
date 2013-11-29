@@ -7,6 +7,8 @@
 @cyan: #2AA198;
 @green: #859900;
 @body-color: #586e75;
+@code-bg: #FFFAEE;
+
 
 
 
@@ -14,31 +16,44 @@
 h1 span, 
 h1 sup {
 	color: #DDD;
-	font-style: normal;
+}
+
+h1 span {
+	font-weight: normal;
+}
+
+h1 span span {
+	font-size: 130%;
+	position: relative;
+	top: 0.05em;
+	left: -0.2em;
 }
 
 h1 sup {
 	font-size: 40%;
+	position: relative;
+	top: -0.7em;
+	background-color: @code-bg;
 }
 
 h1 a, h1 a:visited {
 	color: @body-color;
 }
 
-h2 {
-	margin-top: 64px;
-}
+// h2 {
+// 	margin-top: 64px;
+// }
 
 ul {
 	margin-bottom: 32px;
 }
 
 footer {
-	margin:64px 0 10px;
+	margin:8em 0 10px;
 }
 
 .wrapper {
-	margin: 1em auto;
+	margin: 0 auto;
 	padding: 0 4%;
 }
 
@@ -147,8 +162,8 @@ audio[controls], canvas, video {
 	* To add a background to the WRAPPER, set it in the 'body' element
 */
 html {
-	/*height: 100%;*/
-	font-size: 100%;
+	letter-spacing: 1px;
+	word-spacing: 0.1em;
 	overflow-y: scroll; /* Force a scrollbar in non-IE */
 	-webkit-text-size-adjust: 100%; /* Prevent iOS text size adjust on orientation change without disabling user zoom */
 	-ms-text-size-adjust: 100%;
@@ -180,13 +195,13 @@ p, blockquote, q, pre, address, hr, code, samp, dl, ol, ul, form, table, fieldse
 */
 h1, h2, h3, h4, h5 {
 	font-family: Monaco, Consolas, "Lucida Console", monospace;
-	margin-top: 2em;
+	margin-top: 3em;
 }
 
 h1 {
 	font-size: 4.25em; /* 68px */
 	line-height: 1.1471em;
-	margin: 2em 0 0.3824em;
+	margin: 1em 0 0.3824em;
 }
 
 h2 {
@@ -198,7 +213,7 @@ h2 {
 h3 {
 	font-size: 1.625em; /* 26px */
 	line-height: 1em;
-	margin: 2em 0 1em;
+	margin: 3em 0 1em;
 }
 
 small {
@@ -211,14 +226,17 @@ small {
 
 /* Allows line wrapping of 'pre' */
 pre {
+	overflow: auto;
 	white-space: pre;
-	white-space: pre-wrap;
-	word-wrap: break-word;
+	word-wrap: normal;
 }
 
 pre, code, kbd, samp {
 	font-family: monospace, serif;
 	font-size: 1em;
+	background-color: @code-bg;
+	overflow: auto;
+	word-wrap: normal;
 }
 
 /* Tables
@@ -490,9 +508,9 @@ sub {
 	}
 }
 
-@media only screen and (min-width: 1024px) { 
+@media only screen and (min-width: 1200px) { 
 	.wrapper {
-		width: 960px;
+		width: 1200px;
 	}
 }
 

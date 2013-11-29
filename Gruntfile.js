@@ -44,7 +44,7 @@ module.exports = function(grunt) {
     coffee: {
       compile: {
         files: {
-          'js/jtmpl.js': ['src/coffee/*.litcoffee'],
+          'js/jtmpl.js': ['src/coffee/*.coffee.md'],
           'js/tests.js': ['src/tests/*.coffee']
         }
       }
@@ -71,7 +71,7 @@ module.exports = function(grunt) {
         tasks: ['jshint', 'concat', 'uglify', 'copy:tests']
       },
       coffee: {
-        files: ['src/coffee/*.coffee', 'src/coffee/*.litcoffee', 'src/tests/*.litcoffee', 'src/tests/*.coffee'],
+        files: ['src/coffee/*.coffee', 'src/coffee/*.litcoffee', 'src/coffee/*.coffee.md', 'src/tests/*.litcoffee', 'src/tests/*.coffee.md', 'src/tests/*.coffee'],
         tasks: ['coffee', 'concat', 'uglify']
       },
       less: {
@@ -82,8 +82,8 @@ module.exports = function(grunt) {
         files: ['src/sass/*.scss'],
         tasks: ['sass']
       },
-      readme: {
-        files: ['README.md'],
+      markdown: {
+        files: ['README.md', 'src/coffee/jtmpl.coffee.md'],
         tasks: ['copy', 'dotlit', 'md2html', 'clean'],
         options: {
           nospawn: true
@@ -133,6 +133,15 @@ module.exports = function(grunt) {
         files: [{
           src: ['README.md'],
           dest: 'README.html'
+        }]
+      },
+      jtmpl: {
+        options: {
+          layout: 'src/templates/layout.html'
+        },
+        files: [{
+          src: ['src/coffee/jtmpl.coffee.md'],
+          dest: 'jtmpl.coffee.html'
         }]
       }
     },

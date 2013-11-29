@@ -1,8 +1,8 @@
 (function() {
-  var RE_ANYTHING, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_SPACE, ap, appop, appush, apreverse, apshift, apslice, apsort, apunshift, bindArrayToNodeChildren, bindRules, compose, createSectionItem, curry, escapeHTML, escapeRE, initBindings, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, regexp;
+  var RE_ANYTHING, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_SPACE, ap, appop, appush, apreverse, apshift, apslice, apsort, apunshift, bindArrayToNodeChildren, bindRules, compose, createSectionItem, curry, escapeHTML, escapeRE, extend, initBindings, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, regexp;
 
-  jtmpl = function(target, template, model, options) {
-    var delimiters, html, _ref;
+  jtmpl = (typeof exports !== "undefined" && exports !== null ? exports : this).jtmpl = function(target, template, model, options) {
+    var delimiters, html, newTarget, _ref;
     if ((target === null || typeof target === 'string') && (template == null)) {
       if (typeof document === "undefined" || document === null) {
         throw new Error(':( this API is only available in a browser');
@@ -32,10 +32,18 @@
     options.defaultTargetTag = options.defaultTargetTag || 'div';
     delimiters = options.delimiters;
     template = ('' + template).replace(regexp("{{{ (" + RE_IDENTIFIER + ") }}}"), delimiters[0] + '&$1' + delimiters[1]).replace(regexp("<!-- " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " -->", delimiters), '$1').replace(regexp("(" + RE_IDENTIFIER + ")='({{ " + RE_IDENTIFIER + " }})'", delimiters), '$1=$2').replace(regexp("(" + RE_IDENTIFIER + ")=\"({{ " + RE_IDENTIFIER + " }})\"", delimiters), '$1=$2').replace(regexp("\\n " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " \\n", delimiters), '\n$1\n');
-    return html = jtmpl.compile(template, model, null, false, options);
+    html = jtmpl.compile(template, model, null, false, options);
+    if (!target) {
+      return html;
+    }
+    if (target.nodeName === 'SCRIPT') {
+      newTarget = document.createElement(options.defaultTargetTag);
+      target.parentNode.replaceChild(newTarget, target);
+      target = newTarget;
+    }
+    target.innerHTML = html;
+    return jtmpl.bind(target, model);
   };
-
-  this.jtmpl = jtmpl;
 
   RE_IDENTIFIER = '[\\w\\.\\-]+';
 
@@ -46,6 +54,19 @@
   RE_SPACE = '\\s*';
 
   RE_DATA_JT = '(?: ( \\s* data-jt = " [^"]* )" )?';
+
+  jtmpl.preprocessingRules = [
+    {
+      pattern: "",
+      replaceWith: ""
+    }, {
+      pattern: "",
+      replaceWith: ""
+    }, {
+      pattern: "",
+      replaceWith: ""
+    }
+  ];
 
   jtmpl.compileRules = [
     {
@@ -371,6 +392,15 @@
     return function() {
       return f(g.apply(this, apslice.call(arguments)));
     };
+  };
+
+  extend = function(obj, props) {
+    var k, v;
+    for (k in props) {
+      v = props[k];
+      obj[k] = v;
+    }
+    return obj;
   };
 
   escapeRE = function(s) {

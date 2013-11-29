@@ -1,0 +1,712 @@
+<!doctype html>
+<html>
+    <head>
+        <link rel="stylesheet" href="css/styles.css">
+        <link rel="stylesheet" href="css/highlight.css">
+        <title>jtmpl</title>
+    </head>
+    <body>
+        <div class="wrapper">
+          <h1 id="-span-span-rsaquo-span-span-jtmpl-sup-0-2-0-sup-"><span>{<span>&rsaquo;</span></span> <a href="/">jtmpl</a> <sup>0.2.0</sup></h1>
+<h2 id="interface">Interface</h2>
+<h3 id="compile-">Compile:</h3>
+<p>String jtmpl(String template, AnyType model)</p>
+<h3 id="compile-and-bind-browser-only-">Compile and bind (browser only):</h3>
+<p>void jtmpl(DOMElement target, String template, AnyType model)</p>
+<p><code>target</code> and <code>template</code> can be Strings in the format &quot;#element-id&quot;.</p>
+<h3 id="main-function">Main function</h3>
+<p>Target NodeJS and browser</p>
+<pre><code>jtmpl = (exports ? this).jtmpl = (target, template, model, options) -&gt;
+
+  # Deprecated. `jtmpl(selector)`?
+  if (target is null or typeof target is &#39;string&#39;) and not template?
+
+    if not document?
+      throw new Error(&#39;:( this API is only available in a browser&#39;)
+
+    return apslice.call(document.querySelectorAll(target))
+
+  # `jtmpl(template, model)`?
+  if typeof target is &#39;string&#39; and
+      typeof template in [&#39;number&#39;, &#39;string&#39;, &#39;boolean&#39;, &#39;object&#39;] and
+      (model is undefined or model is null)
+
+    model = template
+    template = target
+    target = undefined
+
+  # `jtmpl(&#39;#element-id&#39;, ...)`?
+  if typeof target is &#39;string&#39; and target.match(RE_NODE_ID)
+    target = document.getElementById(target.substring(1))
+
+  if not model?
+    throw new Error(&#39;:( no model&#39;)
+
+  # `jtmpl(&#39;#template-id&#39;, ...)` or `jtmpl(element, &#39;#template-id&#39;, ...)`      
+  if template.match and template.match(RE_NODE_ID)
+    template = document.getElementById(template.substring(1)).innerHTML
+
+  # options
+  options = options or {}
+
+  # string-separated opening and closing delimiter
+  options.delimiters = (options.delimiters or &#39;{{ }}&#39;).split(&#39; &#39;)
+  # delimiters are changed in the generated HTML comment-enclosed section prototype
+  # to avoid double-parsing
+  options.compiledDelimiters = (options.compiledDelimiters or &#39;&lt;&lt;&lt; &gt;&gt;&gt;&#39;).split(&#39; &#39;)
+
+  # sections not enclosed in HTML tag are automatically enclosed
+  options.defaultSection = options.defaultSectionTag or &#39;div&#39;
+  # default for section items
+  options.defaultSectionItem = options.defaultSectionItem or &#39;div&#39;
+  # default for section items
+  options.defaultVar = options.defaultVar or &#39;span&#39;
+
+  # default target tag
+  options.defaultTargetTag = options.defaultTargetTag or &#39;div&#39;
+
+  delimiters = options.delimiters
+
+  ## Preprocess template
+  template = (&#39;&#39; + template)
+    # Convert triple mustache (output unescaped var) to alt form
+    .replace(regexp(&quot;{{{ (#{ RE_IDENTIFIER }) }}}&quot;), delimiters[0] + &#39;&amp;$1&#39; + delimiters[1])
+    # Strip HTML comments that enclose tokens
+    .replace(regexp(&quot;&lt;!-- #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } --&gt;&quot;, delimiters), &#39;$1&#39;)
+    # Strip single quotes around html element attributes associated with tokens
+    .replace(regexp(&quot;(#{ RE_IDENTIFIER })=&#39;({{ #{ RE_IDENTIFIER } }})&#39;&quot;, delimiters), &#39;$1=$2&#39;)
+    # Strip double quotes around html element attributes associated with tags
+    .replace(regexp(&quot;(#{ RE_IDENTIFIER })=\&quot;({{ #{ RE_IDENTIFIER } }})\&quot;&quot;, delimiters), &#39;$1=$2&#39;)
+    # If tags stand on their own line remove the line, keep the tag only
+    .replace(regexp(&quot;\\n #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } \\n&quot;, delimiters), &#39;\n$1\n&#39;)
+
+  # Compile template
+  html = jtmpl.compile(template, model, null, false, options)
+
+  # Done?
+  if not target then return html
+
+  if target.nodeName is &#39;SCRIPT&#39;
+    newTarget = document.createElement(options.defaultTargetTag)
+    target.parentNode.replaceChild(newTarget, target)
+    target = newTarget
+
+  # Construct DOM
+  target.innerHTML = html
+
+  # Bind recursively using data-jt attributes
+  jtmpl.bind(target, model)</code></pre>
+<h2 id="rules">Rules</h2>
+<p>jtmpl is a processor of rules. </p>
+<p>Rules in sequences are in increasing generality order. It&#39;s just like 
+<a href="http://learnyouahaskell.com/syntax-in-functions">Haskell pattern matching</a>.</p>
+<p>Compilation and binding stages can be extended with new rules,
+put them at the beginning:</p>
+<p><code>jtmpl.compileRules.unshift({ new compile rule... })</code><br><code>jtmpl.bindRules.unshift({ new binding rule... })</code></p>
+<h3 id="regular-expression-atoms">Regular expression atoms</h3>
+<p>Used in various matchers</p>
+<pre><code>RE_IDENTIFIER = &#39;[\\w\\.\\-]+&#39;
+RE_NODE_ID = &#39;^#[\\w\\.\\-]+$&#39;
+RE_ANYTHING = &#39;[\\s\\S]*?&#39;
+RE_SPACE = &#39;\\s*&#39;
+RE_DATA_JT = &#39;(?: ( \\s* data-jt = &quot; [^&quot;]* )&quot; )?&#39;</code></pre>
+<h3 id="pre-processing-rules">Pre-processing rules</h3>
+<p>Transformations to clean up template for easier matching</p>
+<pre><code>jtmpl.preprocessingRules = [
+
+  { pattern: &quot;&quot;, replaceWith: &quot;&quot; }
+
+  { pattern: &quot;&quot;, replaceWith: &quot;&quot; }
+
+  { pattern: &quot;&quot;, replaceWith: &quot;&quot; }
+]</code></pre>
+<h3 id="compile-rules">Compile rules</h3>
+<p>Delimiters in <code>pattern</code>s are replaced with escaped options.delimiters, whitespace - stripped.</p>
+<p>Inline tags implement <code>replaceWith</code>, section (block) tags implement <code>contents</code>.</p>
+<p>Signatures:</p>
+<p>[String, Array] <code>replaceWith</code> (String for each group in pattern, AnyType model)</p>
+<p>String <code>bindingToken</code> (String for each group in pattern)</p>
+<p>[String, Array] <code>contents</code> (String template, AnyType model, String section, Object options)</p>
+<pre><code>jtmpl.compileRules = [
+
+  { # class=&quot;whatever, maybe other bindings... {{booleanVar}}
+    pattern: &quot;(class=\&quot;? [\\w \\. \\- \\s {{}}]*) {{ (#{ RE_IDENTIFIER }) }}$&quot;
+    replaceWith: (pre, prop, model) -&gt;
+      val = model[prop]
+      [ # Emit match, and class name if booleanVar
+        (pre.search(&#39;{&#39;) is -1 and pre or &#39; &#39;) +
+        (typeof val is &#39;boolean&#39; and val and prop or &#39;&#39;)
+        ,
+        []
+      ]
+    echoReplaceWith: (pre, prop) -&gt;
+      if pre.search(&#39;{&#39;) &gt; - 1 then &quot; {{#{ prop }}}&quot; else null
+    bindingToken: (pre, prop) -&gt; &quot;class=#{ prop }&quot;
+  }
+
+
+  { # onevent={{func}}
+    pattern: &quot;on(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}$&quot;
+    replaceWith: -&gt; [&#39;&#39;, []]
+    bindingToken: (event, handler) -&gt; &quot;on#{ event }=#{ handler }&quot;
+  }
+
+
+  { # attr={{prop}}
+    pattern: &quot;(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}$&quot;
+    replaceWith: (attr, prop, model) -&gt;
+      val = model[prop]
+      # null?
+      if not val? or val is null
+        [&#39;&#39;, []]
+      # boolean?
+      else if typeof val is &#39;boolean&#39;
+        [(if val then attr else &#39;&#39;), []]
+      # quoted value
+      else
+        [&quot;#{ attr }=\&quot;#{ val }\&quot;&quot;, []]
+    bindingToken: (attr, prop) -&gt; &quot;#{ attr }=#{ prop }&quot;
+  }
+
+
+  { # {{^inverted_section}}
+    pattern: &quot;{{ \\^ (#{ RE_IDENTIFIER }) }}$&quot;
+    wrapper: &#39;defaultSection&#39;
+    contents: (template, model, section, options) -&gt;
+      val = model[section]
+
+      # Sequence?
+      if Array.isArray(val)
+        [ # template as HTML comment
+          &quot;&lt;!-- ^ #{ multiReplace(template, options.delimiters, options.compiledDelimiters) } --&gt;&quot;
+          +
+          # Render body if array empty
+          if not val.length then jtmpl(template, model) else &#39;&#39;
+          ,
+          []
+        ]
+
+      else
+        [ jtmpl(template, model),
+          if val then [[&#39;style&#39;, &#39;display:none&#39;]] else []
+        ]
+    bindingToken: (section) -&gt; &quot;^#{ section }&quot;
+  }
+
+
+  { # {{#section}}
+    pattern: &quot;{{ \\# (#{ RE_IDENTIFIER }) }}$&quot;
+    wrapper: &#39;defaultSection&#39;
+    contents: (template, model, section, options) -&gt;
+      val = model[section]
+      # Sequence?
+      if Array.isArray(val)
+        [ # template as HTML comment
+          &quot;&lt;!-- # #{ multiReplace(template, options.delimiters, options.compiledDelimiters) } --&gt;&quot; +
+          # Render body for each item
+          (jtmpl(template, item, null, { asArrayItem: true }) for item in val).join(&#39;&#39;),
+          []
+        ]
+
+      # Context?
+      else if typeof val is &#39;object&#39;
+        # Render body using context
+        [ jtmpl(template, val),
+          []
+        ]
+
+      else
+        [ jtmpl(template, model),
+          if not val then [[&#39;style&#39;, &#39;display:none&#39;]] else []
+        ]
+    bindingToken: (section) -&gt; &quot;##{ section }&quot;
+  }
+
+
+  { # {{&amp;unescaped_var}}
+    pattern: &quot;{{ &amp; (#{ RE_IDENTIFIER }) }}$&quot;
+    wrapper: &#39;defaultVar&#39;
+    replaceWith: (prop, model) -&gt; [prop is &#39;.&#39; and model or model[prop], []]
+    bindingToken: (prop) -&gt; prop
+  }
+
+
+  { # {{var}}
+    pattern: &quot;{{ (#{ RE_IDENTIFIER }) }}$&quot;
+    wrapper: &#39;defaultVar&#39;
+    replaceWith: (prop, model) -&gt; [escapeHTML(prop is &#39;.&#39; and model or model[prop]), []]
+    bindingToken: (prop) -&gt; prop
+  }
+
+]</code></pre>
+<h3 id="bind-rules">Bind rules</h3>
+<p>Matching is done on tokenized data-jt items</p>
+<p><code>react</code> signature:</p>
+<p>Function void (AnyType val) <code>react</code>
+(DOMElement node, String for each pattern group, AnyType model)</p>
+<pre><code>bindRules = [
+
+  { # value/checked/selected=var
+    pattern: &quot;(value | checked | selected) = (#{ RE_IDENTIFIER })&quot;,
+    react: (node, attr, prop, model) -&gt;
+      # attach DOM reactor
+
+      # first select option?
+      if node.nodeName is &#39;OPTION&#39; and node.parentNode.querySelector(&#39;option&#39;) is node
+        node.parentNode.addEventListener(&#39;change&#39;, -&gt;
+          idx = 0
+          for option in node.parentNode.children
+            if option.nodeName is &#39;OPTION&#39;
+              model[prop] = option.selected
+              idx++
+        )
+
+      # radio group?
+      if node.type is &#39;radio&#39; and node.name
+        node.addEventListener(&#39;change&#39;, -&gt;
+          if node[attr]
+            for input in document.querySelectorAll(&quot;input[type=radio][name=#{ node.name }]&quot;)
+              if input isnt node
+                input.dispatchEvent(new Event(&#39;change&#39;))
+          model[prop] = node[attr]
+        )
+
+      # text input?
+      if node.type is &#39;text&#39;
+        node.addEventListener(&#39;input&#39;, -&gt; model[prop] = node[attr])
+
+      # other inputs
+      else
+        node.addEventListener(&#39;change&#39;, -&gt; model[prop] = node[attr])
+
+      # return model reactor
+      (val) -&gt; if node[attr] isnt val then node[attr] = val
+  }
+
+
+  { # class=var
+    pattern: &quot;class = (#{ RE_IDENTIFIER })&quot;,
+    react: (node, prop, model) -&gt;
+      (val) -&gt; (val and addClass or removeClass)(node, prop)
+  }
+
+
+  { # attr=var
+    pattern: &quot;(#{ RE_IDENTIFIER }) = #{ RE_IDENTIFIER }&quot;,
+    react: (node, attr) -&gt;
+      (val) -&gt; if node[attr] isnt val then node[attr] = val
+  }
+
+
+  { # var
+    pattern: &quot;#{ RE_IDENTIFIER }&quot;,
+    react: (node) -&gt;
+      (val) -&gt; node.innerHTML = val
+  }
+
+]</code></pre>
+<h2 id="compile-rules-processor">Compile rules processor</h2>
+<h3 id="compile-routine">Compile routine</h3>
+<p>Tokenize template and apply each rule on tokens.
+Rules can be inline or recursive, end block is hardcoded as &quot;{{/block}}&quot;.
+Current delimiters are respected.</p>
+<p>String  template
+AnyType model
+String  openTag
+Boolean echoMode
+Array   delimiters
+Boolean asArrayItem</p>
+<pre><code>jtmpl.compile = (template, model, openTag, echoMode, options, asArrayItem) -&gt;
+
+  tokenizer = regexp(&quot;{{ (\/?) (#{ RE_ANYTHING }) }}&quot;, options.delimiters)
+  result = &#39;&#39;
+  pos = 0
+
+  while (token = tokenizer.exec(template))
+
+    # End block?
+    if token[1]
+      if token[2] isnt openTag
+        throw new Error(openTag and
+          &quot;:( expected {{/#{ openTag }}}, got {{#{ token[2] }}}&quot; or
+          &quot;:( unexpected {{/#{ token[2] }}}&quot;)
+
+      # Exit recursion
+      return result + template.slice(pos, tokenizer.lastIndex - token[0].length)
+
+    slice = template.slice(Math.max(0, pos - 128), tokenizer.lastIndex)
+
+    # Process rules
+    for rule in jtmpl.compileRules
+
+      match = regexp(rule.pattern, options.delimiters).exec(slice)
+      if match
+        # accumulate output
+        result += template.slice(pos, tokenizer.lastIndex - match[0].length)
+
+        # inject token in data-jt attr
+        htagPos = lastOpenedHTMLTag(result)
+        bindingToken = rule.bindingToken(match.slice(1)...)
+
+        # inline tag or section?
+        if rule.replaceWith?
+          if echoMode
+            result += rule.echoReplaceWith?(match.slice(1)...) or match[0]
+          else
+            [replaceWith, wrapperAttrs] =
+              rule.replaceWith(match.slice(1).concat([model])...)
+
+            if htagPos is -1 and rule.wrapper?
+              # wrapping needed
+              tag = options[rule.wrapper]
+              result += injectTagBinding(&quot;&lt;#{ tag }&gt;#{ replaceWith }&lt;/#{ tag }&gt;&quot;, bindingToken, wrapperAttrs)
+            else
+              result += replaceWith
+              result = result.slice(0, htagPos) + injectTagBinding(result.slice(htagPos), bindingToken, wrapperAttrs)
+
+          pos = tokenizer.lastIndex
+
+        else
+          # Recursively get nested template (echoMode=on)
+          tmpl = jtmpl.compile(
+            template.slice(tokenizer.lastIndex), 
+            model, match[1], true, options)
+
+          # Skip block contents
+          tokenizer.lastIndex += tmpl.length
+
+          # Match close block token
+          closing = tokenizer.exec(template)
+          pos = tokenizer.lastIndex
+
+          if echoMode
+            result += token[0] + tmpl + closing[0]
+          else
+            [contents, wrapperAttrs] = rule.contents(tmpl, model, match[1], options)
+            if htagPos is -1
+              tag = options[rule.wrapper]
+              result += injectTagBinding(&quot;&lt;#{ tag }&gt;#{ contents }&lt;/#{ tag }&gt;&quot;, bindingToken, wrapperAttrs)
+            else
+              result = (
+                result.slice(0, htagPos) + 
+                injectTagBinding(result.slice(htagPos), bindingToken, wrapperAttrs) +
+                contents.trim()
+              )
+
+
+        # Match was found, skip other rules
+        break
+
+  result += template.slice(pos)
+
+  # Return accumulated output
+  if options.asArrayItem
+
+    # enclose in defaultSectionItem HTML tag if needed
+    if isValidHTMLTag(result)
+      result 
+    else
+      tag = options.defaultSectionItem
+      &quot;&lt;#{ tag }&gt;#{ result }&lt;/#{ tag }&gt;&quot;
+
+  else
+    result</code></pre>
+<h3 id="compiling-stage-supporting-utilities">Compiling stage supporting utilities</h3>
+<p>String addTagBinding(String, String)</p>
+<p>Inject token in HTML element data-jt attribute.
+Create attribute if not existent.
+wrapperAttrs is array of pairs [attribute, value] to inject in element</p>
+<pre><code>injectTagBinding = (template, token, wrapperAttrs) -&gt;
+  # group 1: &#39;data-jt&#39; inject position
+  # group 2: token inject position, if attribute exists
+  # group 3 (RE_DATA_JT): existing &#39;data-jt&#39; value
+  match = regexp(&quot;^ (#{ RE_SPACE } &lt; #{ RE_IDENTIFIER }) (#{ RE_ANYTHING }) #{ RE_DATA_JT }&quot;).exec(template)
+  attrLen = (match[3] or &#39;&#39;).length
+  pos = match[1].length + match[2].length + attrLen
+  # inject, return result
+  ( template.slice(0, pos) +
+    ( if token
+        ( if attrLen
+            (if match[3].trim() is &#39;data-jt=&quot;&#39; then &#39;&#39; else &#39; &#39;) + token
+          else
+            &#39; data-jt=&quot;&#39; + token + &#39;&quot;&#39;
+        )
+      else
+        &#39;&#39;
+    ) +
+    (&quot; #{ pair[0] }=\&quot;#{ pair[1] }\&quot;&quot; for pair in wrapperAttrs).join(&#39;&#39;) +
+    template.slice(pos)
+  )</code></pre>
+<p>Int lastOpenedHTMLTag(String)</p>
+<p>Return index of the last opening, maybe opened (no close bracket), HTML tag
+followed by end of string, or -1, if no such exists</p>
+<pre><code>lastOpenedHTMLTag = (template) -&gt;
+  template.trimRight().search(regexp(&quot;&lt; #{ RE_IDENTIFIER } [^&gt;]*? &gt;?$&quot;))</code></pre>
+<p>Boolean isValidHTMLTag(String)</p>
+<p>Check if contents is properly formatted closed HTML tag</p>
+<pre><code>isValidHTMLTag = (contents) -&gt;
+  !!contents.trim().match(regexp(&quot;^&lt;(#{ RE_IDENTIFIER }) #{ RE_SPACE }
+    [^&gt;]*? &gt; #{ RE_ANYTHING } &lt;/\\1&gt;$ | &lt; [^&gt;]*? /&gt;$&quot;)
+  )</code></pre>
+<h2 id="bind-rules-processor">Bind rules processor</h2>
+<p>void <code>bind</code> (DOMElement root, AnyType model)</p>
+<p>Walk DOM and setup reactors on model and nodes.</p>
+<pre><code>jtmpl.bind = (root, model) -&gt;
+
+  itemIndex = 0
+  nodeContext = null
+
+  # iterate children
+  for node in root.childNodes
+
+    switch node.nodeType
+
+      when node.ELEMENT_NODE
+        ;
+
+      when node.COMMENT_NODE
+        ;
+
+  # return node
+  node</code></pre>
+<h2 id="supporting-code">Supporting code</h2>
+<h3 id="array-shortcuts">Array shortcuts</h3>
+<pre><code>ap = Array.prototype
+apslice = ap.slice
+appop = ap.pop
+appush = ap.push
+apreverse = ap.reverse
+apshift = ap.shift
+apunshift = ap.unshift
+apsort = ap.sort</code></pre>
+<h3 id="functional-utilities">Functional utilities</h3>
+<p>Function curry(Function f, AnyType frozenArg1, AnyType frozenArg2, ...)</p>
+<pre><code>curry = -&gt;
+  args = apslice.call(arguments)
+  -&gt;
+    args2 = apslice.call(arguments)
+    args[0].apply(@, args.slice(1).concat(args2))</code></pre>
+<p>Function compose(Function f, Function g)</p>
+<pre><code>compose = (f, g) -&gt; -&gt; f(g.apply(@, apslice.call(arguments)))</code></pre>
+<h3 id="object-utilities">Object utilities</h3>
+<p>Extend an object with given properties</p>
+<pre><code>extend = (obj, props) -&gt;
+  for k, v of props
+    obj[k] = v
+  obj</code></pre>
+<h3 id="regular-expression-utilities">Regular expression utilities</h3>
+<p>String escapeRE(String s)</p>
+<p>Escape regular expression characters</p>
+<pre><code>escapeRE = (s) -&gt; (s + &#39;&#39;).replace(/([.?*+^$[\]\\(){}|-])/g, &#39;\\$1&#39;)</code></pre>
+<p>RegExp regexp(String src, Object options)</p>
+<p>Replace mustaches with given delimiters, strip whitespace, return RegExp</p>
+<pre><code>regexp = (src, delimiters) -&gt;
+  # strip whitespace
+  src = src.replace(/\s+/g, &#39;&#39;)
+  new RegExp((if delimiters then src
+    .replace(&#39;{{&#39;,  escapeRE(delimiters[0]))
+    .replace(&#39;}}&#39;,  escapeRE(delimiters[1]))
+    else src)
+  , &#39;g&#39;)</code></pre>
+<h3 id="string-utilities">String utilities</h3>
+<p>String escapeHTML(String val)</p>
+<p>Replace HTML special characters</p>
+<pre><code>escapeHTML = (val) -&gt;
+  (val? and val or &#39;&#39;)
+    .toString()
+    .replace /[&amp;&quot;&lt;&gt;\\]/g, (s) -&gt; { 
+        &#39;&amp;&#39;: &#39;&amp;amp;&#39;
+        &#39;\\&#39;: &#39;\\\\&#39;
+        &#39;&quot;&#39;: &#39;\&quot;&#39;
+        &#39;&lt;&#39;: &#39;&amp;lt;&#39;
+        &#39;&gt;&#39;: &#39;&amp;gt;&#39;
+      }[s]</code></pre>
+<p>String multiReplace(String template, Array from, Array to)</p>
+<p>Replace <code>from</code> literal strings with <code>to</code> strings in template</p>
+<pre><code>multiReplace = (template, from, to) -&gt;
+  for find, i in from
+    template = template.replace(regexp(escapeRE(find)), escapeRE(to[i]))
+  template</code></pre>
+<h3 id="dom-utilities">DOM utilities</h3>
+<p>DOMElement createSectionItem (DOMElement parent, AnyType context)</p>
+<pre><code>createSectionItem = (parent, context) -&gt;
+  element = document.createElement(&#39;body&#39;)
+  element.innerHTML = jtmpl(parent.getAttribute(&#39;data-jt-1&#39;) or &#39;&#39;, context)
+  element = element.children[0]
+  jtmpl(element, element.innerHTML, context, { rootModel: model })
+  element</code></pre>
+<h3 id="binding-utilities">Binding utilities</h3>
+<p>void initBindings(Object context, String prop)</p>
+<p>Create slots for property value and change reactor functions.
+Setter notifies all reactors.</p>
+<pre><code>initBindings = (context, prop) -&gt;
+  if not context[&quot;__#{ prop }_bindings&quot;]
+    Object.defineProperty(context, &quot;__#{ prop }_bindings&quot;,
+      enumerable: false
+      writable: true
+      value: []
+    )
+    Object.defineProperty(context, &quot;__#{ prop }&quot;,
+      enumerable: false
+      writable: true
+      value: context[prop]
+    )
+    Object.defineProperty(context, prop, 
+      get: -&gt; this[&quot;__#{ prop }&quot;]
+      set: (val) -&gt; 
+        this[&quot;__#{ prop }&quot;] = val
+        reactor.call(this, val) for reactor in this[&quot;__#{ prop }_bindings&quot;]
+    )</code></pre>
+<p>void bindArrayToNodeChildren(Array array, DOMElement node)</p>
+<p>Bind an array to DOM node, 
+so when array is modified, node children are updated accordingly.</p>
+<p>Array is augmented by attaching listeners on existing indices
+and setting a proxy for each mutable operation. 
+<code>createSectionItem</code> is used for creating new items.</p>
+<pre><code>bindArrayToNodeChildren = (array, node) -&gt;
+
+  # array already augmented?
+  if not array.__garbageCollectNodes
+
+    # it&#39;s possible for a referenced node to be destroyed. free the reference
+    array.__garbageCollectNodes = -&gt;
+      i = this.__nodes.length
+      while --i
+        if not this.__nodes[i].parentNode
+          this.__nodes.splice(i, 1)
+
+    array.__removeEmpty = -&gt;
+      if not this.length then node.innerHTML = &#39;&#39;
+
+    array.__addEmpty = -&gt;
+      if not this.length then node.innerHTML = jtmpl(node.getAttribute(&#39;data-jt-0&#39;) or &#39;&#39;, {})
+
+    # Mutable array operations
+
+    array.pop = -&gt;
+      this.__removeEmpty()
+      this.__garbageCollectNodes()
+      node.removeChild(node.children[node.children.length - 1]) for node in this.__nodes
+      appop.apply(this, arguments)
+      appop.apply(this.__values, arguments)
+      this.__addEmpty()
+
+    array.push = (item) -&gt;
+      this.__removeEmpty()
+      this.__garbageCollectNodes()
+      node.appendChild(createSectionItem(node, item)) for node in this.__nodes
+      appush.apply(this, arguments)
+      len = this.__values.length
+      result = appush.apply(this.__values, arguments)
+      bindProp(item, len)
+      result
+
+    array.reverse = -&gt;
+      this.__removeEmpty()
+      this.__garbageCollectNodes()
+      result = apreverse.apply(this.__values, arguments)
+      for node in this.__nodes
+        node.innerHTML = &#39;&#39;
+        for item, i in this.__values
+          node.appendChild(createSectionItem(node, item))
+          bindProp(item, i)
+      this.__addEmpty()
+      result
+
+    array.shift = -&gt;
+      this.__removeEmpty()
+      this.__garbageCollectNodes()
+      apshift.apply(this, arguments)
+      result = apshift.apply(this.__values, arguments)
+      for node in this.__nodes
+        node.removeChild(node.children[0])
+      for item, i in this.__values
+        bindProp(item, i)
+      this.__addEmpty()
+      result
+
+    array.unshift = -&gt;
+      this.__removeEmpty()
+      this.__garbageCollectNodes()
+      for item in apslice.call(arguments).reverse()
+        for node in this.__nodes
+          node.insertBefore(createSectionItem(node, item), node.children[0])
+      apunshift.apply(this, arguments)
+      result = apunshift.apply(this.__values, arguments)
+      for item, i in this.__values
+        bindProp(item, i)
+      this.__addEmpty()
+      result
+
+    array.sort = -&gt;
+      this.__removeEmpty()
+      this.__garbageCollectNodes()
+      apsort.apply(this, arguments)
+      result = apsort.apply(this.__values, arguments)
+      for node in this.__nodes
+        node.innerHTML = &#39;&#39;
+        for item, i in array
+          node.appendChild(createSectionItem(node, item)) for node in this.__nodes
+          bindProp(item, i)
+      this.__addEmpty()
+      result
+
+    array.splice = (index, howMany) -&gt;
+      this.__removeEmpty()
+      this.__garbageCollectNodes()
+      for node in this.__nodes
+        for i in [0...howMany]
+          node.removeChild(node.children[index])
+        for item in apslice.call(arguments, 2)
+          node.insertBefore(createSectionItem(node, item), node.children[index])
+          bindProp(item, index)
+      apsplice.apply(this, arguments)
+      apsplice.apply(this.__values, arguments)
+      this.__addEmpty()
+
+    # Bind property
+    bindProp = (item, i) -&gt;
+      array.__values[i] = item
+      Object.defineProperty(array, i, 
+        get: -&gt; this.__values[i]
+        set: (val) -&gt; 
+          this.__garbageCollectNodes()
+          this.__values[i] = val
+          node.replaceChild(createSectionItem(node, val), node.children[i]) for node in this.__nodes
+      )
+
+    # bound nodes
+    Object.defineProperty(array, &#39;__nodes&#39;,
+      enumerable: false
+      writable: true
+      value: []
+    )
+    # onchange handlers for each item
+    Object.defineProperty(array, &#39;__values&#39;,
+      enumerable: false
+      writable: true
+      value: []
+    )
+    for item, i in array
+      bindProp(item, i)
+
+  if array.__nodes.indexOf(node) is -1 then array.__nodes.push(node)
+  array</code></pre>
+
+          <footer>
+              Copyright &copy; 2013 Atanas Minev, <a href="LICENSE">MIT license</a>
+          </footer>
+        </div>
+        <script src="js/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script>
+        <script src="js/jtmpl.js"></script>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+          ga('create', 'UA-43285803-1', 'jtmpl.com');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
