@@ -274,6 +274,9 @@ Showcase of all features, tests
           <h1><span>{&gt;</span> <a href="/">jtmpl</a></h1>
           <h2>KitchenSync&mdash;feature explorer</h2>
           <p>
+            Check the <a href="http://codepen.io/atmin/full/JkmrD">obligatory Todo application demo</a>, as well.
+          </p>
+          <p>
             Feel free to modify <code>model</code> from JS console and observe changes.
           </p>
 
