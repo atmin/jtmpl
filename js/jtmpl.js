@@ -1,5 +1,5 @@
 (function() {
-  var RE_ANYTHING, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_SPACE, ap, appop, appush, apreverse, apshift, apslice, apsort, apunshift, bindArrayToNodeChildren, bindRules, compose, createSectionItem, curry, escapeHTML, escapeRE, extend, initBindings, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, regexp;
+  var RE_ANYTHING, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_SPACE, ap, appop, appush, apreverse, apshift, apslice, apsort, apunshift, bindArrayToNodeChildren, bindRules, compose, createSectionItem, curry, escapeHTML, escapeRE, extend, initBindings, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp;
 
   jtmpl = (typeof exports !== "undefined" && exports !== null ? exports : this).jtmpl = function(target, template, model, options) {
     var delimiters, html, newTarget, _ref;
@@ -442,6 +442,24 @@
       rootModel: model
     });
     return element;
+  };
+
+  propChange = function(obj, prop, callback) {
+    var oldDescriptor;
+    oldDescriptor = Object.getOwnPropertyDescriptor(obj, prop) || Object.getOwnPropertyDescriptor(obj.constructor.prototype, prop);
+    return Object.defineProperty(obj, prop, {
+      get: (oldDescriptor.get != null) && oldDescriptor.get || function() {
+        return oldDescriptor.value;
+      },
+      set: (oldDescriptor.set != null) && (function(value) {
+        oldDescriptor.set(value);
+        return callback(value);
+      }) || (function(value) {
+        oldDescriptor.value = value;
+        return callback(value);
+      }),
+      configurable: true
+    });
   };
 
   initBindings = function(context, prop) {

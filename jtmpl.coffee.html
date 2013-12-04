@@ -536,6 +536,27 @@ apsort = ap.sort</code></pre>
   jtmpl(element, element.innerHTML, context, { rootModel: model })
   element</code></pre>
 <h3 id="binding-utilities">Binding utilities</h3>
+<p>void propChange(Object obj, String prop, Function callback)</p>
+<p>Register a callback to handle property change.</p>
+<pre><code>propChange = (obj, prop, callback) -&gt;
+  oldDescriptor = (Object.getOwnPropertyDescriptor(obj, prop) or
+    Object.getOwnPropertyDescriptor(obj.constructor.prototype, prop))
+
+  Object.defineProperty(obj, prop, {
+    get: oldDescriptor.get? and oldDescriptor.get or -&gt; oldDescriptor.value,
+
+    set: oldDescriptor.set? and (
+      (value) -&gt;
+        oldDescriptor.set(value)
+        callback(value)
+    ) or (
+      (value) -&gt;
+        oldDescriptor.value = value
+        callback(value)
+    ),
+
+    configurable: true
+  })</code></pre>
 <p>void initBindings(Object context, String prop)</p>
 <p>Create slots for property value and change reactor functions.
 Setter notifies all reactors.</p>

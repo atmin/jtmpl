@@ -696,6 +696,34 @@ DOMElement createSectionItem (DOMElement parent, AnyType context)
 
 ### Binding utilities
 
+void propChange(Object obj, String prop, Function callback)
+
+Register a callback to handle property change.
+
+    propChange = (obj, prop, callback) ->
+      oldDescriptor = (Object.getOwnPropertyDescriptor(obj, prop) or
+        Object.getOwnPropertyDescriptor(obj.constructor.prototype, prop))
+
+      Object.defineProperty(obj, prop, {
+        get: oldDescriptor.get? and oldDescriptor.get or -> oldDescriptor.value,
+
+        set: oldDescriptor.set? and (
+          (value) ->
+            oldDescriptor.set(value)
+            callback(value)
+        ) or (
+          (value) ->
+            oldDescriptor.value = value
+            callback(value)
+        ),
+
+        configurable: true
+      })
+
+
+
+
+
 void initBindings(Object context, String prop)
 
 Create slots for property value and change reactor functions.
