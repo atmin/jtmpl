@@ -589,35 +589,6 @@ Walk DOM and setup reactors on model and nodes.
     
 
 
-### Functional utilities
-
-Function curry(Function f, AnyType frozenArg1, AnyType frozenArg2, ...)
-
-    curry = ->
-      args = apslice.call(arguments)
-      ->
-        args2 = apslice.call(arguments)
-        args[0].apply(@, args.slice(1).concat(args2))
-
-
-Function compose(Function f, Function g)
-
-    compose = (f, g) -> -> f(g.apply(@, apslice.call(arguments)))
-
-
-
-### Object utilities
-
-Extend an object with given properties
-
-    extend = (obj, props) ->
-      for k, v of props
-        obj[k] = v
-      obj
-
-
-
-
 ### Regular expression utilities
 
 String escapeRE(String s)
@@ -720,33 +691,6 @@ Register a callback to handle property change.
         configurable: true
       })
 
-
-
-
-
-void initBindings(Object context, String prop)
-
-Create slots for property value and change reactor functions.
-Setter notifies all reactors.
-
-    initBindings = (context, prop) ->
-      if not context["__#{ prop }_bindings"]
-        Object.defineProperty(context, "__#{ prop }_bindings",
-          enumerable: false
-          writable: true
-          value: []
-        )
-        Object.defineProperty(context, "__#{ prop }",
-          enumerable: false
-          writable: true
-          value: context[prop]
-        )
-        Object.defineProperty(context, prop, 
-          get: -> this["__#{ prop }"]
-          set: (val) -> 
-            this["__#{ prop }"] = val
-            reactor.call(this, val) for reactor in this["__#{ prop }_bindings"]
-        )
 
 
 
