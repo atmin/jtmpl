@@ -49,7 +49,7 @@ test 'compile', ->
 
 	equal jtmpl('<div>{{#outer}}<div>{{#inner}}{{.}}{{/inner}}</div>{{/outer}}</div>', 
 			{ outer: [{ inner: [1, 2, 3] }, { inner: [1, 2] }, { inner: [1] }] }),
-		'<div data-jt="#outer" data-jt-1="<div>#{#inner}##{.}##{/inner}#</div>"><div data-jt="#inner" data-jt-1="#{.}#"><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner" data-jt-1="#{.}#"><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner" data-jt-1="#{.}#"><span data-jt=".">1</span></div></div>',
+		'<div data-jt="#outer" data-jt-1="&lt;div&gt;#{#inner}##{.}##{/inner}#&lt;/div&gt;"><div data-jt="#inner" data-jt-1="#{.}#"><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner" data-jt-1="#{.}#"><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner" data-jt-1="#{.}#"><span data-jt=".">1</span></div></div>',
 		'nested sections'
 
 	equal jtmpl('{{#outer}}{{#inner}}{{.}}{{/inner}}{{/outer}}', 
@@ -85,7 +85,7 @@ test 'compile', ->
 
 	equal jtmpl('{{#links}}<a href="{{href}}" class="{{selected}}">{{title}}</a>{{/links}}',
 		{ links: [{ href: '/', selected: true, title: 'root'}]}),
-		'<div data-jt="#links" data-jt-1="<a href=#{href}# class=#{selected}#>#{title}#</a>"><a data-jt="href=href class=selected title" href="/" class=selected>root</a></div>',
+		'<div data-jt="#links" data-jt-1="&lt;a href=#{href}# class=#{selected}#&gt;#{title}#&lt;/a&gt;"><a data-jt="href=href class=selected title" href="/" class=selected>root</a></div>',
 		'array of links with many bound attributes'
 
 

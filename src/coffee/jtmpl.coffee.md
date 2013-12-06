@@ -618,7 +618,7 @@ wrapperAttrs is array of pairs [attribute, value] to inject in element
       pos = match[1].length
       (
         template.slice(0, pos) + 
-        [" #{ pair[0] }=\"#{ pair[1].replace(/"/g, '&quot;') }\"" for pair in attributes].join('') +
+        [" #{ pair[0] }=\"#{ pair[1].replace(/"/g, '&quot;').replace(/>/g, '&gt;').replace(/</g, '&lt;') }\"" for pair in attributes].join('') +
         '>' +
         (contents or '') +
         template.slice(pos + 1)
@@ -680,28 +680,10 @@ Walk DOM and setup reactors on model and nodes.
 
       bindNode(root)
 
-      # iterate children
-      for node in root.childNodes
+      for node in root.children
 
-        switch node.nodeType
-
-          when node.ELEMENT_NODE
-            if bindNode(node)
-              jtmpl.bind(node, model, options)
-
-          when node.COMMENT_NODE
-            # collection template?
-            if section = node.nodeValue.trim().match(RE_COLLECTION_TEMPLATE)
-              # decompile delimiters
-              section[2] = section[2]
-                .replace(new RegExp(escapeRE(options.compiledDelimiters[0]), 'g'), options.delimiters[0])
-                .replace(new RegExp(escapeRE(options.compiledDelimiters[1]), 'g'), options.delimiters[1])
-              if section[1] is '#'
-                # section
-                root.setAttribute('data-jt-1', section[2])
-              else
-                # inverted section
-                root.setAttribute('data-jt-0', section[2])
+          if bindNode(node)
+            jtmpl.bind(node, model, options)
 
       # return node
       node

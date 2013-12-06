@@ -401,7 +401,7 @@
         _results = [];
         for (_i = 0, _len = attributes.length; _i < _len; _i++) {
           pair = attributes[_i];
-          _results.push(" " + pair[0] + "=\"" + (pair[1].replace(/"/g, '&quot;')) + "\"");
+          _results.push(" " + pair[0] + "=\"" + (pair[1].replace(/"/g, '&quot;').replace(/>/g, '&gt;').replace(/</g, '&lt;')) + "\"");
         }
         return _results;
       })()
@@ -417,7 +417,7 @@
   };
 
   jtmpl.bind = function(root, model, options) {
-    var bindNode, node, section, _i, _len, _ref;
+    var bindNode, node, _i, _len, _ref;
     bindNode = function(node) {
       var attr, jt, match, rule, _i, _j, _len, _len1, _ref, _ref1;
       if (attr = node.getAttribute('data-jt')) {
@@ -437,24 +437,11 @@
       }
     };
     bindNode(root);
-    _ref = root.childNodes;
+    _ref = root.children;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       node = _ref[_i];
-      switch (node.nodeType) {
-        case node.ELEMENT_NODE:
-          if (bindNode(node)) {
-            jtmpl.bind(node, model, options);
-          }
-          break;
-        case node.COMMENT_NODE:
-          if (section = node.nodeValue.trim().match(RE_COLLECTION_TEMPLATE)) {
-            section[2] = section[2].replace(new RegExp(escapeRE(options.compiledDelimiters[0]), 'g'), options.delimiters[0]).replace(new RegExp(escapeRE(options.compiledDelimiters[1]), 'g'), options.delimiters[1]);
-            if (section[1] === '#') {
-              root.setAttribute('data-jt-1', section[2]);
-            } else {
-              root.setAttribute('data-jt-0', section[2]);
-            }
-          }
+      if (bindNode(node)) {
+        jtmpl.bind(node, model, options);
       }
     }
     return node;

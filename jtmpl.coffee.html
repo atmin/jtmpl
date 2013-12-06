@@ -542,7 +542,7 @@ injectAttributes = (template, attributes, contents) -&gt;
   pos = match[1].length
   (
     template.slice(0, pos) + 
-    [&quot; #{ pair[0] }=\&quot;#{ pair[1].replace(/&quot;/g, &#39;&amp;quot;&#39;) }\&quot;&quot; for pair in attributes].join(&#39;&#39;) +
+    [&quot; #{ pair[0] }=\&quot;#{ pair[1].replace(/&quot;/g, &#39;&amp;quot;&#39;).replace(/&gt;/g, &#39;&amp;gt;&#39;).replace(/&lt;/g, &#39;&amp;lt;&#39;) }\&quot;&quot; for pair in attributes].join(&#39;&#39;) +
     &#39;&gt;&#39; +
     (contents or &#39;&#39;) +
     template.slice(pos + 1)
@@ -584,28 +584,10 @@ followed by end of string, or -1, if no such exists</p>
 
   bindNode(root)
 
-  # iterate children
-  for node in root.childNodes
+  for node in root.children
 
-    switch node.nodeType
-
-      when node.ELEMENT_NODE
-        if bindNode(node)
-          jtmpl.bind(node, model, options)
-
-      when node.COMMENT_NODE
-        # collection template?
-        if section = node.nodeValue.trim().match(RE_COLLECTION_TEMPLATE)
-          # decompile delimiters
-          section[2] = section[2]
-            .replace(new RegExp(escapeRE(options.compiledDelimiters[0]), &#39;g&#39;), options.delimiters[0])
-            .replace(new RegExp(escapeRE(options.compiledDelimiters[1]), &#39;g&#39;), options.delimiters[1])
-          if section[1] is &#39;#&#39;
-            # section
-            root.setAttribute(&#39;data-jt-1&#39;, section[2])
-          else
-            # inverted section
-            root.setAttribute(&#39;data-jt-0&#39;, section[2])
+      if bindNode(node)
+        jtmpl.bind(node, model, options)
 
   # return node
   node</code></pre>
