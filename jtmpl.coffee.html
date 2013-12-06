@@ -53,7 +53,7 @@
   options.delimiters = (options.delimiters or &#39;{{ }}&#39;).split(&#39; &#39;)
   # delimiters are changed in the generated HTML comment-enclosed section prototype
   # to avoid double-parsing
-  options.compiledDelimiters = (options.compiledDelimiters or &#39;&lt;&lt;&lt; &gt;&gt;&gt;&#39;).split(&#39; &#39;)
+  options.compiledDelimiters = (options.compiledDelimiters or &#39;#{ }#&#39;).split(&#39; &#39;)
 
   # sections not enclosed in HTML tag are automatically enclosed
   options.defaultSection = options.defaultSectionTag or &#39;div&#39;
@@ -81,7 +81,7 @@
     .replace(regexp(&quot;\\n #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } \\n&quot;, delimiters), &#39;\n$1\n&#39;)
 
   # Compile template
-  html = jtmpl.compile(template, model, null, false, options)
+  html = jtmpl.compile(template, model, null, false, options).trim()
 
   # Done?
   if not target then return html
@@ -95,7 +95,8 @@
   target.innerHTML = html
 
   # Bind recursively using data-jt attributes
-  jtmpl.bind(target, model)</code></pre>
+  options.rootModel = model
+  # jtmpl.bind(target, model, options)</code></pre>
 <h2 id="rules">Rules</h2>
 <p>jtmpl is a processor of rules. </p>
 <p>Rules in sequences are in increasing generality order. It&#39;s just like 
@@ -109,7 +110,8 @@ put them at the beginning:</p>
 RE_NODE_ID = &#39;^#[\\w\\.\\-]+$&#39;
 RE_ANYTHING = &#39;[\\s\\S]*?&#39;
 RE_SPACE = &#39;\\s*&#39;
-RE_DATA_JT = &#39;(?: ( \\s* data-jt = &quot; [^&quot;]* )&quot; )?&#39;</code></pre>
+RE_DATA_JT = &#39;(?: ( \\s* data-jt = &quot; [^&quot;]* )&quot; )?&#39;
+RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
 <h3 id="pre-processing-rules">Pre-processing rules</h3>
 <p>Transformations to clean up template for easier matching</p>
 <pre><code>jtmpl.preprocessingRules = [
@@ -177,13 +179,17 @@ RE_DATA_JT = &#39;(?: ( \\s* data-jt = &quot; [^&quot;]* )&quot; )?&#39;</code><
 
       # Sequence?
       if Array.isArray(val)
-        [ # template as HTML comment
-          &quot;&lt;!-- ^ #{ multiReplace(template, options.delimiters, options.compiledDelimiters) } --&gt;&quot;
-          +
+        [
           # Render body if array empty
           if not val.length then jtmpl(template, model) else &#39;&#39;
           ,
-          []
+          [
+            [ # template as node data attribute
+              &#39;data-jt-0&#39;,
+
+              multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)
+            ]
+          ]
         ]
 
       else
@@ -201,11 +207,15 @@ RE_DATA_JT = &#39;(?: ( \\s* data-jt = &quot; [^&quot;]* )&quot; )?&#39;</code><
       val = model[section]
       # Sequence?
       if Array.isArray(val)
-        [ # template as HTML comment
-          &quot;&lt;!-- # #{ multiReplace(template, options.delimiters, options.compiledDelimiters) } --&gt;&quot; +
-          # Render body for each item
+        [ # Render body for each item
           (jtmpl(template, item, null, { asArrayItem: true }) for item in val).join(&#39;&#39;),
-          []
+          [ # template as node data attribute
+            [
+              &#39;data-jt-1&#39;,
+
+              multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)
+            ]
+          ]
         ]
 
       # Context?
@@ -243,8 +253,8 @@ RE_DATA_JT = &#39;(?: ( \\s* data-jt = &quot; [^&quot;]* )&quot; )?&#39;</code><
 <p>Matching is done on tokenized data-jt items</p>
 <p><code>react</code> signature:</p>
 <p>Function void (AnyType val) <code>react</code>
-(DOMElement node, String for each pattern group, AnyType model)</p>
-<pre><code>bindRules = [
+(DOMElement node, String for each pattern group, AnyType model, Object options)</p>
+<pre><code>jtmpl.bindRules = [
 
   { # value/checked/selected=var
     pattern: &quot;(value | checked | selected) = (#{ RE_IDENTIFIER })&quot;,
@@ -284,6 +294,20 @@ RE_DATA_JT = &#39;(?: ( \\s* data-jt = &quot; [^&quot;]* )&quot; )?&#39;</code><
   }
 
 
+  { # onevent=var
+    pattern: &quot;on(#{ RE_IDENTIFIER }) = (#{ RE_IDENTIFIER })&quot;,
+    react: (node, evnt, listener, model, options) -&gt;
+      handler = options?.rootModel?[listener] or model[listener]
+      if typeof handler is &#39;function&#39;
+        node.addEventListener(evnt, handler.bind(model))
+      else
+        throw &quot;:( #{ listener } is not a function, cannot attach event handler&quot;
+
+      # job done, no reactor to return
+      null
+  }
+
+
   { # class=var
     pattern: &quot;class = (#{ RE_IDENTIFIER })&quot;,
     react: (node, prop, model) -&gt;
@@ -295,6 +319,54 @@ RE_DATA_JT = &#39;(?: ( \\s* data-jt = &quot; [^&quot;]* )&quot; )?&#39;</code><
     pattern: &quot;(#{ RE_IDENTIFIER }) = #{ RE_IDENTIFIER }&quot;,
     react: (node, attr) -&gt;
       (val) -&gt; if node[attr] isnt val then node[attr] = val
+  }
+
+
+  { # section
+    pattern: &quot;(# | \\^) (#{ RE_IDENTIFIER })&quot;,
+
+    # do not process children recursively during binding phase
+    recurse: false,
+
+    react: (node, sectionType, attr, model, options) -&gt;
+      val = model[attr]
+
+      if Array.isArray(val) and sectionType is &#39;#&#39;
+        # bind collection items to node children
+        for child, i in node.children
+          jtmpl.bind(child, val[i], options)
+
+      else if typeof val is &#39;object&#39;
+        # bind context
+        jtmpl.bind(node, val, options)
+
+      # else
+        # if section
+        # jtmpl.bind(node, model, options)
+
+      # Return reactor function
+      (val) -&gt;
+        # collection?
+        if Array.isArray(val)
+          jtmpl.bindArrayToNodeChildren(val, node)
+
+          node.innerHTML =
+            if not val.length
+              jtmpl(node.getAttribute(&#39;data-jt-0&#39;) or &#39;&#39;, {})
+            else 
+              &#39;&#39;
+
+          node.appendChild(jtmpl.createSectionItem(node, item)) for item in val
+
+        # local context?
+        else if typeof val is &#39;object&#39;
+          node.innerHTML = jtmpl(node.getAttribute(&#39;data-jt-1&#39;) or &#39;&#39;, val)
+          jtmpl(node, node.innerHTML, val, { rootModel: model })
+
+        # if section
+        else
+          node.style.display = (!!val is (sectionType is &#39;^&#39;)) and &#39;none&#39; or &#39;&#39;
+
   }
 
 
@@ -359,10 +431,16 @@ Boolean asArrayItem</p>
             if htagPos is -1 and rule.wrapper?
               # wrapping needed
               tag = options[rule.wrapper]
-              result += injectTagBinding(&quot;&lt;#{ tag }&gt;#{ replaceWith }&lt;/#{ tag }&gt;&quot;, bindingToken, wrapperAttrs)
+              result += injectAttributes(
+                injectTagBinding(&quot;&lt;#{ tag }&gt;#{ replaceWith }&lt;/#{ tag }&gt;&quot;, bindingToken),
+                wrapperAttrs
+              )
             else
               result += replaceWith
-              result = result.slice(0, htagPos) + injectTagBinding(result.slice(htagPos), bindingToken, wrapperAttrs)
+              result = result.slice(0, htagPos) + injectAttributes(
+                injectTagBinding(result.slice(htagPos), bindingToken),
+                wrapperAttrs
+              )
 
           pos = tokenizer.lastIndex
 
@@ -382,16 +460,40 @@ Boolean asArrayItem</p>
           if echoMode
             result += token[0] + tmpl + closing[0]
           else
-            [contents, wrapperAttrs] = rule.contents(tmpl, model, match[1], options)
+            section = match[1]
+            [contents, wrapperAttrs] = rule.contents(tmpl, model, section, options)
+
             if htagPos is -1
               tag = options[rule.wrapper]
-              result += injectTagBinding(&quot;&lt;#{ tag }&gt;#{ contents }&lt;/#{ tag }&gt;&quot;, bindingToken, wrapperAttrs)
+
+              if section isnt lastSectionTag
+                lastSectionHTagPos = result.length
+                result += injectAttributes(
+                  injectTagBinding(&quot;&lt;#{ tag }&gt;#{ contents }&lt;/#{ tag }&gt;&quot;, bindingToken),
+                  wrapperAttrs
+                )
+              else
+                result = (
+                  result.slice(0, lastSectionHTagPos) +
+                  injectAttributes(
+                    injectTagBinding(result.slice(lastSectionHTagPos), bindingToken),
+                    wrapperAttrs,
+                    contents.trim()
+                  )
+                )
+
             else
               result = (
                 result.slice(0, htagPos) + 
-                injectTagBinding(result.slice(htagPos), bindingToken, wrapperAttrs) +
+                injectAttributes(
+                  injectTagBinding(result.slice(htagPos), bindingToken),
+                  wrapperAttrs
+                ) +
                 contents.trim()
               )
+              lastSectionHTagPos = htagPos
+
+            lastSectionTag = section
 
 
         # Match was found, skip other rules
@@ -416,7 +518,7 @@ Boolean asArrayItem</p>
 <p>Inject token in HTML element data-jt attribute.
 Create attribute if not existent.
 wrapperAttrs is array of pairs [attribute, value] to inject in element</p>
-<pre><code>injectTagBinding = (template, token, wrapperAttrs) -&gt;
+<pre><code>injectTagBinding = (template, token) -&gt;
   # group 1: &#39;data-jt&#39; inject position
   # group 2: token inject position, if attribute exists
   # group 3 (RE_DATA_JT): existing &#39;data-jt&#39; value
@@ -425,17 +527,25 @@ wrapperAttrs is array of pairs [attribute, value] to inject in element</p>
   pos = match[1].length + match[2].length + attrLen
   # inject, return result
   ( template.slice(0, pos) +
-    ( if token
-        ( if attrLen
-            (if match[3].trim() is &#39;data-jt=&quot;&#39; then &#39;&#39; else &#39; &#39;) + token
-          else
-            &#39; data-jt=&quot;&#39; + token + &#39;&quot;&#39;
-        )
+    ( if attrLen
+        (if match[3].trim() is &#39;data-jt=&quot;&#39; then &#39;&#39; else &#39; &#39;) + token
       else
-        &#39;&#39;
+        &#39; data-jt=&quot;&#39; + token + &#39;&quot;&#39;
     ) +
-    (&quot; #{ pair[0] }=\&quot;#{ pair[1] }\&quot;&quot; for pair in wrapperAttrs).join(&#39;&#39;) +
     template.slice(pos)
+  )
+
+injectAttributes = (template, attributes, contents) -&gt;
+  if not attributes.length then return template
+
+  match = regexp(&quot;^ (#{ RE_SPACE } &lt; #{ RE_IDENTIFIER } #{ RE_ANYTHING })&gt;&quot;).exec(template)
+  pos = match[1].length
+  (
+    template.slice(0, pos) + 
+    [&quot; #{ pair[0] }=\&quot;#{ pair[1].replace(/&quot;/g, &#39;&amp;quot;&#39;) }\&quot;&quot; for pair in attributes].join(&#39;&#39;) +
+    &#39;&gt;&#39; +
+    (contents or &#39;&#39;) +
+    template.slice(pos + 1)
   )</code></pre>
 <p>Int lastOpenedHTMLTag(String)</p>
 <p>Return index of the last opening, maybe opened (no close bracket), HTML tag
@@ -451,10 +561,28 @@ followed by end of string, or -1, if no such exists</p>
 <h2 id="bind-rules-processor">Bind rules processor</h2>
 <p>void <code>bind</code> (DOMElement root, AnyType model)</p>
 <p>Walk DOM and setup reactors on model and nodes.</p>
-<pre><code>jtmpl.bind = (root, model) -&gt;
+<pre><code>jtmpl.bind = (root, model, options) -&gt;
 
-  itemIndex = 0
-  nodeContext = null
+  # Returns true, if recursion should continue
+  bindNode = (node) -&gt;
+    if attr = node.getAttribute(&#39;data-jt&#39;)
+      # iterate node bindings
+      for jt in attr.trim().split(&#39; &#39;)
+        # iterate binding rules
+        for rule in jtmpl.bindRules
+          # matching rule?
+          if match = regexp(rule.pattern).exec(jt)
+
+            propChange(model, rule.attr,
+              rule.react([node].concat(match.slice(1), [model, options])...)
+            )
+            # Missing rule.recurse attribute means continue recursion
+            return rule.recurse? and rule.recurse or true
+
+      # If no data-jt attribute, continue recursion
+      return true
+
+  bindNode(root)
 
   # iterate children
   for node in root.childNodes
@@ -462,10 +590,22 @@ followed by end of string, or -1, if no such exists</p>
     switch node.nodeType
 
       when node.ELEMENT_NODE
-        ;
+        if bindNode(node)
+          jtmpl.bind(node, model, options)
 
       when node.COMMENT_NODE
-        ;
+        # collection template?
+        if section = node.nodeValue.trim().match(RE_COLLECTION_TEMPLATE)
+          # decompile delimiters
+          section[2] = section[2]
+            .replace(new RegExp(escapeRE(options.compiledDelimiters[0]), &#39;g&#39;), options.delimiters[0])
+            .replace(new RegExp(escapeRE(options.compiledDelimiters[1]), &#39;g&#39;), options.delimiters[1])
+          if section[1] is &#39;#&#39;
+            # section
+            root.setAttribute(&#39;data-jt-1&#39;, section[2])
+          else
+            # inverted section
+            root.setAttribute(&#39;data-jt-0&#39;, section[2])
 
   # return node
   node</code></pre>
@@ -479,21 +619,6 @@ apreverse = ap.reverse
 apshift = ap.shift
 apunshift = ap.unshift
 apsort = ap.sort</code></pre>
-<h3 id="functional-utilities">Functional utilities</h3>
-<p>Function curry(Function f, AnyType frozenArg1, AnyType frozenArg2, ...)</p>
-<pre><code>curry = -&gt;
-  args = apslice.call(arguments)
-  -&gt;
-    args2 = apslice.call(arguments)
-    args[0].apply(@, args.slice(1).concat(args2))</code></pre>
-<p>Function compose(Function f, Function g)</p>
-<pre><code>compose = (f, g) -&gt; -&gt; f(g.apply(@, apslice.call(arguments)))</code></pre>
-<h3 id="object-utilities">Object utilities</h3>
-<p>Extend an object with given properties</p>
-<pre><code>extend = (obj, props) -&gt;
-  for k, v of props
-    obj[k] = v
-  obj</code></pre>
 <h3 id="regular-expression-utilities">Regular expression utilities</h3>
 <p>String escapeRE(String s)</p>
 <p>Escape regular expression characters</p>
@@ -525,11 +650,11 @@ apsort = ap.sort</code></pre>
 <p>Replace <code>from</code> literal strings with <code>to</code> strings in template</p>
 <pre><code>multiReplace = (template, from, to) -&gt;
   for find, i in from
-    template = template.replace(regexp(escapeRE(find)), escapeRE(to[i]))
+    template = template.replace(regexp(escapeRE(find)), to[i])
   template</code></pre>
 <h3 id="dom-utilities">DOM utilities</h3>
 <p>DOMElement createSectionItem (DOMElement parent, AnyType context)</p>
-<pre><code>createSectionItem = (parent, context) -&gt;
+<pre><code>jtmpl.createSectionItem = createSectionItem = (parent, context) -&gt;
   element = document.createElement(&#39;body&#39;)
   element.innerHTML = jtmpl(parent.getAttribute(&#39;data-jt-1&#39;) or &#39;&#39;, context)
   element = element.children[0]
@@ -537,54 +662,29 @@ apsort = ap.sort</code></pre>
   element</code></pre>
 <h3 id="binding-utilities">Binding utilities</h3>
 <p>void propChange(Object obj, String prop, Function callback)</p>
-<p>Register a callback to handle property change.</p>
+<p>Register a callback to handle object property change. </p>
 <pre><code>propChange = (obj, prop, callback) -&gt;
+  # All must be specified, don&#39;t fail if not
+  if not (obj and prop and callback) then return
+
   oldDescriptor = (Object.getOwnPropertyDescriptor(obj, prop) or
     Object.getOwnPropertyDescriptor(obj.constructor.prototype, prop))
 
   Object.defineProperty(obj, prop, {
-    get: oldDescriptor.get? and oldDescriptor.get or -&gt; oldDescriptor.value,
-
-    set: oldDescriptor.set? and (
-      (value) -&gt;
-        oldDescriptor.set(value)
-        callback(value)
-    ) or (
-      (value) -&gt;
-        oldDescriptor.value = value
-        callback(value)
+    get: oldDescriptor.get or -&gt; oldDescriptor.value,
+    set: ((val) -&gt;
+      oldDescriptor.set?(val) or oldDescriptor.value = val
+      callback(val)
     ),
-
     configurable: true
   })</code></pre>
-<p>void initBindings(Object context, String prop)</p>
-<p>Create slots for property value and change reactor functions.
-Setter notifies all reactors.</p>
-<pre><code>initBindings = (context, prop) -&gt;
-  if not context[&quot;__#{ prop }_bindings&quot;]
-    Object.defineProperty(context, &quot;__#{ prop }_bindings&quot;,
-      enumerable: false
-      writable: true
-      value: []
-    )
-    Object.defineProperty(context, &quot;__#{ prop }&quot;,
-      enumerable: false
-      writable: true
-      value: context[prop]
-    )
-    Object.defineProperty(context, prop, 
-      get: -&gt; this[&quot;__#{ prop }&quot;]
-      set: (val) -&gt; 
-        this[&quot;__#{ prop }&quot;] = val
-        reactor.call(this, val) for reactor in this[&quot;__#{ prop }_bindings&quot;]
-    )</code></pre>
 <p>void bindArrayToNodeChildren(Array array, DOMElement node)</p>
 <p>Bind an array to DOM node, 
 so when array is modified, node children are updated accordingly.</p>
 <p>Array is augmented by attaching listeners on existing indices
 and setting a proxy for each mutable operation. 
 <code>createSectionItem</code> is used for creating new items.</p>
-<pre><code>bindArrayToNodeChildren = (array, node) -&gt;
+<pre><code>jtmpl.bindArrayToNodeChildren = bindArrayToNodeChildren = (array, node) -&gt;
 
   # array already augmented?
   if not array.__garbageCollectNodes

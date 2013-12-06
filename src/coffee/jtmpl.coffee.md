@@ -63,7 +63,7 @@ Target NodeJS and browser
       options.delimiters = (options.delimiters or '{{ }}').split(' ')
       # delimiters are changed in the generated HTML comment-enclosed section prototype
       # to avoid double-parsing
-      options.compiledDelimiters = (options.compiledDelimiters or '<<< >>>').split(' ')
+      options.compiledDelimiters = (options.compiledDelimiters or '#{ }#').split(' ')
 
       # sections not enclosed in HTML tag are automatically enclosed
       options.defaultSection = options.defaultSectionTag or 'div'
@@ -91,7 +91,7 @@ Target NodeJS and browser
         .replace(regexp("\\n #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } \\n", delimiters), '\n$1\n')
 
       # Compile template
-      html = jtmpl.compile(template, model, null, false, options)
+      html = jtmpl.compile(template, model, null, false, options).trim()
 
       # Done?
       if not target then return html
@@ -105,7 +105,8 @@ Target NodeJS and browser
       target.innerHTML = html
 
       # Bind recursively using data-jt attributes
-      jtmpl.bind(target, model)
+      options.rootModel = model
+      # jtmpl.bind(target, model, options)
 
 
 
@@ -138,6 +139,7 @@ Used in various matchers
     RE_ANYTHING = '[\\s\\S]*?'
     RE_SPACE = '\\s*'
     RE_DATA_JT = '(?: ( \\s* data-jt = " [^"]* )" )?'
+    RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/
 
 
 
@@ -225,13 +227,17 @@ String `bindingToken` (String for each group in pattern)
 
           # Sequence?
           if Array.isArray(val)
-            [ # template as HTML comment
-              "<!-- ^ #{ multiReplace(template, options.delimiters, options.compiledDelimiters) } -->"
-              +
+            [
               # Render body if array empty
               if not val.length then jtmpl(template, model) else ''
               ,
-              []
+              [
+                [ # template as node data attribute
+                  'data-jt-0',
+
+                  multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)
+                ]
+              ]
             ]
 
           else
@@ -249,11 +255,15 @@ String `bindingToken` (String for each group in pattern)
           val = model[section]
           # Sequence?
           if Array.isArray(val)
-            [ # template as HTML comment
-              "<!-- # #{ multiReplace(template, options.delimiters, options.compiledDelimiters) } -->" +
-              # Render body for each item
+            [ # Render body for each item
               (jtmpl(template, item, null, { asArrayItem: true }) for item in val).join(''),
-              []
+              [ # template as node data attribute
+                [
+                  'data-jt-1',
+
+                  multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)
+                ]
+              ]
             ]
 
           # Context?
@@ -299,11 +309,11 @@ Matching is done on tokenized data-jt items
 `react` signature:
 
 Function void (AnyType val) `react`
-(DOMElement node, String for each pattern group, AnyType model)
+(DOMElement node, String for each pattern group, AnyType model, Object options)
 
 
 
-    bindRules = [
+    jtmpl.bindRules = [
 
       { # value/checked/selected=var
         pattern: "(value | checked | selected) = (#{ RE_IDENTIFIER })",
@@ -343,6 +353,20 @@ Function void (AnyType val) `react`
       }
 
 
+      { # onevent=var
+        pattern: "on(#{ RE_IDENTIFIER }) = (#{ RE_IDENTIFIER })",
+        react: (node, evnt, listener, model, options) ->
+          handler = options?.rootModel?[listener] or model[listener]
+          if typeof handler is 'function'
+            node.addEventListener(evnt, handler.bind(model))
+          else
+            throw ":( #{ listener } is not a function, cannot attach event handler"
+
+          # job done, no reactor to return
+          null
+      }
+
+
       { # class=var
         pattern: "class = (#{ RE_IDENTIFIER })",
         react: (node, prop, model) ->
@@ -354,6 +378,54 @@ Function void (AnyType val) `react`
         pattern: "(#{ RE_IDENTIFIER }) = #{ RE_IDENTIFIER }",
         react: (node, attr) ->
           (val) -> if node[attr] isnt val then node[attr] = val
+      }
+
+
+      { # section
+        pattern: "(# | \\^) (#{ RE_IDENTIFIER })",
+
+        # do not process children recursively during binding phase
+        recurse: false,
+
+        react: (node, sectionType, attr, model, options) ->
+          val = model[attr]
+
+          if Array.isArray(val) and sectionType is '#'
+            # bind collection items to node children
+            for child, i in node.children
+              jtmpl.bind(child, val[i], options)
+
+          else if typeof val is 'object'
+            # bind context
+            jtmpl.bind(node, val, options)
+
+          # else
+            # if section
+            # jtmpl.bind(node, model, options)
+
+          # Return reactor function
+          (val) ->
+            # collection?
+            if Array.isArray(val)
+              jtmpl.bindArrayToNodeChildren(val, node)
+
+              node.innerHTML =
+                if not val.length
+                  jtmpl(node.getAttribute('data-jt-0') or '', {})
+                else 
+                  ''
+
+              node.appendChild(jtmpl.createSectionItem(node, item)) for item in val
+
+            # local context?
+            else if typeof val is 'object'
+              node.innerHTML = jtmpl(node.getAttribute('data-jt-1') or '', val)
+              jtmpl(node, node.innerHTML, val, { rootModel: model })
+
+            # if section
+            else
+              node.style.display = (!!val is (sectionType is '^')) and 'none' or ''
+
       }
 
 
@@ -428,10 +500,16 @@ Boolean asArrayItem
                 if htagPos is -1 and rule.wrapper?
                   # wrapping needed
                   tag = options[rule.wrapper]
-                  result += injectTagBinding("<#{ tag }>#{ replaceWith }</#{ tag }>", bindingToken, wrapperAttrs)
+                  result += injectAttributes(
+                    injectTagBinding("<#{ tag }>#{ replaceWith }</#{ tag }>", bindingToken),
+                    wrapperAttrs
+                  )
                 else
                   result += replaceWith
-                  result = result.slice(0, htagPos) + injectTagBinding(result.slice(htagPos), bindingToken, wrapperAttrs)
+                  result = result.slice(0, htagPos) + injectAttributes(
+                    injectTagBinding(result.slice(htagPos), bindingToken),
+                    wrapperAttrs
+                  )
 
               pos = tokenizer.lastIndex
 
@@ -451,16 +529,40 @@ Boolean asArrayItem
               if echoMode
                 result += token[0] + tmpl + closing[0]
               else
-                [contents, wrapperAttrs] = rule.contents(tmpl, model, match[1], options)
+                section = match[1]
+                [contents, wrapperAttrs] = rule.contents(tmpl, model, section, options)
+
                 if htagPos is -1
                   tag = options[rule.wrapper]
-                  result += injectTagBinding("<#{ tag }>#{ contents }</#{ tag }>", bindingToken, wrapperAttrs)
+
+                  if section isnt lastSectionTag
+                    lastSectionHTagPos = result.length
+                    result += injectAttributes(
+                      injectTagBinding("<#{ tag }>#{ contents }</#{ tag }>", bindingToken),
+                      wrapperAttrs
+                    )
+                  else
+                    result = (
+                      result.slice(0, lastSectionHTagPos) +
+                      injectAttributes(
+                        injectTagBinding(result.slice(lastSectionHTagPos), bindingToken),
+                        wrapperAttrs,
+                        contents.trim()
+                      )
+                    )
+
                 else
                   result = (
                     result.slice(0, htagPos) + 
-                    injectTagBinding(result.slice(htagPos), bindingToken, wrapperAttrs) +
+                    injectAttributes(
+                      injectTagBinding(result.slice(htagPos), bindingToken),
+                      wrapperAttrs
+                    ) +
                     contents.trim()
                   )
+                  lastSectionHTagPos = htagPos
+
+                lastSectionTag = section
 
 
             # Match was found, skip other rules
@@ -492,7 +594,7 @@ Inject token in HTML element data-jt attribute.
 Create attribute if not existent.
 wrapperAttrs is array of pairs [attribute, value] to inject in element
 
-    injectTagBinding = (template, token, wrapperAttrs) ->
+    injectTagBinding = (template, token) ->
       # group 1: 'data-jt' inject position
       # group 2: token inject position, if attribute exists
       # group 3 (RE_DATA_JT): existing 'data-jt' value
@@ -501,17 +603,25 @@ wrapperAttrs is array of pairs [attribute, value] to inject in element
       pos = match[1].length + match[2].length + attrLen
       # inject, return result
       ( template.slice(0, pos) +
-        ( if token
-            ( if attrLen
-                (if match[3].trim() is 'data-jt="' then '' else ' ') + token
-              else
-                ' data-jt="' + token + '"'
-            )
+        ( if attrLen
+            (if match[3].trim() is 'data-jt="' then '' else ' ') + token
           else
-            ''
+            ' data-jt="' + token + '"'
         ) +
-        (" #{ pair[0] }=\"#{ pair[1] }\"" for pair in wrapperAttrs).join('') +
         template.slice(pos)
+      )
+
+    injectAttributes = (template, attributes, contents) ->
+      if not attributes.length then return template
+
+      match = regexp("^ (#{ RE_SPACE } < #{ RE_IDENTIFIER } #{ RE_ANYTHING })>").exec(template)
+      pos = match[1].length
+      (
+        template.slice(0, pos) + 
+        [" #{ pair[0] }=\"#{ pair[1].replace(/"/g, '&quot;') }\"" for pair in attributes].join('') +
+        '>' +
+        (contents or '') +
+        template.slice(pos + 1)
       )
 
 
@@ -547,10 +657,28 @@ void `bind` (DOMElement root, AnyType model)
 Walk DOM and setup reactors on model and nodes.
 
 
-    jtmpl.bind = (root, model) ->
+    jtmpl.bind = (root, model, options) ->
 
-      itemIndex = 0
-      nodeContext = null
+      # Returns true, if recursion should continue
+      bindNode = (node) ->
+        if attr = node.getAttribute('data-jt')
+          # iterate node bindings
+          for jt in attr.trim().split(' ')
+            # iterate binding rules
+            for rule in jtmpl.bindRules
+              # matching rule?
+              if match = regexp(rule.pattern).exec(jt)
+
+                propChange(model, rule.attr,
+                  rule.react([node].concat(match.slice(1), [model, options])...)
+                )
+                # Missing rule.recurse attribute means continue recursion
+                return rule.recurse? and rule.recurse or true
+
+          # If no data-jt attribute, continue recursion
+          return true
+
+      bindNode(root)
 
       # iterate children
       for node in root.childNodes
@@ -558,10 +686,22 @@ Walk DOM and setup reactors on model and nodes.
         switch node.nodeType
 
           when node.ELEMENT_NODE
-            ;
+            if bindNode(node)
+              jtmpl.bind(node, model, options)
 
           when node.COMMENT_NODE
-            ;
+            # collection template?
+            if section = node.nodeValue.trim().match(RE_COLLECTION_TEMPLATE)
+              # decompile delimiters
+              section[2] = section[2]
+                .replace(new RegExp(escapeRE(options.compiledDelimiters[0]), 'g'), options.delimiters[0])
+                .replace(new RegExp(escapeRE(options.compiledDelimiters[1]), 'g'), options.delimiters[1])
+              if section[1] is '#'
+                # section
+                root.setAttribute('data-jt-1', section[2])
+              else
+                # inverted section
+                root.setAttribute('data-jt-0', section[2])
 
       # return node
       node
@@ -642,7 +782,7 @@ Replace `from` literal strings with `to` strings in template
 
     multiReplace = (template, from, to) ->
       for find, i in from
-        template = template.replace(regexp(escapeRE(find)), escapeRE(to[i]))
+        template = template.replace(regexp(escapeRE(find)), to[i])
       template
 
 
@@ -654,7 +794,7 @@ Replace `from` literal strings with `to` strings in template
 
 DOMElement createSectionItem (DOMElement parent, AnyType context)
 
-    createSectionItem = (parent, context) ->
+    jtmpl.createSectionItem = createSectionItem = (parent, context) ->
       element = document.createElement('body')
       element.innerHTML = jtmpl(parent.getAttribute('data-jt-1') or '', context)
       element = element.children[0]
@@ -669,25 +809,21 @@ DOMElement createSectionItem (DOMElement parent, AnyType context)
 
 void propChange(Object obj, String prop, Function callback)
 
-Register a callback to handle property change.
+Register a callback to handle object property change. 
 
     propChange = (obj, prop, callback) ->
+      # All must be specified, don't fail if not
+      if not (obj and prop and callback) then return
+
       oldDescriptor = (Object.getOwnPropertyDescriptor(obj, prop) or
         Object.getOwnPropertyDescriptor(obj.constructor.prototype, prop))
 
       Object.defineProperty(obj, prop, {
-        get: oldDescriptor.get? and oldDescriptor.get or -> oldDescriptor.value,
-
-        set: oldDescriptor.set? and (
-          (value) ->
-            oldDescriptor.set(value)
-            callback(value)
-        ) or (
-          (value) ->
-            oldDescriptor.value = value
-            callback(value)
+        get: oldDescriptor.get or -> oldDescriptor.value,
+        set: ((val) ->
+          oldDescriptor.set?(val) or oldDescriptor.value = val
+          callback(val)
         ),
-
         configurable: true
       })
 
@@ -705,7 +841,7 @@ and setting a proxy for each mutable operation.
 `createSectionItem` is used for creating new items.
 
 
-    bindArrayToNodeChildren = (array, node) ->
+    jtmpl.bindArrayToNodeChildren = bindArrayToNodeChildren = (array, node) ->
 
       # array already augmented?
       if not array.__garbageCollectNodes

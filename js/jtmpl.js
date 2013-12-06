@@ -1,5 +1,5 @@
 (function() {
-  var RE_ANYTHING, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_SPACE, ap, appop, appush, apreverse, apshift, apslice, apsort, apunshift, bindArrayToNodeChildren, bindRules, compose, createSectionItem, curry, escapeHTML, escapeRE, extend, initBindings, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp;
+  var RE_ANYTHING, RE_COLLECTION_TEMPLATE, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_SPACE, ap, appop, appush, apreverse, apshift, apslice, apsort, apunshift, bindArrayToNodeChildren, createSectionItem, escapeHTML, escapeRE, injectAttributes, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp;
 
   jtmpl = (typeof exports !== "undefined" && exports !== null ? exports : this).jtmpl = function(target, template, model, options) {
     var delimiters, html, newTarget, _ref;
@@ -25,14 +25,14 @@
     }
     options = options || {};
     options.delimiters = (options.delimiters || '{{ }}').split(' ');
-    options.compiledDelimiters = (options.compiledDelimiters || '<<< >>>').split(' ');
+    options.compiledDelimiters = (options.compiledDelimiters || '#{ }#').split(' ');
     options.defaultSection = options.defaultSectionTag || 'div';
     options.defaultSectionItem = options.defaultSectionItem || 'div';
     options.defaultVar = options.defaultVar || 'span';
     options.defaultTargetTag = options.defaultTargetTag || 'div';
     delimiters = options.delimiters;
     template = ('' + template).replace(regexp("{{{ (" + RE_IDENTIFIER + ") }}}"), delimiters[0] + '&$1' + delimiters[1]).replace(regexp("<!-- " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " -->", delimiters), '$1').replace(regexp("(" + RE_IDENTIFIER + ")='({{ " + RE_IDENTIFIER + " }})'", delimiters), '$1=$2').replace(regexp("(" + RE_IDENTIFIER + ")=\"({{ " + RE_IDENTIFIER + " }})\"", delimiters), '$1=$2').replace(regexp("\\n " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " \\n", delimiters), '\n$1\n');
-    html = jtmpl.compile(template, model, null, false, options);
+    html = jtmpl.compile(template, model, null, false, options).trim();
     if (!target) {
       return html;
     }
@@ -42,7 +42,7 @@
       target = newTarget;
     }
     target.innerHTML = html;
-    return jtmpl.bind(target, model);
+    return options.rootModel = model;
   };
 
   RE_IDENTIFIER = '[\\w\\.\\-]+';
@@ -54,6 +54,8 @@
   RE_SPACE = '\\s*';
 
   RE_DATA_JT = '(?: ( \\s* data-jt = " [^"]* )" )?';
+
+  RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/;
 
   jtmpl.preprocessingRules = [
     {
@@ -117,7 +119,7 @@
         var val;
         val = model[section];
         if (Array.isArray(val)) {
-          return ["<!-- ^ " + (multiReplace(template, options.delimiters, options.compiledDelimiters)) + " -->", +(!val.length ? jtmpl(template, model) : ''), []];
+          return [!val.length ? jtmpl(template, model) : '', [['data-jt-0', multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)]]];
         } else {
           return [jtmpl(template, model), val ? [['style', 'display:none']] : []];
         }
@@ -133,7 +135,7 @@
         val = model[section];
         if (Array.isArray(val)) {
           return [
-            ("<!-- # " + (multiReplace(template, options.delimiters, options.compiledDelimiters)) + " -->") + ((function() {
+            ((function() {
               var _i, _len, _results;
               _results = [];
               for (_i = 0, _len = val.length; _i < _len; _i++) {
@@ -143,7 +145,7 @@
                 }));
               }
               return _results;
-            })()).join(''), []
+            })()).join(''), [['data-jt-1', multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)]]
           ];
         } else if (typeof val === 'object') {
           return [jtmpl(template, val), []];
@@ -175,7 +177,7 @@
     }
   ];
 
-  bindRules = [
+  jtmpl.bindRules = [
     {
       pattern: "(value | checked | selected) = (" + RE_IDENTIFIER + ")",
       react: function(node, attr, prop, model) {
@@ -228,6 +230,18 @@
         };
       }
     }, {
+      pattern: "on(" + RE_IDENTIFIER + ") = (" + RE_IDENTIFIER + ")",
+      react: function(node, evnt, listener, model, options) {
+        var handler, _ref;
+        handler = (options != null ? (_ref = options.rootModel) != null ? _ref[listener] : void 0 : void 0) || model[listener];
+        if (typeof handler === 'function') {
+          node.addEventListener(evnt, handler.bind(model));
+        } else {
+          throw ":( " + listener + " is not a function, cannot attach event handler";
+        }
+        return null;
+      }
+    }, {
       pattern: "class = (" + RE_IDENTIFIER + ")",
       react: function(node, prop, model) {
         return function(val) {
@@ -244,6 +258,42 @@
         };
       }
     }, {
+      pattern: "(# | \\^) (" + RE_IDENTIFIER + ")",
+      recurse: false,
+      react: function(node, sectionType, attr, model, options) {
+        var child, i, val, _i, _len, _ref;
+        val = model[attr];
+        if (Array.isArray(val) && sectionType === '#') {
+          _ref = node.children;
+          for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+            child = _ref[i];
+            jtmpl.bind(child, val[i], options);
+          }
+        } else if (typeof val === 'object') {
+          jtmpl.bind(node, val, options);
+        }
+        return function(val) {
+          var item, _j, _len1, _results;
+          if (Array.isArray(val)) {
+            jtmpl.bindArrayToNodeChildren(val, node);
+            node.innerHTML = !val.length ? jtmpl(node.getAttribute('data-jt-0') || '', {}) : '';
+            _results = [];
+            for (_j = 0, _len1 = val.length; _j < _len1; _j++) {
+              item = val[_j];
+              _results.push(node.appendChild(jtmpl.createSectionItem(node, item)));
+            }
+            return _results;
+          } else if (typeof val === 'object') {
+            node.innerHTML = jtmpl(node.getAttribute('data-jt-1') || '', val);
+            return jtmpl(node, node.innerHTML, val, {
+              rootModel: model
+            });
+          } else {
+            return node.style.display = (!!val === (sectionType === '^')) && 'none' || '';
+          }
+        };
+      }
+    }, {
       pattern: "" + RE_IDENTIFIER,
       react: function(node) {
         return function(val) {
@@ -254,7 +304,7 @@
   ];
 
   jtmpl.compile = function(template, model, openTag, echoMode, options, asArrayItem) {
-    var bindingToken, closing, contents, htagPos, match, pos, replaceWith, result, rule, slice, tag, tmpl, token, tokenizer, wrapperAttrs, _i, _len, _ref, _ref1, _ref2;
+    var bindingToken, closing, contents, htagPos, lastSectionHTagPos, lastSectionTag, match, pos, replaceWith, result, rule, section, slice, tag, tmpl, token, tokenizer, wrapperAttrs, _i, _len, _ref, _ref1, _ref2;
     tokenizer = regexp("{{ (\/?) (" + RE_ANYTHING + ") }}", options.delimiters);
     result = '';
     pos = 0;
@@ -281,10 +331,10 @@
               _ref1 = rule.replaceWith.apply(rule, match.slice(1).concat([model])), replaceWith = _ref1[0], wrapperAttrs = _ref1[1];
               if (htagPos === -1 && (rule.wrapper != null)) {
                 tag = options[rule.wrapper];
-                result += injectTagBinding("<" + tag + ">" + replaceWith + "</" + tag + ">", bindingToken, wrapperAttrs);
+                result += injectAttributes(injectTagBinding("<" + tag + ">" + replaceWith + "</" + tag + ">", bindingToken), wrapperAttrs);
               } else {
                 result += replaceWith;
-                result = result.slice(0, htagPos) + injectTagBinding(result.slice(htagPos), bindingToken, wrapperAttrs);
+                result = result.slice(0, htagPos) + injectAttributes(injectTagBinding(result.slice(htagPos), bindingToken), wrapperAttrs);
               }
             }
             pos = tokenizer.lastIndex;
@@ -296,13 +346,21 @@
             if (echoMode) {
               result += token[0] + tmpl + closing[0];
             } else {
-              _ref2 = rule.contents(tmpl, model, match[1], options), contents = _ref2[0], wrapperAttrs = _ref2[1];
+              section = match[1];
+              _ref2 = rule.contents(tmpl, model, section, options), contents = _ref2[0], wrapperAttrs = _ref2[1];
               if (htagPos === -1) {
                 tag = options[rule.wrapper];
-                result += injectTagBinding("<" + tag + ">" + contents + "</" + tag + ">", bindingToken, wrapperAttrs);
+                if (section !== lastSectionTag) {
+                  lastSectionHTagPos = result.length;
+                  result += injectAttributes(injectTagBinding("<" + tag + ">" + contents + "</" + tag + ">", bindingToken), wrapperAttrs);
+                } else {
+                  result = result.slice(0, lastSectionHTagPos) + injectAttributes(injectTagBinding(result.slice(lastSectionHTagPos), bindingToken), wrapperAttrs, contents.trim());
+                }
               } else {
-                result = result.slice(0, htagPos) + injectTagBinding(result.slice(htagPos), bindingToken, wrapperAttrs) + contents.trim();
+                result = result.slice(0, htagPos) + injectAttributes(injectTagBinding(result.slice(htagPos), bindingToken), wrapperAttrs) + contents.trim();
+                lastSectionHTagPos = htagPos;
               }
+              lastSectionTag = section;
             }
           }
           break;
@@ -322,20 +380,32 @@
     }
   };
 
-  injectTagBinding = function(template, token, wrapperAttrs) {
-    var attrLen, match, pair, pos;
+  injectTagBinding = function(template, token) {
+    var attrLen, match, pos;
     match = regexp("^ (" + RE_SPACE + " < " + RE_IDENTIFIER + ") (" + RE_ANYTHING + ") " + RE_DATA_JT).exec(template);
     attrLen = (match[3] || '').length;
     pos = match[1].length + match[2].length + attrLen;
-    return template.slice(0, pos) + (token ? (attrLen ? (match[3].trim() === 'data-jt="' ? '' : ' ') + token : ' data-jt="' + token + '"') : '') + ((function() {
-      var _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = wrapperAttrs.length; _i < _len; _i++) {
-        pair = wrapperAttrs[_i];
-        _results.push(" " + pair[0] + "=\"" + pair[1] + "\"");
-      }
-      return _results;
-    })()).join('') + template.slice(pos);
+    return template.slice(0, pos) + (attrLen ? (match[3].trim() === 'data-jt="' ? '' : ' ') + token : ' data-jt="' + token + '"') + template.slice(pos);
+  };
+
+  injectAttributes = function(template, attributes, contents) {
+    var match, pair, pos;
+    if (!attributes.length) {
+      return template;
+    }
+    match = regexp("^ (" + RE_SPACE + " < " + RE_IDENTIFIER + " " + RE_ANYTHING + ")>").exec(template);
+    pos = match[1].length;
+    return template.slice(0, pos) + [
+      (function() {
+        var _i, _len, _results;
+        _results = [];
+        for (_i = 0, _len = attributes.length; _i < _len; _i++) {
+          pair = attributes[_i];
+          _results.push(" " + pair[0] + "=\"" + (pair[1].replace(/"/g, '&quot;')) + "\"");
+        }
+        return _results;
+      })()
+    ].join('') + '>' + (contents || '') + template.slice(pos + 1);
   };
 
   lastOpenedHTMLTag = function(template) {
@@ -346,17 +416,45 @@
     return !!contents.trim().match(regexp("^<(" + RE_IDENTIFIER + ") " + RE_SPACE + "        [^>]*? > " + RE_ANYTHING + " </\\1>$ | < [^>]*? />$"));
   };
 
-  jtmpl.bind = function(root, model) {
-    var itemIndex, node, nodeContext, _i, _len, _ref;
-    itemIndex = 0;
-    nodeContext = null;
+  jtmpl.bind = function(root, model, options) {
+    var bindNode, node, section, _i, _len, _ref;
+    bindNode = function(node) {
+      var attr, jt, match, rule, _i, _j, _len, _len1, _ref, _ref1;
+      if (attr = node.getAttribute('data-jt')) {
+        _ref = attr.trim().split(' ');
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          jt = _ref[_i];
+          _ref1 = jtmpl.bindRules;
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            rule = _ref1[_j];
+            if (match = regexp(rule.pattern).exec(jt)) {
+              propChange(model, rule.attr, rule.react.apply(rule, [node].concat(match.slice(1), [model, options])));
+              return (rule.recurse != null) && rule.recurse || true;
+            }
+          }
+        }
+        return true;
+      }
+    };
+    bindNode(root);
     _ref = root.childNodes;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       node = _ref[_i];
       switch (node.nodeType) {
         case node.ELEMENT_NODE:
+          if (bindNode(node)) {
+            jtmpl.bind(node, model, options);
+          }
           break;
         case node.COMMENT_NODE:
+          if (section = node.nodeValue.trim().match(RE_COLLECTION_TEMPLATE)) {
+            section[2] = section[2].replace(new RegExp(escapeRE(options.compiledDelimiters[0]), 'g'), options.delimiters[0]).replace(new RegExp(escapeRE(options.compiledDelimiters[1]), 'g'), options.delimiters[1]);
+            if (section[1] === '#') {
+              root.setAttribute('data-jt-1', section[2]);
+            } else {
+              root.setAttribute('data-jt-0', section[2]);
+            }
+          }
       }
     }
     return node;
@@ -377,31 +475,6 @@
   apunshift = ap.unshift;
 
   apsort = ap.sort;
-
-  curry = function() {
-    var args;
-    args = apslice.call(arguments);
-    return function() {
-      var args2;
-      args2 = apslice.call(arguments);
-      return args[0].apply(this, args.slice(1).concat(args2));
-    };
-  };
-
-  compose = function(f, g) {
-    return function() {
-      return f(g.apply(this, apslice.call(arguments)));
-    };
-  };
-
-  extend = function(obj, props) {
-    var k, v;
-    for (k in props) {
-      v = props[k];
-      obj[k] = v;
-    }
-    return obj;
-  };
 
   escapeRE = function(s) {
     return (s + '').replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
@@ -428,12 +501,12 @@
     var find, i, _i, _len;
     for (i = _i = 0, _len = from.length; _i < _len; i = ++_i) {
       find = from[i];
-      template = template.replace(regexp(escapeRE(find)), escapeRE(to[i]));
+      template = template.replace(regexp(escapeRE(find)), to[i]);
     }
     return template;
   };
 
-  createSectionItem = function(parent, context) {
+  jtmpl.createSectionItem = createSectionItem = function(parent, context) {
     var element;
     element = document.createElement('body');
     element.innerHTML = jtmpl(parent.getAttribute('data-jt-1') || '', context);
@@ -446,54 +519,23 @@
 
   propChange = function(obj, prop, callback) {
     var oldDescriptor;
+    if (!(obj && prop && callback)) {
+      return;
+    }
     oldDescriptor = Object.getOwnPropertyDescriptor(obj, prop) || Object.getOwnPropertyDescriptor(obj.constructor.prototype, prop);
     return Object.defineProperty(obj, prop, {
-      get: (oldDescriptor.get != null) && oldDescriptor.get || function() {
+      get: oldDescriptor.get || function() {
         return oldDescriptor.value;
       },
-      set: (oldDescriptor.set != null) && (function(value) {
-        oldDescriptor.set(value);
-        return callback(value);
-      }) || (function(value) {
-        oldDescriptor.value = value;
-        return callback(value);
+      set: (function(val) {
+        (typeof oldDescriptor.set === "function" ? oldDescriptor.set(val) : void 0) || (oldDescriptor.value = val);
+        return callback(val);
       }),
       configurable: true
     });
   };
 
-  initBindings = function(context, prop) {
-    if (!context["__" + prop + "_bindings"]) {
-      Object.defineProperty(context, "__" + prop + "_bindings", {
-        enumerable: false,
-        writable: true,
-        value: []
-      });
-      Object.defineProperty(context, "__" + prop, {
-        enumerable: false,
-        writable: true,
-        value: context[prop]
-      });
-      return Object.defineProperty(context, prop, {
-        get: function() {
-          return this["__" + prop];
-        },
-        set: function(val) {
-          var reactor, _i, _len, _ref, _results;
-          this["__" + prop] = val;
-          _ref = this["__" + prop + "_bindings"];
-          _results = [];
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            reactor = _ref[_i];
-            _results.push(reactor.call(this, val));
-          }
-          return _results;
-        }
-      });
-    }
-  };
-
-  bindArrayToNodeChildren = function(array, node) {
+  jtmpl.bindArrayToNodeChildren = bindArrayToNodeChildren = function(array, node) {
     var bindProp, i, item, _i, _len;
     if (!array.__garbageCollectNodes) {
       array.__garbageCollectNodes = function() {
