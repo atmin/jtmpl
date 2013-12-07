@@ -34,7 +34,7 @@ Target NodeJS and browser
         if not document?
           throw new Error(':( this API is only available in a browser')
 
-        return apslice.call(document.querySelectorAll(target))
+        return ap.slice.call(document.querySelectorAll(target))
 
       # `jtmpl(template, model)`?
       if typeof target is 'string' and
@@ -106,7 +106,7 @@ Target NodeJS and browser
 
       # Bind recursively using data-jt attributes
       options.rootModel = model
-      # jtmpl.bind(target, model, options)
+      jtmpl.bind(target, model, options)
 
 
 
@@ -152,10 +152,6 @@ Transformations to clean up template for easier matching
     jtmpl.preprocessingRules = [
 
       { pattern: "", replaceWith: "" }
-
-      { pattern: "", replaceWith: "" }
-
-      { pattern: "", replaceWith: "" }
     ]
 
 
@@ -181,6 +177,7 @@ String `bindingToken` (String for each group in pattern)
 
       { # class="whatever, maybe other bindings... {{booleanVar}}
         pattern: "(class=\"? [\\w \\. \\- \\s {{}}]*) {{ (#{ RE_IDENTIFIER }) }}$"
+
         replaceWith: (pre, prop, model) ->
           val = model[prop]
           [ # Emit match, and class name if booleanVar
@@ -189,21 +186,26 @@ String `bindingToken` (String for each group in pattern)
             ,
             []
           ]
+
         echoReplaceWith: (pre, prop) ->
           if pre.search('{') > - 1 then " {{#{ prop }}}" else null
+
         bindingToken: (pre, prop) -> "class=#{ prop }"
       }
 
 
       { # onevent={{func}}
         pattern: "on(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}$"
+
         replaceWith: -> ['', []]
+
         bindingToken: (event, handler) -> "on#{ event }=#{ handler }"
       }
 
 
       { # attr={{prop}}
         pattern: "(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}$"
+
         replaceWith: (attr, prop, model) ->
           val = model[prop]
           # null?
@@ -215,13 +217,19 @@ String `bindingToken` (String for each group in pattern)
           # quoted value
           else
             ["#{ attr }=\"#{ val }\"", []]
+
         bindingToken: (attr, prop) -> "#{ attr }=#{ prop }"
       }
 
 
       { # {{^inverted_section}}
         pattern: "{{ \\^ (#{ RE_IDENTIFIER }) }}$"
+
         wrapper: 'defaultSection'
+
+        lastTag: (model, section) ->
+          if Array.isArray(model[section]) then section else null
+
         contents: (template, model, section, options) ->
           val = model[section]
 
@@ -250,7 +258,12 @@ String `bindingToken` (String for each group in pattern)
       
       { # {{#section}}
         pattern: "{{ \\# (#{ RE_IDENTIFIER }) }}$"
+
+        lastTag: (model, section) ->
+          if Array.isArray(model[section]) then section else null
+
         wrapper: 'defaultSection'
+
         contents: (template, model, section, options) ->
           val = model[section]
           # Sequence?
@@ -277,22 +290,29 @@ String `bindingToken` (String for each group in pattern)
             [ jtmpl(template, model),
               if not val then [['style', 'display:none']] else []
             ]
+
         bindingToken: (section) -> "##{ section }"
       }
 
 
       { # {{&unescaped_var}}
         pattern: "{{ & (#{ RE_IDENTIFIER }) }}$"
+
         wrapper: 'defaultVar'
+
         replaceWith: (prop, model) -> [prop is '.' and model or model[prop], []]
+
         bindingToken: (prop) -> prop
       }
 
 
       { # {{var}}
         pattern: "{{ (#{ RE_IDENTIFIER }) }}$"
+
         wrapper: 'defaultVar'
+
         replaceWith: (prop, model) -> [escapeHTML(prop is '.' and model or model[prop]), []]
+
         bindingToken: (prop) -> prop
       }
 
@@ -316,7 +336,10 @@ Function void (AnyType val) `react`
     jtmpl.bindRules = [
 
       { # value/checked/selected=var
-        pattern: "(value | checked | selected) = (#{ RE_IDENTIFIER })",
+        pattern: "(value | checked | selected) = (#{ RE_IDENTIFIER })"
+
+        bindTo: (attr, prop) -> prop,
+
         react: (node, attr, prop, model) ->
           # attach DOM reactor
 
@@ -354,7 +377,8 @@ Function void (AnyType val) `react`
 
 
       { # onevent=var
-        pattern: "on(#{ RE_IDENTIFIER }) = (#{ RE_IDENTIFIER })",
+        pattern: "on(#{ RE_IDENTIFIER }) = (#{ RE_IDENTIFIER })"
+
         react: (node, evnt, listener, model, options) ->
           handler = options?.rootModel?[listener] or model[listener]
           if typeof handler is 'function'
@@ -368,40 +392,53 @@ Function void (AnyType val) `react`
 
 
       { # class=var
-        pattern: "class = (#{ RE_IDENTIFIER })",
+        pattern: "class = (#{ RE_IDENTIFIER })"
+
+        bindTo: (prop) -> prop
+
         react: (node, prop, model) ->
           (val) -> (val and addClass or removeClass)(node, prop)
       }
 
 
       { # attr=var
-        pattern: "(#{ RE_IDENTIFIER }) = #{ RE_IDENTIFIER }",
+        pattern: "(#{ RE_IDENTIFIER }) = #{ RE_IDENTIFIER }"
+
+        bindTo: (attr, prop) -> prop
+
         react: (node, attr) ->
           (val) -> if node[attr] isnt val then node[attr] = val
       }
 
 
       { # section
-        pattern: "(# | \\^) (#{ RE_IDENTIFIER })",
+        pattern: "(# | \\^) (#{ RE_IDENTIFIER })"
 
-        # do not process children recursively during binding phase
-        recurse: false,
+        bindTo: (sectionType, prop) -> prop
+
+        # context for recursion
+        recurseContext: (sectionType, attr, model) ->
+          val = model[attr]
+          if Array.isArray(val)
+            console.log('no recurseContext')
+            null
+          else if typeof val is 'object'
+            console.log('recurseContext: ' + attr)
+            val
+          else
+            console.log('recurseContext: model')
+            model
 
         react: (node, sectionType, attr, model, options) ->
           val = model[attr]
 
+          console.log("react sectionType=#{ sectionType } attr=#{ attr } val=#{ val }")
+
           if Array.isArray(val) and sectionType is '#'
+            console.log('binding collection items')
             # bind collection items to node children
             for child, i in node.children
               jtmpl.bind(child, val[i], options)
-
-          else if typeof val is 'object'
-            # bind context
-            jtmpl.bind(node, val, options)
-
-          # else
-            # if section
-            # jtmpl.bind(node, model, options)
 
           # Return reactor function
           (val) ->
@@ -411,7 +448,11 @@ Function void (AnyType val) `react`
 
               node.innerHTML =
                 if not val.length
-                  jtmpl(node.getAttribute('data-jt-0') or '', {})
+                  jtmpl(
+                    multiReplace(node.getAttribute('data-jt-0') or '',
+                      options.compiledDelimiters, options.delimiters),
+                    {}
+                  )
                 else 
                   ''
 
@@ -419,18 +460,24 @@ Function void (AnyType val) `react`
 
             # local context?
             else if typeof val is 'object'
-              node.innerHTML = jtmpl(node.getAttribute('data-jt-1') or '', val)
+              node.innerHTML = jtmpl(
+                multiReplace(node.getAttribute('data-jt-1') or '',
+                    options.compiledDelimiters, options.delimiters),
+                val
+              )
               jtmpl(node, node.innerHTML, val, { rootModel: model })
 
             # if section
             else
-              node.style.display = (!!val is (sectionType is '^')) and 'none' or ''
-
+              node.style.display = (!val isnt (sectionType is '^')) and 'none' or ''
       }
 
 
       { # var
-        pattern: "#{ RE_IDENTIFIER }",
+        pattern: "(#{ RE_IDENTIFIER })"
+
+        bindTo: (prop) -> prop
+
         react: (node) ->
           (val) -> node.innerHTML = val
       }
@@ -562,7 +609,7 @@ Boolean asArrayItem
                   )
                   lastSectionHTagPos = htagPos
 
-                lastSectionTag = section
+                lastSectionTag = rule.lastTag?(model, section) or null
 
 
             # Match was found, skip other rules
@@ -659,35 +706,36 @@ Walk DOM and setup reactors on model and nodes.
 
     jtmpl.bind = (root, model, options) ->
 
-      # Returns true, if recursion should continue
-      bindNode = (node) ->
-        if attr = node.getAttribute('data-jt')
-          # iterate node bindings
-          for jt in attr.trim().split(' ')
-            # iterate binding rules
-            for rule in jtmpl.bindRules
-              # matching rule?
-              if match = regexp(rule.pattern).exec(jt)
-
-                propChange(model, rule.attr,
-                  rule.react([node].concat(match.slice(1), [model, options])...)
-                )
-                # Missing rule.recurse attribute means continue recursion
-                return rule.recurse? and rule.recurse or true
-
-          # If no data-jt attribute, continue recursion
-          return true
-
-      bindNode(root)
-
       for node in root.children
 
-          if bindNode(node)
-            jtmpl.bind(node, model, options)
+        if data_jt = node.getAttribute('data-jt')
 
-      # return node
-      node
+          for jt in data_jt.trim().split(' ')
 
+            for rule in jtmpl.bindRules
+
+              if match = regexp(rule.pattern).exec(jt)
+
+                console.log(match[0])
+                # console.log(model)
+
+                reactor = rule.react([node].concat(match.slice(1), [model, options])...)
+                prop = rule.bindTo?(match.slice(1)...)
+                # console.log(prop)
+                # console.log(reactor)
+                propChange(model, prop, reactor)
+
+                recurseContext = rule.recurseContext?(match.slice(1).concat([model])...)
+                if recurseContext isnt null
+                  console.log('recurse')
+                  jtmpl.bind(node, recurseContext or model, options)
+
+                break
+
+        else
+          # No data-jt attribute, bind recursively
+          console.log('recurse')
+          jtmpl.bind(node, model, options)
 
 
 
@@ -696,16 +744,9 @@ Walk DOM and setup reactors on model and nodes.
 ## Supporting code
 
 
-### Array shortcuts
+### Useful shortcut
 
     ap = Array.prototype
-    apslice = ap.slice
-    appop = ap.pop
-    appush = ap.push
-    apreverse = ap.reverse
-    apshift = ap.shift
-    apunshift = ap.unshift
-    apsort = ap.sort
 
 
     
@@ -778,11 +819,24 @@ DOMElement createSectionItem (DOMElement parent, AnyType context)
 
     jtmpl.createSectionItem = createSectionItem = (parent, context) ->
       element = document.createElement('body')
-      element.innerHTML = jtmpl(parent.getAttribute('data-jt-1') or '', context)
+      element.innerHTML = jtmpl(
+        multiReplace(node.getAttribute('data-jt-1') or '',
+          options.compiledDelimiters, options.delimiters),
+        context
+      )
       element = element.children[0]
       jtmpl(element, element.innerHTML, context, { rootModel: model })
       element
 
+    jtmpl.hasClass = hasClass = (el, name) -> new RegExp("(\\s|^)#{ name }(\\s|$)").test(el.className)
+
+    jtmpl.addClass = addClass = (el, name) -> 
+      if not hasClass(el, name) then el.className += (el.className and ' ' or '') + name
+
+    jtmpl.removeClass = removeClass = (el, name) ->
+      if hasClass(el, name) then el.className = el.className
+        .replace(new RegExp("(\\s|^)#{name}(\\s|$)"), '')
+        .replace(/^\s+|\s+$/g, '')
 
 
 
@@ -839,7 +893,12 @@ and setting a proxy for each mutable operation.
           if not this.length then node.innerHTML = ''
 
         array.__addEmpty = ->
-          if not this.length then node.innerHTML = jtmpl(node.getAttribute('data-jt-0') or '', {})
+          if not this.length
+            node.innerHTML = jtmpl(
+              multiReplace(node.getAttribute('data-jt-0') or '',
+                options.compiledDelimiters, options.delimiters),
+              {}
+            )
 
         # Mutable array operations
 
@@ -847,24 +906,24 @@ and setting a proxy for each mutable operation.
           this.__removeEmpty()
           this.__garbageCollectNodes()
           node.removeChild(node.children[node.children.length - 1]) for node in this.__nodes
-          appop.apply(this, arguments)
-          appop.apply(this.__values, arguments)
+          ap.pop.apply(this, arguments)
+          ap.pop.apply(this.__values, arguments)
           this.__addEmpty()
 
         array.push = (item) ->
           this.__removeEmpty()
           this.__garbageCollectNodes()
           node.appendChild(createSectionItem(node, item)) for node in this.__nodes
-          appush.apply(this, arguments)
+          ap.push.apply(this, arguments)
           len = this.__values.length
-          result = appush.apply(this.__values, arguments)
+          result = ap.push.apply(this.__values, arguments)
           bindProp(item, len)
           result
 
         array.reverse = ->
           this.__removeEmpty()
           this.__garbageCollectNodes()
-          result = apreverse.apply(this.__values, arguments)
+          result = ap.reverse.apply(this.__values, arguments)
           for node in this.__nodes
             node.innerHTML = ''
             for item, i in this.__values
@@ -876,8 +935,8 @@ and setting a proxy for each mutable operation.
         array.shift = ->
           this.__removeEmpty()
           this.__garbageCollectNodes()
-          apshift.apply(this, arguments)
-          result = apshift.apply(this.__values, arguments)
+          ap.shift.apply(this, arguments)
+          result = ap.shift.apply(this.__values, arguments)
           for node in this.__nodes
             node.removeChild(node.children[0])
           for item, i in this.__values
@@ -888,11 +947,11 @@ and setting a proxy for each mutable operation.
         array.unshift = ->
           this.__removeEmpty()
           this.__garbageCollectNodes()
-          for item in apslice.call(arguments).reverse()
+          for item in ap.slice.call(arguments).reverse()
             for node in this.__nodes
               node.insertBefore(createSectionItem(node, item), node.children[0])
-          apunshift.apply(this, arguments)
-          result = apunshift.apply(this.__values, arguments)
+          ap.unshift.apply(this, arguments)
+          result = ap.unshift.apply(this.__values, arguments)
           for item, i in this.__values
             bindProp(item, i)
           this.__addEmpty()
@@ -901,8 +960,8 @@ and setting a proxy for each mutable operation.
         array.sort = ->
           this.__removeEmpty()
           this.__garbageCollectNodes()
-          apsort.apply(this, arguments)
-          result = apsort.apply(this.__values, arguments)
+          ap.sort.apply(this, arguments)
+          result = ap.sort.apply(this.__values, arguments)
           for node in this.__nodes
             node.innerHTML = ''
             for item, i in array
@@ -917,11 +976,11 @@ and setting a proxy for each mutable operation.
           for node in this.__nodes
             for i in [0...howMany]
               node.removeChild(node.children[index])
-            for item in apslice.call(arguments, 2)
+            for item in ap.slice.call(arguments, 2)
               node.insertBefore(createSectionItem(node, item), node.children[index])
               bindProp(item, index)
-          apsplice.apply(this, arguments)
-          apsplice.apply(this.__values, arguments)
+          ap.splice.apply(this, arguments)
+          ap.splice.apply(this.__values, arguments)
           this.__addEmpty()
 
         # Bind property

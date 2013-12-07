@@ -24,7 +24,7 @@
     if not document?
       throw new Error(&#39;:( this API is only available in a browser&#39;)
 
-    return apslice.call(document.querySelectorAll(target))
+    return ap.slice.call(document.querySelectorAll(target))
 
   # `jtmpl(template, model)`?
   if typeof target is &#39;string&#39; and
@@ -96,7 +96,7 @@
 
   # Bind recursively using data-jt attributes
   options.rootModel = model
-  # jtmpl.bind(target, model, options)</code></pre>
+  jtmpl.bind(target, model, options)</code></pre>
 <h2 id="rules">Rules</h2>
 <p>jtmpl is a processor of rules. </p>
 <p>Rules in sequences are in increasing generality order. It&#39;s just like 
@@ -117,10 +117,6 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
 <pre><code>jtmpl.preprocessingRules = [
 
   { pattern: &quot;&quot;, replaceWith: &quot;&quot; }
-
-  { pattern: &quot;&quot;, replaceWith: &quot;&quot; }
-
-  { pattern: &quot;&quot;, replaceWith: &quot;&quot; }
 ]</code></pre>
 <h3 id="compile-rules">Compile rules</h3>
 <p>Delimiters in <code>pattern</code>s are replaced with escaped options.delimiters, whitespace - stripped.</p>
@@ -133,6 +129,7 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
 
   { # class=&quot;whatever, maybe other bindings... {{booleanVar}}
     pattern: &quot;(class=\&quot;? [\\w \\. \\- \\s {{}}]*) {{ (#{ RE_IDENTIFIER }) }}$&quot;
+
     replaceWith: (pre, prop, model) -&gt;
       val = model[prop]
       [ # Emit match, and class name if booleanVar
@@ -141,21 +138,26 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
         ,
         []
       ]
+
     echoReplaceWith: (pre, prop) -&gt;
       if pre.search(&#39;{&#39;) &gt; - 1 then &quot; {{#{ prop }}}&quot; else null
+
     bindingToken: (pre, prop) -&gt; &quot;class=#{ prop }&quot;
   }
 
 
   { # onevent={{func}}
     pattern: &quot;on(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}$&quot;
+
     replaceWith: -&gt; [&#39;&#39;, []]
+
     bindingToken: (event, handler) -&gt; &quot;on#{ event }=#{ handler }&quot;
   }
 
 
   { # attr={{prop}}
     pattern: &quot;(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}$&quot;
+
     replaceWith: (attr, prop, model) -&gt;
       val = model[prop]
       # null?
@@ -167,13 +169,19 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
       # quoted value
       else
         [&quot;#{ attr }=\&quot;#{ val }\&quot;&quot;, []]
+
     bindingToken: (attr, prop) -&gt; &quot;#{ attr }=#{ prop }&quot;
   }
 
 
   { # {{^inverted_section}}
     pattern: &quot;{{ \\^ (#{ RE_IDENTIFIER }) }}$&quot;
+
     wrapper: &#39;defaultSection&#39;
+
+    lastTag: (model, section) -&gt;
+      if Array.isArray(model[section]) then section else null
+
     contents: (template, model, section, options) -&gt;
       val = model[section]
 
@@ -202,7 +210,12 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
 
   { # {{#section}}
     pattern: &quot;{{ \\# (#{ RE_IDENTIFIER }) }}$&quot;
+
+    lastTag: (model, section) -&gt;
+      if Array.isArray(model[section]) then section else null
+
     wrapper: &#39;defaultSection&#39;
+
     contents: (template, model, section, options) -&gt;
       val = model[section]
       # Sequence?
@@ -229,22 +242,29 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
         [ jtmpl(template, model),
           if not val then [[&#39;style&#39;, &#39;display:none&#39;]] else []
         ]
+
     bindingToken: (section) -&gt; &quot;##{ section }&quot;
   }
 
 
   { # {{&amp;unescaped_var}}
     pattern: &quot;{{ &amp; (#{ RE_IDENTIFIER }) }}$&quot;
+
     wrapper: &#39;defaultVar&#39;
+
     replaceWith: (prop, model) -&gt; [prop is &#39;.&#39; and model or model[prop], []]
+
     bindingToken: (prop) -&gt; prop
   }
 
 
   { # {{var}}
     pattern: &quot;{{ (#{ RE_IDENTIFIER }) }}$&quot;
+
     wrapper: &#39;defaultVar&#39;
+
     replaceWith: (prop, model) -&gt; [escapeHTML(prop is &#39;.&#39; and model or model[prop]), []]
+
     bindingToken: (prop) -&gt; prop
   }
 
@@ -257,7 +277,10 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
 <pre><code>jtmpl.bindRules = [
 
   { # value/checked/selected=var
-    pattern: &quot;(value | checked | selected) = (#{ RE_IDENTIFIER })&quot;,
+    pattern: &quot;(value | checked | selected) = (#{ RE_IDENTIFIER })&quot;
+
+    bindTo: (attr, prop) -&gt; prop,
+
     react: (node, attr, prop, model) -&gt;
       # attach DOM reactor
 
@@ -295,7 +318,8 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
 
 
   { # onevent=var
-    pattern: &quot;on(#{ RE_IDENTIFIER }) = (#{ RE_IDENTIFIER })&quot;,
+    pattern: &quot;on(#{ RE_IDENTIFIER }) = (#{ RE_IDENTIFIER })&quot;
+
     react: (node, evnt, listener, model, options) -&gt;
       handler = options?.rootModel?[listener] or model[listener]
       if typeof handler is &#39;function&#39;
@@ -309,40 +333,53 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
 
 
   { # class=var
-    pattern: &quot;class = (#{ RE_IDENTIFIER })&quot;,
+    pattern: &quot;class = (#{ RE_IDENTIFIER })&quot;
+
+    bindTo: (prop) -&gt; prop
+
     react: (node, prop, model) -&gt;
       (val) -&gt; (val and addClass or removeClass)(node, prop)
   }
 
 
   { # attr=var
-    pattern: &quot;(#{ RE_IDENTIFIER }) = #{ RE_IDENTIFIER }&quot;,
+    pattern: &quot;(#{ RE_IDENTIFIER }) = #{ RE_IDENTIFIER }&quot;
+
+    bindTo: (attr, prop) -&gt; prop
+
     react: (node, attr) -&gt;
       (val) -&gt; if node[attr] isnt val then node[attr] = val
   }
 
 
   { # section
-    pattern: &quot;(# | \\^) (#{ RE_IDENTIFIER })&quot;,
+    pattern: &quot;(# | \\^) (#{ RE_IDENTIFIER })&quot;
 
-    # do not process children recursively during binding phase
-    recurse: false,
+    bindTo: (sectionType, prop) -&gt; prop
+
+    # context for recursion
+    recurseContext: (sectionType, attr, model) -&gt;
+      val = model[attr]
+      if Array.isArray(val)
+        console.log(&#39;no recurseContext&#39;)
+        null
+      else if typeof val is &#39;object&#39;
+        console.log(&#39;recurseContext: &#39; + attr)
+        val
+      else
+        console.log(&#39;recurseContext: model&#39;)
+        model
 
     react: (node, sectionType, attr, model, options) -&gt;
       val = model[attr]
 
+      console.log(&quot;react sectionType=#{ sectionType } attr=#{ attr } val=#{ val }&quot;)
+
       if Array.isArray(val) and sectionType is &#39;#&#39;
+        console.log(&#39;binding collection items&#39;)
         # bind collection items to node children
         for child, i in node.children
           jtmpl.bind(child, val[i], options)
-
-      else if typeof val is &#39;object&#39;
-        # bind context
-        jtmpl.bind(node, val, options)
-
-      # else
-        # if section
-        # jtmpl.bind(node, model, options)
 
       # Return reactor function
       (val) -&gt;
@@ -352,7 +389,11 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
 
           node.innerHTML =
             if not val.length
-              jtmpl(node.getAttribute(&#39;data-jt-0&#39;) or &#39;&#39;, {})
+              jtmpl(
+                multiReplace(node.getAttribute(&#39;data-jt-0&#39;) or &#39;&#39;,
+                  options.compiledDelimiters, options.delimiters),
+                {}
+              )
             else 
               &#39;&#39;
 
@@ -360,18 +401,24 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
 
         # local context?
         else if typeof val is &#39;object&#39;
-          node.innerHTML = jtmpl(node.getAttribute(&#39;data-jt-1&#39;) or &#39;&#39;, val)
+          node.innerHTML = jtmpl(
+            multiReplace(node.getAttribute(&#39;data-jt-1&#39;) or &#39;&#39;,
+                options.compiledDelimiters, options.delimiters),
+            val
+          )
           jtmpl(node, node.innerHTML, val, { rootModel: model })
 
         # if section
         else
-          node.style.display = (!!val is (sectionType is &#39;^&#39;)) and &#39;none&#39; or &#39;&#39;
-
+          node.style.display = (!val isnt (sectionType is &#39;^&#39;)) and &#39;none&#39; or &#39;&#39;
   }
 
 
   { # var
-    pattern: &quot;#{ RE_IDENTIFIER }&quot;,
+    pattern: &quot;(#{ RE_IDENTIFIER })&quot;
+
+    bindTo: (prop) -&gt; prop
+
     react: (node) -&gt;
       (val) -&gt; node.innerHTML = val
   }
@@ -493,7 +540,7 @@ Boolean asArrayItem</p>
               )
               lastSectionHTagPos = htagPos
 
-            lastSectionTag = section
+            lastSectionTag = rule.lastTag?(model, section) or null
 
 
         # Match was found, skip other rules
@@ -563,44 +610,39 @@ followed by end of string, or -1, if no such exists</p>
 <p>Walk DOM and setup reactors on model and nodes.</p>
 <pre><code>jtmpl.bind = (root, model, options) -&gt;
 
-  # Returns true, if recursion should continue
-  bindNode = (node) -&gt;
-    if attr = node.getAttribute(&#39;data-jt&#39;)
-      # iterate node bindings
-      for jt in attr.trim().split(&#39; &#39;)
-        # iterate binding rules
-        for rule in jtmpl.bindRules
-          # matching rule?
-          if match = regexp(rule.pattern).exec(jt)
-
-            propChange(model, rule.attr,
-              rule.react([node].concat(match.slice(1), [model, options])...)
-            )
-            # Missing rule.recurse attribute means continue recursion
-            return rule.recurse? and rule.recurse or true
-
-      # If no data-jt attribute, continue recursion
-      return true
-
-  bindNode(root)
-
   for node in root.children
 
-      if bindNode(node)
-        jtmpl.bind(node, model, options)
+    if data_jt = node.getAttribute(&#39;data-jt&#39;)
 
-  # return node
-  node</code></pre>
+      for jt in data_jt.trim().split(&#39; &#39;)
+
+        for rule in jtmpl.bindRules
+
+          if match = regexp(rule.pattern).exec(jt)
+
+            console.log(match[0])
+            # console.log(model)
+
+            reactor = rule.react([node].concat(match.slice(1), [model, options])...)
+            prop = rule.bindTo?(match.slice(1)...)
+            # console.log(prop)
+            # console.log(reactor)
+            propChange(model, prop, reactor)
+
+            recurseContext = rule.recurseContext?(match.slice(1).concat([model])...)
+            if recurseContext isnt null
+              console.log(&#39;recurse&#39;)
+              jtmpl.bind(node, recurseContext or model, options)
+
+            break
+
+    else
+      # No data-jt attribute, bind recursively
+      console.log(&#39;recurse&#39;)
+      jtmpl.bind(node, model, options)</code></pre>
 <h2 id="supporting-code">Supporting code</h2>
-<h3 id="array-shortcuts">Array shortcuts</h3>
-<pre><code>ap = Array.prototype
-apslice = ap.slice
-appop = ap.pop
-appush = ap.push
-apreverse = ap.reverse
-apshift = ap.shift
-apunshift = ap.unshift
-apsort = ap.sort</code></pre>
+<h3 id="useful-shortcut">Useful shortcut</h3>
+<pre><code>ap = Array.prototype</code></pre>
 <h3 id="regular-expression-utilities">Regular expression utilities</h3>
 <p>String escapeRE(String s)</p>
 <p>Escape regular expression characters</p>
@@ -638,10 +680,24 @@ apsort = ap.sort</code></pre>
 <p>DOMElement createSectionItem (DOMElement parent, AnyType context)</p>
 <pre><code>jtmpl.createSectionItem = createSectionItem = (parent, context) -&gt;
   element = document.createElement(&#39;body&#39;)
-  element.innerHTML = jtmpl(parent.getAttribute(&#39;data-jt-1&#39;) or &#39;&#39;, context)
+  element.innerHTML = jtmpl(
+    multiReplace(node.getAttribute(&#39;data-jt-1&#39;) or &#39;&#39;,
+      options.compiledDelimiters, options.delimiters),
+    context
+  )
   element = element.children[0]
   jtmpl(element, element.innerHTML, context, { rootModel: model })
-  element</code></pre>
+  element
+
+jtmpl.hasClass = hasClass = (el, name) -&gt; new RegExp(&quot;(\\s|^)#{ name }(\\s|$)&quot;).test(el.className)
+
+jtmpl.addClass = addClass = (el, name) -&gt; 
+  if not hasClass(el, name) then el.className += (el.className and &#39; &#39; or &#39;&#39;) + name
+
+jtmpl.removeClass = removeClass = (el, name) -&gt;
+  if hasClass(el, name) then el.className = el.className
+    .replace(new RegExp(&quot;(\\s|^)#{name}(\\s|$)&quot;), &#39;&#39;)
+    .replace(/^\s+|\s+$/g, &#39;&#39;)</code></pre>
 <h3 id="binding-utilities">Binding utilities</h3>
 <p>void propChange(Object obj, String prop, Function callback)</p>
 <p>Register a callback to handle object property change. </p>
@@ -682,7 +738,12 @@ and setting a proxy for each mutable operation.
       if not this.length then node.innerHTML = &#39;&#39;
 
     array.__addEmpty = -&gt;
-      if not this.length then node.innerHTML = jtmpl(node.getAttribute(&#39;data-jt-0&#39;) or &#39;&#39;, {})
+      if not this.length
+        node.innerHTML = jtmpl(
+          multiReplace(node.getAttribute(&#39;data-jt-0&#39;) or &#39;&#39;,
+            options.compiledDelimiters, options.delimiters),
+          {}
+        )
 
     # Mutable array operations
 
@@ -690,24 +751,24 @@ and setting a proxy for each mutable operation.
       this.__removeEmpty()
       this.__garbageCollectNodes()
       node.removeChild(node.children[node.children.length - 1]) for node in this.__nodes
-      appop.apply(this, arguments)
-      appop.apply(this.__values, arguments)
+      ap.pop.apply(this, arguments)
+      ap.pop.apply(this.__values, arguments)
       this.__addEmpty()
 
     array.push = (item) -&gt;
       this.__removeEmpty()
       this.__garbageCollectNodes()
       node.appendChild(createSectionItem(node, item)) for node in this.__nodes
-      appush.apply(this, arguments)
+      ap.push.apply(this, arguments)
       len = this.__values.length
-      result = appush.apply(this.__values, arguments)
+      result = ap.push.apply(this.__values, arguments)
       bindProp(item, len)
       result
 
     array.reverse = -&gt;
       this.__removeEmpty()
       this.__garbageCollectNodes()
-      result = apreverse.apply(this.__values, arguments)
+      result = ap.reverse.apply(this.__values, arguments)
       for node in this.__nodes
         node.innerHTML = &#39;&#39;
         for item, i in this.__values
@@ -719,8 +780,8 @@ and setting a proxy for each mutable operation.
     array.shift = -&gt;
       this.__removeEmpty()
       this.__garbageCollectNodes()
-      apshift.apply(this, arguments)
-      result = apshift.apply(this.__values, arguments)
+      ap.shift.apply(this, arguments)
+      result = ap.shift.apply(this.__values, arguments)
       for node in this.__nodes
         node.removeChild(node.children[0])
       for item, i in this.__values
@@ -731,11 +792,11 @@ and setting a proxy for each mutable operation.
     array.unshift = -&gt;
       this.__removeEmpty()
       this.__garbageCollectNodes()
-      for item in apslice.call(arguments).reverse()
+      for item in ap.slice.call(arguments).reverse()
         for node in this.__nodes
           node.insertBefore(createSectionItem(node, item), node.children[0])
-      apunshift.apply(this, arguments)
-      result = apunshift.apply(this.__values, arguments)
+      ap.unshift.apply(this, arguments)
+      result = ap.unshift.apply(this.__values, arguments)
       for item, i in this.__values
         bindProp(item, i)
       this.__addEmpty()
@@ -744,8 +805,8 @@ and setting a proxy for each mutable operation.
     array.sort = -&gt;
       this.__removeEmpty()
       this.__garbageCollectNodes()
-      apsort.apply(this, arguments)
-      result = apsort.apply(this.__values, arguments)
+      ap.sort.apply(this, arguments)
+      result = ap.sort.apply(this.__values, arguments)
       for node in this.__nodes
         node.innerHTML = &#39;&#39;
         for item, i in array
@@ -760,11 +821,11 @@ and setting a proxy for each mutable operation.
       for node in this.__nodes
         for i in [0...howMany]
           node.removeChild(node.children[index])
-        for item in apslice.call(arguments, 2)
+        for item in ap.slice.call(arguments, 2)
           node.insertBefore(createSectionItem(node, item), node.children[index])
           bindProp(item, index)
-      apsplice.apply(this, arguments)
-      apsplice.apply(this.__values, arguments)
+      ap.splice.apply(this, arguments)
+      ap.splice.apply(this.__values, arguments)
       this.__addEmpty()
 
     # Bind property

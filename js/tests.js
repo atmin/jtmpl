@@ -97,7 +97,6 @@
 
   test('bind', function() {
     var collectionDOMText;
-    return;
     collectionDOMText = function() {
       var node;
       return "" + ((function() {
@@ -113,6 +112,7 @@
     };
     model.collection[0].inner[0] = 42;
     equal(jtmpl('ul li ul li')[0].innerHTML, '42', 'nested section item innerHTML');
+    return;
     equal(jtmpl('ul')[0].children.length, model.collection.length, 'collection.length equals li.length');
     model.field = 'qunit';
     equal(jtmpl('p')[3].innerHTML, '<code>model.field</code> = "<span data-jt="field">qunit</span>"', 'positive if section');

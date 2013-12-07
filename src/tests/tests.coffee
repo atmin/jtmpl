@@ -93,7 +93,6 @@ test 'compile', ->
 
 
 test 'bind', ->
-	return
 	collectionDOMText = -> 
 		"#{ parseInt(node.innerHTML) for node in jtmpl('ul li ul')[0].children }"
 
@@ -101,6 +100,8 @@ test 'bind', ->
 	equal jtmpl('ul li ul li')[0].innerHTML, 
 		'42',
 		'nested section item innerHTML'
+
+	return
 
 	equal jtmpl('ul')[0].children.length, 
 		model.collection.length,
