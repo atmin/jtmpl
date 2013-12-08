@@ -101,8 +101,6 @@ test 'bind', ->
 		'42',
 		'nested section item innerHTML'
 
-	return
-
 	equal jtmpl('ul')[0].children.length, 
 		model.collection.length,
 		'collection.length equals li.length'

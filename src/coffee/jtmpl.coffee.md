@@ -60,10 +60,20 @@ Target NodeJS and browser
       options = options or {}
 
       # string-separated opening and closing delimiter
-      options.delimiters = (options.delimiters or '{{ }}').split(' ')
+      options.delimiters = (
+        if Array.isArray(options.delimiters)
+          options.delimiters.join(' ')
+        else
+          options.delimiters or '{{ }}'
+      ).split(' ')
       # delimiters are changed in the generated HTML comment-enclosed section prototype
       # to avoid double-parsing
-      options.compiledDelimiters = (options.compiledDelimiters or '#{ }#').split(' ')
+      options.compiledDelimiters = (
+        if Array.isArray(options.compiledDelimiters)
+          options.compiledDelimiters.join(' ')
+        else
+          options.compiledDelimiters or  '#{ }#'
+      ).split(' ')
 
       # sections not enclosed in HTML tag are automatically enclosed
       options.defaultSection = options.defaultSectionTag or 'div'
@@ -105,7 +115,7 @@ Target NodeJS and browser
       target.innerHTML = html
 
       # Bind recursively using data-jt attributes
-      options.rootModel = model
+      options.rootModel ?= model
       jtmpl.bind(target, model, options)
 
 
@@ -343,14 +353,10 @@ Function void (AnyType val) `react`
         react: (node, attr, prop, model) ->
           # attach DOM reactor
 
-          # first select option?
-          if node.nodeName is 'OPTION' and node.parentNode.querySelector('option') is node
+          # select option?
+          if node.nodeName is 'OPTION'
             node.parentNode.addEventListener('change', ->
-              idx = 0
-              for option in node.parentNode.children
-                if option.nodeName is 'OPTION'
-                  model[prop] = option.selected
-                  idx++
+              if model[prop] isnt node.selected then model[prop] = node.selected
             )
 
           # radio group?
@@ -402,7 +408,7 @@ Function void (AnyType val) `react`
 
 
       { # attr=var
-        pattern: "(#{ RE_IDENTIFIER }) = #{ RE_IDENTIFIER }"
+        pattern: "(#{ RE_IDENTIFIER }) = (#{ RE_IDENTIFIER })"
 
         bindTo: (attr, prop) -> prop
 
@@ -435,16 +441,18 @@ Function void (AnyType val) `react`
           console.log("react sectionType=#{ sectionType } attr=#{ attr } val=#{ val }")
 
           if Array.isArray(val) and sectionType is '#'
-            console.log('binding collection items')
+            jtmpl.bindArrayToNodeChildren(val, node, options)
             # bind collection items to node children
             for child, i in node.children
-              jtmpl.bind(child, val[i], options)
+              if typeof val[i] is 'object'
+                console.log('binding val[' + i + ']')
+                jtmpl.bind(child, val[i], options)
 
           # Return reactor function
           (val) ->
             # collection?
             if Array.isArray(val)
-              jtmpl.bindArrayToNodeChildren(val, node)
+              jtmpl.bindArrayToNodeChildren(val, node, options)
 
               node.innerHTML =
                 if not val.length
@@ -456,7 +464,7 @@ Function void (AnyType val) `react`
                 else 
                   ''
 
-              node.appendChild(jtmpl.createSectionItem(node, item)) for item in val
+              node.appendChild(jtmpl.createSectionItem(node, item, options)) for item in val
 
             # local context?
             else if typeof val is 'object'
@@ -704,38 +712,32 @@ void `bind` (DOMElement root, AnyType model)
 Walk DOM and setup reactors on model and nodes.
 
 
-    jtmpl.bind = (root, model, options) ->
+    jtmpl.bind = (node, model, options) ->
 
-      for node in root.children
+      if data_jt = node.getAttribute('data-jt')
 
-        if data_jt = node.getAttribute('data-jt')
+        for jt in data_jt.trim().split(' ')
 
-          for jt in data_jt.trim().split(' ')
+          for rule in jtmpl.bindRules
 
-            for rule in jtmpl.bindRules
+            if match = regexp(rule.pattern).exec(jt)
 
-              if match = regexp(rule.pattern).exec(jt)
+              console.log(match[0])
+              # console.log(model)
 
-                console.log(match[0])
-                # console.log(model)
+              reactor = rule.react([node].concat(match.slice(1), [model, options])...)
+              prop = rule.bindTo?(match.slice(1)...)
+              # console.log(prop)
+              # console.log(reactor)
+              propChange(model, prop, reactor)
 
-                reactor = rule.react([node].concat(match.slice(1), [model, options])...)
-                prop = rule.bindTo?(match.slice(1)...)
-                # console.log(prop)
-                # console.log(reactor)
-                propChange(model, prop, reactor)
+              recurseContext = rule.recurseContext?(match.slice(1).concat([model])...)
 
-                recurseContext = rule.recurseContext?(match.slice(1).concat([model])...)
-                if recurseContext isnt null
-                  console.log('recurse')
-                  jtmpl.bind(node, recurseContext or model, options)
+              break
 
-                break
-
-        else
-          # No data-jt attribute, bind recursively
-          console.log('recurse')
-          jtmpl.bind(node, model, options)
+      if recurseContext isnt null
+        for child in node.children
+          jtmpl.bind(child, recurseContext or model, options)
 
 
 
@@ -817,15 +819,16 @@ Replace `from` literal strings with `to` strings in template
 
 DOMElement createSectionItem (DOMElement parent, AnyType context)
 
-    jtmpl.createSectionItem = createSectionItem = (parent, context) ->
+    jtmpl.createSectionItem = createSectionItem = (parent, context, options) ->
       element = document.createElement('body')
       element.innerHTML = jtmpl(
-        multiReplace(node.getAttribute('data-jt-1') or '',
+        multiReplace(parent.getAttribute('data-jt-1') or '',
           options.compiledDelimiters, options.delimiters),
         context
       )
       element = element.children[0]
-      jtmpl(element, element.innerHTML, context, { rootModel: model })
+      if typeof context is 'object'
+        jtmpl(element, element.innerHTML, context, options)
       element
 
     jtmpl.hasClass = hasClass = (el, name) -> new RegExp("(\\s|^)#{ name }(\\s|$)").test(el.className)
@@ -877,7 +880,7 @@ and setting a proxy for each mutable operation.
 `createSectionItem` is used for creating new items.
 
 
-    jtmpl.bindArrayToNodeChildren = bindArrayToNodeChildren = (array, node) ->
+    jtmpl.bindArrayToNodeChildren = bindArrayToNodeChildren = (array, node, options) ->
 
       # array already augmented?
       if not array.__garbageCollectNodes
@@ -913,7 +916,7 @@ and setting a proxy for each mutable operation.
         array.push = (item) ->
           this.__removeEmpty()
           this.__garbageCollectNodes()
-          node.appendChild(createSectionItem(node, item)) for node in this.__nodes
+          node.appendChild(createSectionItem(node, item, options)) for node in this.__nodes
           ap.push.apply(this, arguments)
           len = this.__values.length
           result = ap.push.apply(this.__values, arguments)
@@ -927,7 +930,7 @@ and setting a proxy for each mutable operation.
           for node in this.__nodes
             node.innerHTML = ''
             for item, i in this.__values
-              node.appendChild(createSectionItem(node, item))
+              node.appendChild(createSectionItem(node, item, options))
               bindProp(item, i)
           this.__addEmpty()
           result
@@ -949,7 +952,7 @@ and setting a proxy for each mutable operation.
           this.__garbageCollectNodes()
           for item in ap.slice.call(arguments).reverse()
             for node in this.__nodes
-              node.insertBefore(createSectionItem(node, item), node.children[0])
+              node.insertBefore(createSectionItem(node, item, options), node.children[0])
           ap.unshift.apply(this, arguments)
           result = ap.unshift.apply(this.__values, arguments)
           for item, i in this.__values
@@ -965,7 +968,7 @@ and setting a proxy for each mutable operation.
           for node in this.__nodes
             node.innerHTML = ''
             for item, i in array
-              node.appendChild(createSectionItem(node, item)) for node in this.__nodes
+              node.appendChild(createSectionItem(node, item, options)) for node in this.__nodes
               bindProp(item, i)
           this.__addEmpty()
           result
@@ -977,7 +980,7 @@ and setting a proxy for each mutable operation.
             for i in [0...howMany]
               node.removeChild(node.children[index])
             for item in ap.slice.call(arguments, 2)
-              node.insertBefore(createSectionItem(node, item), node.children[index])
+              node.insertBefore(createSectionItem(node, item, options), node.children[index])
               bindProp(item, index)
           ap.splice.apply(this, arguments)
           ap.splice.apply(this.__values, arguments)
@@ -991,7 +994,7 @@ and setting a proxy for each mutable operation.
             set: (val) -> 
               this.__garbageCollectNodes()
               this.__values[i] = val
-              node.replaceChild(createSectionItem(node, val), node.children[i]) for node in this.__nodes
+              node.replaceChild(createSectionItem(node, val, options), node.children[i]) for node in this.__nodes
           )
 
         # bound nodes

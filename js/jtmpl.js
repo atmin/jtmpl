@@ -24,8 +24,8 @@
       template = document.getElementById(template.substring(1)).innerHTML;
     }
     options = options || {};
-    options.delimiters = (options.delimiters || '{{ }}').split(' ');
-    options.compiledDelimiters = (options.compiledDelimiters || '#{ }#').split(' ');
+    options.delimiters = (Array.isArray(options.delimiters) ? options.delimiters.join(' ') : options.delimiters || '{{ }}').split(' ');
+    options.compiledDelimiters = (Array.isArray(options.compiledDelimiters) ? options.compiledDelimiters.join(' ') : options.compiledDelimiters || '#{ }#').split(' ');
     options.defaultSection = options.defaultSectionTag || 'div';
     options.defaultSectionItem = options.defaultSectionItem || 'div';
     options.defaultVar = options.defaultVar || 'span';
@@ -42,7 +42,9 @@
       target = newTarget;
     }
     target.innerHTML = html;
-    options.rootModel = model;
+    if (options.rootModel == null) {
+      options.rootModel = model;
+    }
     return jtmpl.bind(target, model, options);
   };
 
@@ -193,22 +195,11 @@
         return prop;
       },
       react: function(node, attr, prop, model) {
-        if (node.nodeName === 'OPTION' && node.parentNode.querySelector('option') === node) {
+        if (node.nodeName === 'OPTION') {
           node.parentNode.addEventListener('change', function() {
-            var idx, option, _i, _len, _ref, _results;
-            idx = 0;
-            _ref = node.parentNode.children;
-            _results = [];
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              option = _ref[_i];
-              if (option.nodeName === 'OPTION') {
-                model[prop] = option.selected;
-                _results.push(idx++);
-              } else {
-                _results.push(void 0);
-              }
+            if (model[prop] !== node.selected) {
+              return model[prop] = node.selected;
             }
-            return _results;
           });
         }
         if (node.type === 'radio' && node.name) {
@@ -264,7 +255,7 @@
         };
       }
     }, {
-      pattern: "(" + RE_IDENTIFIER + ") = " + RE_IDENTIFIER,
+      pattern: "(" + RE_IDENTIFIER + ") = (" + RE_IDENTIFIER + ")",
       bindTo: function(attr, prop) {
         return prop;
       },
@@ -299,22 +290,25 @@
         val = model[attr];
         console.log("react sectionType=" + sectionType + " attr=" + attr + " val=" + val);
         if (Array.isArray(val) && sectionType === '#') {
-          console.log('binding collection items');
+          jtmpl.bindArrayToNodeChildren(val, node, options);
           _ref = node.children;
           for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
             child = _ref[i];
-            jtmpl.bind(child, val[i], options);
+            if (typeof val[i] === 'object') {
+              console.log('binding val[' + i + ']');
+              jtmpl.bind(child, val[i], options);
+            }
           }
         }
         return function(val) {
           var item, _j, _len1, _results;
           if (Array.isArray(val)) {
-            jtmpl.bindArrayToNodeChildren(val, node);
+            jtmpl.bindArrayToNodeChildren(val, node, options);
             node.innerHTML = !val.length ? jtmpl(multiReplace(node.getAttribute('data-jt-0') || '', options.compiledDelimiters, options.delimiters), {}) : '';
             _results = [];
             for (_j = 0, _len1 = val.length; _j < _len1; _j++) {
               item = val[_j];
-              _results.push(node.appendChild(jtmpl.createSectionItem(node, item)));
+              _results.push(node.appendChild(jtmpl.createSectionItem(node, item, options)));
             }
             return _results;
           } else if (typeof val === 'object') {
@@ -453,51 +447,35 @@
     return !!contents.trim().match(regexp("^<(" + RE_IDENTIFIER + ") " + RE_SPACE + "        [^>]*? > " + RE_ANYTHING + " </\\1>$ | < [^>]*? />$"));
   };
 
-  jtmpl.bind = function(root, model, options) {
-    var data_jt, jt, match, node, prop, reactor, recurseContext, rule, _i, _len, _ref, _results;
-    _ref = root.children;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      node = _ref[_i];
-      if (data_jt = node.getAttribute('data-jt')) {
-        _results.push((function() {
-          var _j, _len1, _ref1, _results1;
-          _ref1 = data_jt.trim().split(' ');
-          _results1 = [];
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            jt = _ref1[_j];
-            _results1.push((function() {
-              var _k, _len2, _ref2, _results2;
-              _ref2 = jtmpl.bindRules;
-              _results2 = [];
-              for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-                rule = _ref2[_k];
-                if (match = regexp(rule.pattern).exec(jt)) {
-                  console.log(match[0]);
-                  reactor = rule.react.apply(rule, [node].concat(match.slice(1), [model, options]));
-                  prop = typeof rule.bindTo === "function" ? rule.bindTo.apply(rule, match.slice(1)) : void 0;
-                  propChange(model, prop, reactor);
-                  recurseContext = typeof rule.recurseContext === "function" ? rule.recurseContext.apply(rule, match.slice(1).concat([model])) : void 0;
-                  if (recurseContext !== null) {
-                    console.log('recurse');
-                    jtmpl.bind(node, recurseContext || model, options);
-                  }
-                  break;
-                } else {
-                  _results2.push(void 0);
-                }
-              }
-              return _results2;
-            })());
+  jtmpl.bind = function(node, model, options) {
+    var child, data_jt, jt, match, prop, reactor, recurseContext, rule, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _results;
+    if (data_jt = node.getAttribute('data-jt')) {
+      _ref = data_jt.trim().split(' ');
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        jt = _ref[_i];
+        _ref1 = jtmpl.bindRules;
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          rule = _ref1[_j];
+          if (match = regexp(rule.pattern).exec(jt)) {
+            console.log(match[0]);
+            reactor = rule.react.apply(rule, [node].concat(match.slice(1), [model, options]));
+            prop = typeof rule.bindTo === "function" ? rule.bindTo.apply(rule, match.slice(1)) : void 0;
+            propChange(model, prop, reactor);
+            recurseContext = typeof rule.recurseContext === "function" ? rule.recurseContext.apply(rule, match.slice(1).concat([model])) : void 0;
+            break;
           }
-          return _results1;
-        })());
-      } else {
-        console.log('recurse');
-        _results.push(jtmpl.bind(node, model, options));
+        }
       }
     }
-    return _results;
+    if (recurseContext !== null) {
+      _ref2 = node.children;
+      _results = [];
+      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+        child = _ref2[_k];
+        _results.push(jtmpl.bind(child, recurseContext || model, options));
+      }
+      return _results;
+    }
   };
 
   ap = Array.prototype;
@@ -532,14 +510,14 @@
     return template;
   };
 
-  jtmpl.createSectionItem = createSectionItem = function(parent, context) {
+  jtmpl.createSectionItem = createSectionItem = function(parent, context, options) {
     var element;
     element = document.createElement('body');
-    element.innerHTML = jtmpl(multiReplace(node.getAttribute('data-jt-1') || '', options.compiledDelimiters, options.delimiters), context);
+    element.innerHTML = jtmpl(multiReplace(parent.getAttribute('data-jt-1') || '', options.compiledDelimiters, options.delimiters), context);
     element = element.children[0];
-    jtmpl(element, element.innerHTML, context, {
-      rootModel: model
-    });
+    if (typeof context === 'object') {
+      jtmpl(element, element.innerHTML, context, options);
+    }
     return element;
   };
 
@@ -577,7 +555,7 @@
     });
   };
 
-  jtmpl.bindArrayToNodeChildren = bindArrayToNodeChildren = function(array, node) {
+  jtmpl.bindArrayToNodeChildren = bindArrayToNodeChildren = function(array, node, options) {
     var bindProp, i, item, _i, _len;
     if (!array.__garbageCollectNodes) {
       array.__garbageCollectNodes = function() {
@@ -623,7 +601,7 @@
         _ref = this.__nodes;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           node = _ref[_i];
-          node.appendChild(createSectionItem(node, item));
+          node.appendChild(createSectionItem(node, item, options));
         }
         ap.push.apply(this, arguments);
         len = this.__values.length;
@@ -643,7 +621,7 @@
           _ref1 = this.__values;
           for (i = _j = 0, _len1 = _ref1.length; _j < _len1; i = ++_j) {
             item = _ref1[i];
-            node.appendChild(createSectionItem(node, item));
+            node.appendChild(createSectionItem(node, item, options));
             bindProp(item, i);
           }
         }
@@ -679,7 +657,7 @@
           _ref1 = this.__nodes;
           for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
             node = _ref1[_j];
-            node.insertBefore(createSectionItem(node, item), node.children[0]);
+            node.insertBefore(createSectionItem(node, item, options), node.children[0]);
           }
         }
         ap.unshift.apply(this, arguments);
@@ -707,7 +685,7 @@
             _ref1 = this.__nodes;
             for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
               node = _ref1[_k];
-              node.appendChild(createSectionItem(node, item));
+              node.appendChild(createSectionItem(node, item, options));
             }
             bindProp(item, i);
           }
@@ -728,7 +706,7 @@
           _ref1 = ap.slice.call(arguments, 2);
           for (_k = 0, _len1 = _ref1.length; _k < _len1; _k++) {
             item = _ref1[_k];
-            node.insertBefore(createSectionItem(node, item), node.children[index]);
+            node.insertBefore(createSectionItem(node, item, options), node.children[index]);
             bindProp(item, index);
           }
         }
@@ -750,7 +728,7 @@
             _results = [];
             for (_i = 0, _len = _ref.length; _i < _len; _i++) {
               node = _ref[_i];
-              _results.push(node.replaceChild(createSectionItem(node, val), node.children[i]));
+              _results.push(node.replaceChild(createSectionItem(node, val, options), node.children[i]));
             }
             return _results;
           }
