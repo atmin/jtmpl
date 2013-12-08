@@ -326,9 +326,10 @@
       bindTo: function(prop) {
         return prop;
       },
-      react: function(node) {
+      react: function(node, prop, model, options) {
         return function(val) {
-          return node.innerHTML = val;
+          node.innerHTML = val;
+          return jtmpl.bind(node, model, options);
         };
       }
     }

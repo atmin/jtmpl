@@ -486,8 +486,10 @@ Function void (AnyType val) `react`
 
         bindTo: (prop) -> prop
 
-        react: (node) ->
-          (val) -> node.innerHTML = val
+        react: (node, prop, model, options) ->
+          (val) -> 
+            node.innerHTML = val
+            jtmpl.bind(node, model, options)
       }
 
     ]
