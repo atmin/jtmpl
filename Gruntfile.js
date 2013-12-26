@@ -108,6 +108,8 @@ module.exports = function(grunt) {
     copy: {
       main: { 
         files: [
+          {src: 'CNAME', dest: '<%= pkg.buildDir %>/CNAME'},
+          {src: 'favicon.ico', dest: '<%= pkg.buildDir %>/favicon.ico'},
           {src: 'hello.html', dest: '<%= pkg.buildDir %>/hello.html'},
           {src: 'kitchensink.html', dest: '<%= pkg.buildDir %>/kitchensink.html'},
           {src: 'bower_components/qunit/qunit/qunit.js', dest: '<%= pkg.buildDir %>/js/qunit.js'},
