@@ -112,6 +112,7 @@ module.exports = function(grunt) {
           {src: 'favicon.ico', dest: '<%= pkg.buildDir %>/favicon.ico'},
           {src: 'hello.html', dest: '<%= pkg.buildDir %>/hello.html'},
           {src: 'kitchensink.html', dest: '<%= pkg.buildDir %>/kitchensink.html'},
+          {src: 'src/js/highlight-coffee.js', dest: '<%= pkg.buildDir %>/js/highlight-coffee.js'},
           {src: 'bower_components/qunit/qunit/qunit.js', dest: '<%= pkg.buildDir %>/js/qunit.js'},
           {src: 'bower_components/qunit/qunit/qunit.css', dest: '<%= pkg.buildDir %>/css/qunit.css'},
           {src: 'bower_components/highlightjs/highlight.pack.js', dest: '<%= pkg.buildDir %>/js/highlight.min.js'},
