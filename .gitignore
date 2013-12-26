@@ -1,4 +1,7 @@
 node_modules
 components
+bower_components
 tmp
 npm-debug.log
+gh-pages
+

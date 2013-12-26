@@ -3,15 +3,15 @@ module.exports = function(grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
 
-    concat: {
-      options: {
-        separator: '\n\n\n\n\n\n\n\n'
-      },
-      dist: {
-        src: ['js/<%= pkg.name %>.js'],
-        dest: 'js/<%= pkg.name %>.js'
-      }
-    },
+    // concat: {
+    //   options: {
+    //     separator: '\n\n\n\n\n\n\n\n'
+    //   },
+    //   dist: {
+    //     src: ['js/<%= pkg.name %>.js'],
+    //     dest: 'js/<%= pkg.name %>.js'
+    //   }
+    // },
 
     uglify: {
       options: {
@@ -19,17 +19,17 @@ module.exports = function(grunt) {
       },
       dist: {
         files: {
-          'js/<%= pkg.name %>.min.js': ['<%= concat.dist.dest %>']
+          '<%= pkg.buildDir %>/js/<%= pkg.name %>.min.js': ['<%= pkg.buildDir %>/js/<%= pkg.name %>.js']
         }
       }
     },
 
     qunit: {
-      files: ['kitchensink.html']
+      files: ['<%= pkg.buildDir %>/kitchensink.html']
     },
 
     jshint: {
-      files: ['gruntfile.js', 'src/js/**/*.js'],
+      files: ['Gruntfile.js', '<%= pkg.buildDir %>/js/**/*.js'],
       options: {
         // options here to override JSHint defaults
         globals: {
@@ -44,8 +44,8 @@ module.exports = function(grunt) {
     coffee: {
       compile: {
         files: {
-          'js/jtmpl.js': ['src/coffee/*.coffee'],
-          'js/tests.js': ['src/tests/*.coffee']
+          '<%= pkg.buildDir %>/js/jtmpl.js': ['src/coffee/*.coffee.md'],
+          '<%= pkg.buildDir %>/js/tests.js': ['src/tests/*.coffee']
         }
       }
     },    
@@ -53,14 +53,14 @@ module.exports = function(grunt) {
     less: {
       css: {
         src: ['src/less/*.less'],
-        dest: 'css/styles.css',
+        dest: '<%= pkg.buildDir %>/css/styles.css',
       }
     },
 
     sass: {
       dist: {
         files: {
-          'css/styles.css' : 'src/sass/style.scss'
+          '<%= pkg.buildDir %>/css/styles.css' : 'src/sass/style.scss'
         }
       }
     },
@@ -71,7 +71,7 @@ module.exports = function(grunt) {
         tasks: ['jshint', 'concat', 'uglify', 'copy:tests']
       },
       coffee: {
-        files: ['src/coffee/*.coffee', 'src/tests/*.coffee'],
+        files: ['src/coffee/*.coffee', 'src/coffee/*.litcoffee', 'src/coffee/*.coffee.md', 'src/tests/*.litcoffee', 'src/tests/*.coffee.md', 'src/tests/*.coffee'],
         tasks: ['coffee', 'concat', 'uglify']
       },
       less: {
@@ -82,16 +82,16 @@ module.exports = function(grunt) {
         files: ['src/sass/*.scss'],
         tasks: ['sass']
       },
-      readme: {
-        files: ['README.md'],
-        tasks: ['copy', 'dotlit', 'md2html', 'clean'],
+      markdown: {
+        files: ['*.md', 'src/coffee/jtmpl.coffee.md'],
+        tasks: ['md2html'],
         options: {
           nospawn: true
         }
       },
       templates: {
         files: ['src/templates/*'],
-        tasks: ['copy', 'dotlit', 'md2html', 'clean']
+        tasks: ['md2html']
       }
     },
 
@@ -100,7 +100,7 @@ module.exports = function(grunt) {
         options: {
           port: 8000,
           hostname: '0.0.0.0',
-          base: './',
+          base: '<%= pkg.buildDir %>/',
         }
       }
     },
@@ -108,36 +108,40 @@ module.exports = function(grunt) {
     copy: {
       main: { 
         files: [
-          {src: 'README.md', dest: 'dot.lit.md'},
-          {src: 'components/qunit/qunit/qunit.js', dest: 'js/qunit.js'},
-          {src: 'components/qunit/qunit/qunit.css', dest: 'css/qunit.css'},
-          {src: 'components/highlightjs/highlight.pack.js', dest: 'js/highlight.min.js'},
-          {src: 'components/highlightjs/styles/solarized_dark.css', dest: 'css/highlight.css'}
+          {src: 'CNAME', dest: '<%= pkg.buildDir %>/CNAME'},
+          {src: 'favicon.ico', dest: '<%= pkg.buildDir %>/favicon.ico'},
+          {src: 'hello.html', dest: '<%= pkg.buildDir %>/hello.html'},
+          {src: 'kitchensink.html', dest: '<%= pkg.buildDir %>/kitchensink.html'},
+          {src: 'src/js/highlight-coffee.js', dest: '<%= pkg.buildDir %>/js/highlight-coffee.js'},
+          {src: 'bower_components/qunit/qunit/qunit.js', dest: '<%= pkg.buildDir %>/js/qunit.js'},
+          {src: 'bower_components/qunit/qunit/qunit.css', dest: '<%= pkg.buildDir %>/css/qunit.css'},
+          {src: 'bower_components/highlightjs/highlight.pack.js', dest: '<%= pkg.buildDir %>/js/highlight.min.js'},
+          {src: 'bower_components/highlightjs/styles/solarized_dark.css', dest: '<%= pkg.buildDir %>/css/highlight.css'}
         ]
       }
     },
 
-    dotlit: {
-      options: {
-        verbose: true,
-        extractFiles: ['*']
-      },
-      files: ['dot.lit.md']
-    },
-
     md2html: {
-      readme: {
+      multiple_files: {
         options: {
           layout: 'src/templates/layout.html'
         },
         files: [{
-          src: ['README.md'],
-          dest: 'README.html'
+          expand: true,
+          cwd: './',
+          src: ['*.md', 'src/**/*.md'],
+          dest: 'gh-pages',
+          ext: '.html'
         }]
       }
     },
 
-    clean: ['jtmpl', 'dot', 'dot.lit.md']    
+    'gh-pages': {
+      options: {
+        base: 'gh-pages'
+      },
+      src: ['**']
+    }
 
   });
 
@@ -154,7 +158,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-clean');
   grunt.loadNpmTasks('grunt-contrib-less');
   grunt.loadNpmTasks('grunt-css');
+  grunt.loadNpmTasks('grunt-gh-pages');
 
-  grunt.registerTask('default', ['coffee', 'less', 'concat', 'uglify', 'copy', 'dotlit', 'md2html', 'clean', 'connect', 'watch']);
-
+  grunt.registerTask('default', ['coffee', 'less', 'uglify', 'copy', 'md2html', 'connect', 'watch']);
+  grunt.registerTask('build', ['coffee', 'less', 'uglify', 'copy', 'md2html']);
+  grunt.registerTask('publish', ['build', 'gh-pages']);
 };

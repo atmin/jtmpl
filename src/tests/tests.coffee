@@ -4,19 +4,19 @@ test 'compile', ->
 		'var'
 
 	equal jtmpl('{{#a}}{{.}}{{/a}}', { a: [1, 2]}), 
-		'<div data-jt="#a"><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span></div>', 
+		'<div data-jt="#a" data-jt-1="#{.}#"><span data-jt=".">1</span><span data-jt=".">2</span></div>', 
 		'numeric array'
 
 	equal jtmpl('{{#a}}{{.}}{{/a}}', { a: []}), 
-		'<div data-jt="#a"><!-- # <<<.>>> --></div>', 
+		'<div data-jt="#a" data-jt-1="#{.}#"></div>', 
 		'empty array'
 
 	equal jtmpl('{{#a}}{{z}}{{/a}}', { a: [{z:1}]}),
-		'<div data-jt="#a"><!-- # <<<z>>> --><span data-jt="z .">1</span></div>',
+		'<div data-jt="#a" data-jt-1="#{z}#"><span data-jt="z">1</span></div>',
 		'object array'
 
 	equal jtmpl('{{^a}}{{z}}{{/a}}', { a: [{z:1}]}), 
-		'<div data-jt="^a"><!-- ^ <<<z>>> --></div>', 
+		'<div data-jt="^a" data-jt-0="#{z}#"></div>', 
 		'object array false'
 
 	equal jtmpl('{{#a}}1{{/a}}', { a: true }),
@@ -32,7 +32,7 @@ test 'compile', ->
 		'positive condition false'
 
 	equal jtmpl('{{^a}}1{{/a}}', { a: false }),
-		'<div data-jt=\"^a\">1</div>',
+		'<div data-jt="^a">1</div>',
 		'negative condition false'
 
 	equal jtmpl('<p>{{a}}</p>', { a: 1}),
@@ -49,13 +49,23 @@ test 'compile', ->
 
 	equal jtmpl('<div>{{#outer}}<div>{{#inner}}{{.}}{{/inner}}</div>{{/outer}}</div>', 
 			{ outer: [{ inner: [1, 2, 3] }, { inner: [1, 2] }, { inner: [1] }] }),
-		'<div data-jt="#outer"><!-- # <div><<<#inner>>><<<.>>><<</inner>>></div> --><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span></div></div>',
+		'<div data-jt="#outer" data-jt-1="&lt;div&gt;#{#inner}##{.}##{/inner}#&lt;/div&gt;"><div data-jt="#inner" data-jt-1="#{.}#"><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner" data-jt-1="#{.}#"><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner" data-jt-1="#{.}#"><span data-jt=".">1</span></div></div>',
 		'nested sections'
 
 	equal jtmpl('{{#outer}}{{#inner}}{{.}}{{/inner}}{{/outer}}', 
 			{ outer: [{ inner: [1, 2, 3] }, { inner: [1, 2] }, { inner: [1] }] }),
-		'<div data-jt="#outer"><!-- # <<<#inner>>><<<.>>><<</inner>>> --><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner ."><!-- # <<<.>>> --><span data-jt=".">1</span></div></div>',
+		'<div data-jt="#outer" data-jt-1="#{#inner}##{.}##{/inner}#"><div data-jt="#inner" data-jt-1="#{.}#"><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div><div data-jt="#inner" data-jt-1="#{.}#"><span data-jt=".">1</span><span data-jt=".">2</span></div><div data-jt="#inner" data-jt-1="#{.}#"><span data-jt=".">1</span></div></div>',
 		'nested sections no divs'
+
+	equal jtmpl('{{#collection}} {{.}} {{/collection}} {{^collection}} empty {{/collection}}', 
+			{ collection: [1] }),
+		'<div data-jt="#collection ^collection" data-jt-1="#{.}#" data-jt-0="empty"><span data-jt=".">1</span></div>',
+		'collection with empty value'
+
+	equal jtmpl('{{#collection}} {{.}} {{/collection}} {{^collection}} empty {{/collection}}', 
+			{ collection: [] }),
+		'<div data-jt="#collection ^collection" data-jt-1="#{.}#" data-jt-0="empty">empty</div>',
+		'empty collection with empty value'
 
 	equal jtmpl('<a class="some-class {{bound-class}}">', {'bound-class': true}),
 		'<a data-jt="class=bound-class" class="some-class bound-class">',
@@ -75,7 +85,7 @@ test 'compile', ->
 
 	equal jtmpl('{{#links}}<a href="{{href}}" class="{{selected}}">{{title}}</a>{{/links}}',
 		{ links: [{ href: '/', selected: true, title: 'root'}]}),
-		'<div data-jt="#links"><!-- # <a href=<<<href>>> class=<<<selected>>>><<<title>>></a> --><a data-jt="href=href class=selected ." href="/" class=selected><span data-jt="title">root</span></a></div>',
+		'<div data-jt="#links" data-jt-1="&lt;a href=#{href}# class=#{selected}#&gt;#{title}#&lt;/a&gt;"><a data-jt="href=href class=selected title" href="/" class=selected>root</a></div>',
 		'array of links with many bound attributes'
 
 
