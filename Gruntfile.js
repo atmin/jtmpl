@@ -83,15 +83,15 @@ module.exports = function(grunt) {
         tasks: ['sass']
       },
       markdown: {
-        files: ['README.md', 'src/coffee/jtmpl.coffee.md'],
-        tasks: ['copy', 'dotlit', 'md2html', 'clean'],
+        files: ['*.md', 'src/coffee/jtmpl.coffee.md'],
+        tasks: ['md2html'],
         options: {
           nospawn: true
         }
       },
       templates: {
         files: ['src/templates/*'],
-        tasks: ['copy', 'dotlit', 'md2html', 'clean']
+        tasks: ['md2html']
       }
     },
 
@@ -108,7 +108,6 @@ module.exports = function(grunt) {
     copy: {
       main: { 
         files: [
-          {src: 'README.md', dest: 'dot.lit.md'},
           {src: 'hello.html', dest: '<%= pkg.buildDir %>/hello.html'},
           {src: 'kitchensink.html', dest: '<%= pkg.buildDir %>/kitchensink.html'},
           {src: 'bower_components/qunit/qunit/qunit.js', dest: '<%= pkg.buildDir %>/js/qunit.js'},
@@ -117,14 +116,6 @@ module.exports = function(grunt) {
           {src: 'bower_components/highlightjs/styles/solarized_dark.css', dest: '<%= pkg.buildDir %>/css/highlight.css'}
         ]
       }
-    },
-
-    dotlit: {
-      options: {
-        verbose: true,
-        extractFiles: ['*']
-      },
-      files: ['dot.lit.md']
     },
 
     md2html: {
@@ -142,7 +133,12 @@ module.exports = function(grunt) {
       }
     },
 
-    clean: ['jtmpl', 'dot', 'dot.lit.md']    
+    'gh-pages': {
+      options: {
+        base: 'gh-pages'
+      },
+      src: ['**']
+    }
 
   });
 
@@ -159,7 +155,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-clean');
   grunt.loadNpmTasks('grunt-contrib-less');
   grunt.loadNpmTasks('grunt-css');
+  grunt.loadNpmTasks('grunt-gh-pages');
 
-  grunt.registerTask('default', ['coffee', 'less', 'uglify', 'copy', 'dotlit', 'md2html', 'clean', 'connect', 'watch']);
-
+  grunt.registerTask('default', ['coffee', 'less', 'uglify', 'copy', 'md2html', 'connect', 'watch']);
+  grunt.registerTask('build', ['coffee', 'less', 'uglify', 'copy', 'md2html']);
+  grunt.registerTask('publish', ['build', 'gh-pages']);
 };
