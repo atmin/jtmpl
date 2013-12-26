@@ -94,10 +94,14 @@ nav {
 
 	a, a:visited {
 		display: block;
-		margin-bottom: 0.2em;
+		margin: 0 0 0.2em 8em;
 		color: @body-color;
 		font-size: 80%;
 		border-bottom: 1px solid #f3f3f3;
+
+		-webkit-transition : border 300ms ease-out; 
+		-moz-transition : border 300ms ease-out;
+		-o-transition : border 300ms ease-out;
 
 		em {
 			font-size: 80%;
@@ -106,7 +110,13 @@ nav {
 	}
 
 	a:hover {
-		text-decoration: underline;
+		border-bottom: 1px solid #a0a0a0;
+	}
+
+	a[href^="http"]:hover:after {
+		content: "\f08e";
+		font-family: FontAwesome;
+		margin-left: 0.5em;
 	}
 
 
