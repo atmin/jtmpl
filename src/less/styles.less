@@ -47,55 +47,62 @@ footer {
 	margin:8em 0 10px;
 }
 
-.wrapper {
-	margin: 0 auto;
-	padding: 0 4%;
+
+
+nav {
+	overflow: hidden;
+
+	ul {
+		list-style: none;
+		padding: 0;
+	
+		i {
+			font-size: 500%;
+			float: left;
+			display: block;
+			width: 1.2em !important;
+			text-align: right;
+			margin: 0 0.3em 0 0;
+		}
+
+		i.icon-file-text {
+			color: @green;
+		}
+
+		i.icon-gears {
+			color: @red;
+		}
+
+		i.icon-github {
+			color: @yellow;
+		}
+
+		i.icon-download-alt {
+			color: @blue;
+		}
+	}
+
+	li {
+		float: left;
+		width: 25em;
+		margin: 3em 1em 0 0;
+	}
+
+	a, a:visited {
+		display: block;
+		margin-bottom: 0.2em;
+		color: @body-color;
+		font-size: 80%;
+		border-bottom: 1px solid #f3f3f3;
+	}
+
+	a:hover {
+		text-decoration: underline;
+	}
+
 }
 
-.text-center {
-	text-align: center;
-}
-
-.btn, .btn:visited {
-	padding: 16px 24px;
-	color: #fff;
-	margin: 1em 1em 0 0;
-	width: 100%;
-	display: inline-block;
-	border: 1px solid #DDD;
-	-webkit-border-radius: 3px;
-	-moz-border-radius: 3px;
-	border-radius: 3px;
-}
-
-.btn i {
-	margin-right: 8px;
-}
-
-.btn-readme {
-	background-color: @red;
-}
-
-.btn-kitchensink {
-	background-color: @orange;
-}
-
-.btn-github {
-	background-color: @yellow;
-}
-
-.btn-coffee {
-	background-color: @green;
-}
-
-.btn-js {
-	background-color: @violet;
-}
-
-.btn-min {
-	background-color: @blue;
-}
-
+	
 
 
 

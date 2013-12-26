@@ -1,13 +1,28 @@
 Mustache syntax *&nbsp;+&nbsp;* automatic data-binding *&nbsp;=&nbsp;* Live templates
 
 
-<div class="group">
-    <a class="btn btn-readme" href="README.html"><i class="icon-file-text"></i>README</a>
-    <a class="btn btn-kitchensink" href="kitchensink.html"><i class="icon-gears"></i>Demo</a>
-    <a class="btn btn-github" href="https://github.com/atmin/jtmpl"><i class="icon-github"></i>GitHub</a>
-</div>
-<div class="group">
-    <a class="btn btn-coffee" href="https://github.com/atmin/jtmpl/blob/dev/src/coffee/jtmpl.coffee"><i class="fa-file-text-o"></i>jtmpl.coffee</a>
-    <a class="btn btn-js" href="js/jtmpl.js"><i class="icon-download-alt"></i>jtmpl.js</a>
-	<a class="btn btn-min" href="js/jtmpl.min.js"><i class="icon-download-alt"></i>jtmpl.min.js</a>
-</div>
+<nav>
+	<ul>
+		<li>
+			<i class="icon-file-text"></i>
+			<a href="README.html">README</a>
+			<a href="manual.html">Manual</a>
+			<a href="src/coffee/jtmpl.html">Literate CoffeeScript source code</a>
+		</li>
+		<li>
+			<i class="icon-gears"></i>
+			<a href="kitchensink.html">KitchenSink demo</a>
+			<a href="http://codepen.io/atmin/full/JkmrD">TodoMVC demo</a>
+		</li>
+		<li>
+			<i class="icon-github"></i>
+			<a href="https://github.com/atmin/jtmpl">jtmpl@GitHub</a>
+			<a href="https://github.com/atmin/jtmpl/issues?state=open">Issues</a>
+		</li>
+		<li>
+			<i class="icon-download-alt"></i>
+			<a href="js/jtmpl.js">jtmpl.js</a>
+			<a href="js/jtmpl.min.js">jtmpl.min.js</a>
+		</li>
+	</ul>
+</nav>
