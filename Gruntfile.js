@@ -111,10 +111,10 @@ module.exports = function(grunt) {
           {src: 'README.md', dest: 'dot.lit.md'},
           {src: 'hello.html', dest: '<%= pkg.buildDir %>/hello.html'},
           {src: 'kitchensink.html', dest: '<%= pkg.buildDir %>/kitchensink.html'},
-          {src: 'components/qunit/qunit/qunit.js', dest: '<%= pkg.buildDir %>/js/qunit.js'},
-          {src: 'components/qunit/qunit/qunit.css', dest: '<%= pkg.buildDir %>/css/qunit.css'},
-          {src: 'components/highlightjs/highlight.pack.js', dest: '<%= pkg.buildDir %>/js/highlight.min.js'},
-          {src: 'components/highlightjs/styles/solarized_dark.css', dest: '<%= pkg.buildDir %>/css/highlight.css'}
+          {src: 'bower_components/qunit/qunit/qunit.js', dest: '<%= pkg.buildDir %>/js/qunit.js'},
+          {src: 'bower_components/qunit/qunit/qunit.css', dest: '<%= pkg.buildDir %>/css/qunit.css'},
+          {src: 'bower_components/highlightjs/highlight.pack.js', dest: '<%= pkg.buildDir %>/js/highlight.min.js'},
+          {src: 'bower_components/highlightjs/styles/solarized_dark.css', dest: '<%= pkg.buildDir %>/css/highlight.css'}
         ]
       }
     },
