@@ -1,10 +1,6 @@
-<span>{<span>&rsaquo;</span></span> [jtmpl](/) <sup>0.1.2</sup>
-===============================================================
-
-
 ### What
 
-`jtmpl` is a DOM-aware templating engine. It renders a [Mustache](http://mustache.github.io) HTML template using a `model` object and infers bindings from template structure, so when `model` changes DOM is updated accordingly and vice versa. 
+`jtmpl` is <!-- {{ aaa }} --> a DOM-aware templating engine. It renders a [Mustache](http://mustache.github.io) HTML template using a `model` object and infers bindings from template structure, so when `model` changes DOM is updated accordingly and vice versa. 
 
 There's never need to touch the DOM directly, `model` is the [single source of truth](http://en.wikipedia.org/wiki/Single_Source_of_Truth)
 
