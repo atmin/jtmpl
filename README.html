@@ -1,21 +1,23 @@
 <!doctype html>
 <html>
     <head>
-        <link rel="stylesheet" href="css/styles.css">
-        <link rel="stylesheet" href="css/highlight.css">
+        <link rel="stylesheet" href="/css/styles.css">
+        <link rel="stylesheet" href="/css/highlight.css">
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css">
+        <script src="/js/jtmpl.js"></script>
         <title>jtmpl</title>
     </head>
     <body>
         <div class="wrapper">
-          <h1 id="-span-span-jtmpl-sup-0-1-2-sup-"><span>{&gt;</span> <a href="/">jtmpl</a> <sup>0.1.2</sup></h1>
-<h3 id="what">What</h3>
+          <h1 id="-span-span-rsaquo-span-span-jtmpl-sup-0-2-0-sup-"><span>{<span>&rsaquo;</span></span> <a href="/">jtmpl</a> <sup>0.2.0</sup></h1>
+          <h3 id="what">What</h3>
 <p><code>jtmpl</code> is a DOM-aware templating engine. It renders a <a href="http://mustache.github.io">Mustache</a> HTML template using a <code>model</code> object and infers bindings from template structure, so when <code>model</code> changes DOM is updated accordingly and vice versa. </p>
 <p>There&#39;s never need to touch the DOM directly, <code>model</code> is the <a href="http://en.wikipedia.org/wiki/Single_Source_of_Truth">single source of truth</a></p>
 <h3 id="why">Why</h3>
 <ul>
 <li><p>embrace <a href="http://en.wikipedia.org/wiki/Keep_it_simple">KISS</a> and <a href="http://en.wikipedia.org/wiki/Don&#39;t_repeat_yourself">DRY</a></p>
 </li>
-<li><p>write least amount of code possible, enjoy conceptual simplicity</p>
+<li><p><a href="http://www.codinghorror.com/blog/2007/12/size-is-the-enemy.html">write least amount of code possible</a>, enjoy conceptual simplicity</p>
 </li>
 <li><p>ideas by humans, automation by computers</p>
 </li>
@@ -34,12 +36,12 @@
 </li>
 </ol>
 <h3 id="hello-world">Hello, world</h3>
-<h4 id="-stage1-is-a-template-compiler-"><code>Stage1</code> is a template compiler:</h4>
+<p><code>Stage1</code> is a template compiler:</p>
 <pre><code>$ jtmpl(&#39;Hello, {{who}}&#39;, { who: &#39;server&#39; })
 
 Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
 <p><br></p>
-<h4 id="-stage2-renders-live-dom-structure-"><code>Stage2</code> renders live DOM structure:</h4>
+<p><code>Stage2</code> renders live DOM structure:</p>
 <iframe src="hello.html" style="border:0; border-left:1px dotted black; height:4em"></iframe>
 
 
@@ -150,257 +152,15 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
 </li>
 </ul>
 <h4 id="planned-features">Planned features</h4>
-<p>(in random order)</p>
-<ul>
-<li><p>comments</p>
-</li>
-<li><p>partials (template include)</p>
-<ul>
-<li><code>{{&gt;var_template_id_or_url}}</code></li>
-<li><code>{{&gt;&quot;#template-id&quot;}}</code></li>
-<li><p><code>{{&gt;&quot;//xhr-fetch-template.url&quot;}}</code></p>
-<p><em>&quot;http:&quot; or &quot;https:&quot; part <a href="http://stackoverflow.com/a/550073/2713676">can be omitted</a>, so it&#39;ll inherit current scheme</em></p>
-<p>Included templates inherit their parent context.</p>
-</li>
-</ul>
-</li>
-<li><p>blocks and template inheritance akin to <a href="https://docs.djangoproject.com/en/dev/topics/templates/#id1">Django template inheritance</a></p>
-<pre><code>  &lt;script id=&quot;base&quot; type=&quot;text/html&quot;&gt;
-    {{+primary_block}}
-      Block contents is template code, of course
-    {{/primary_block}}
-    {{+secondary_block}}
-      Some secondary content
-    {{/secondary_block}}
-  &lt;/script&gt;
-
-  &lt;script id=&quot;descendant&quot; type=&quot;text/html&quot;&gt;
-    {{&lt;&quot;#base&quot;}}
-
-    {{+primary_block}}
-      Will override #base&#39;s primary_block content
-    {{/primary_block}}
-    {{+secondary_block}}
-      If this block was non-existent, you would see &quot;Some secondary content&quot; from #base
-    {{/secondary_block}}
-  &lt;/script&gt;</code></pre>
-<p>  <em>Syntax inspired by <a href="http://akdubya.github.io/dustjs/">Dust</a></em></p>
-</li>
-<li><p>computed properties</p>
-<pre><code>  var template = &#39;{{fullName}}&#39;;
-  var model = {
-    firstName: &#39;Random&#39;,
-    lastName: &#39;Number&#39;,
-    fullName: function(firstName, lastName) {
-      return firstName + &#39; &#39; + lastName;
-    }
-  }</code></pre>
-<p>  Function will be called whenever any of the argument fields change. Actual field values provided as parameters.</p>
-</li>
-<li><p>refactor in &quot;everything is a plugin&quot; style and figure out a plugin system</p>
-</li>
-</ul>
-<h3 id="kitchen-sink">Kitchen Sink</h3>
-<p>Showcase of all features, tests</p>
-<p><a href="kitchensink.html">Link to example</a></p>
-<pre><code>$ kitchensink.html
-
-&lt;!doctype html&gt;
-&lt;html&gt;
-&lt;head&gt;
-  &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;css/styles.css&quot;&gt;
-  &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;css/qunit.css&quot;&gt;
-  &lt;style&gt;
-    body {line-height: 24px;}
-    h2, h3 {margin-top: 64px}
-    .bound-class {
-      color:red;
-      -webkit-transition:color 0.5s ease-in;  
-      -moz-transition:color 0.5s ease-in;  
-      -o-transition:color 0.5s ease-in;  
-      transition:color 0.5s ease-in;
-    }
-  &lt;/style&gt;
-  &lt;script src=&quot;js/qunit.js&quot;&gt;&lt;/script&gt;
-  &lt;script src=&quot;js/jtmpl.js&quot;&gt;&lt;/script&gt;
-&lt;/head&gt;
-
-&lt;body&gt;
-  &lt;div class=&quot;wrapper&quot;&gt;
-    &lt;script id=&quot;kitchensink&quot; type=&quot;text/jtmpl&quot;&gt;
-
-      &lt;h1&gt;&lt;span&gt;{&amp;gt;&lt;/span&gt; &lt;a href=&quot;/&quot;&gt;jtmpl&lt;/a&gt;&lt;/h1&gt;
-      &lt;h2&gt;KitchenSync&amp;mdash;feature explorer&lt;/h2&gt;
-      &lt;p&gt;
-        Check the &lt;a href=&quot;http://codepen.io/atmin/full/JkmrD&quot;&gt;obligatory Todo application demo&lt;/a&gt;, as well.
-      &lt;/p&gt;
-      &lt;p&gt;
-        Feel free to modify &lt;code&gt;model&lt;/code&gt; from JS console and observe changes.
-      &lt;/p&gt;
-
-      &lt;h3&gt;Toggle text&lt;/h3&gt;
-      &lt;a href=&quot;#&quot; onclick=&#39;{{toggle}}&#39;&gt;Toggle &lt;code&gt;model.text&lt;/code&gt;&lt;/a&gt;
-      &lt;p&gt;
-        {{text}}
-      &lt;/p&gt;
-      &lt;h3&gt;Data binding&lt;/h3&gt;
-      &lt;p&gt;
-        &lt;label for=&quot;field&quot;&gt;Enter something&lt;/label&gt; &lt;input id=&quot;field&quot; value={{field}}&gt;
-      &lt;/p&gt;
-      {{#field}} &lt;p&gt;&lt;code&gt;model.field&lt;/code&gt; = &quot;{{field}}&quot;&lt;/p&gt; {{/field}}
-      {{^field}} &lt;p&gt;&lt;code&gt;model.field&lt;/code&gt; is empty&lt;/p&gt; {{/field}}
-
-      &lt;h3&gt;Data binding, toggle class&lt;/h3&gt;
-      &lt;p&gt;
-        &lt;label&gt;
-            &lt;input type=&quot;checkbox&quot; checked=&quot;{{bound-class}}&quot;&gt;
-            &lt;code&gt;model[&#39;bound-class&#39;]&lt;/code&gt;
-        &lt;/label&gt;
-      &lt;/p&gt;
-      &lt;p class=&quot;{{bound-class}}&quot;&gt;Lorem ipsum ...&lt;/p&gt;
-
-      &lt;h3&gt;Checkboxes toggling &quot;if&quot; sections&lt;/h3&gt;
-      {{#checkboxes}}
-        &lt;p&gt;
-          &lt;label&gt;&lt;input type=&quot;checkbox&quot; checked={{fooCheck}}&gt; check foo&lt;/label&gt;
-          &lt;label&gt;&lt;input type=&quot;checkbox&quot; checked={{barCheck}}&gt; check bar&lt;/label&gt;
-        &lt;/p&gt;
-        {{#fooCheck}}
-        &lt;p&gt;&lt;code&gt;model.checkboxes.fooCheck&lt;/code&gt; is checked&lt;p&gt;
-        {{/fooCheck}}
-        {{#barCheck}}
-        &lt;p&gt;&lt;code&gt;model.checkboxes.barCheck&lt;/code&gt; is checked&lt;p&gt;
-        {{/barCheck}}
-      {{/checkboxes}}
-
-      &lt;h3&gt;Select and radiogroup&lt;/h3&gt;
-      &lt;h5&gt;&lt;code&gt;model.options&lt;/code&gt;&lt;/h5&gt;
-      &lt;p&gt;
-        &lt;select&gt;
-          {{#options}}
-          &lt;option selected={{checked}}&gt;{{text}}&lt;/option&gt;
-          {{/options}}
-        &lt;/select&gt;
-      &lt;/p&gt;
-      &lt;h5&gt;&lt;code&gt;model.options&lt;/code&gt; again&lt;/h5&gt;
-      &lt;p&gt;
-        {{#options}}
-        &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;radio-group&quot; checked={{checked}}&gt;{{text}}&lt;/label&gt;
-        {{/options}}
-      &lt;/p&gt;
-
-      &lt;h3&gt;&lt;code&gt;model.innerHTML&lt;/code&gt;&lt;/h3&gt;
-      &lt;div&gt;&lt;!-- {{{innerHTML}}} --&gt;&lt;/div&gt;
-      &lt;!-- `jtmpl` accepts tags in HTML comments and automatically strips them --&gt;
-
-      &lt;h3&gt;Nested collections&lt;/h3&gt;
-      &lt;ul class=&quot;dummy-class just for the_test&quot;&gt;
-        {{#collection}}
-        &lt;li&gt;
-          &lt;code&gt;model.collection[i].inner&lt;/code&gt;
-          &lt;button onclick={{innerPush}}&gt;push&lt;/button&gt;
-          &lt;button onclick=&quot;{{innerPop}}&quot; disabled={{popDisabled}}&gt;pop&lt;/button&gt;
-          &lt;ul&gt;
-            {{#inner}}&lt;li&gt;{{.}}&lt;/li&gt;{{/inner}}
-            {{^inner}}&lt;div&gt;&amp;lt; empty &amp;gt;&lt;/div&gt;{{/inner}}
-          &lt;/ul&gt;
-          &lt;br&gt;
-        &lt;/li&gt;
-        {{/collection}}
-        {{^collection}}
-        &lt;div&gt;&amp;lt; empty &amp;gt;&lt;/div&gt;
-        {{/collection}}
-      &lt;/ul&gt;
-      &lt;br&gt;
-      &lt;button onclick={{push}}&gt;push&lt;/button&gt;
-      &lt;button onclick=&quot;{{pop}}&quot; disabled={{popDisabled}}&gt;pop&lt;/button&gt;
-
-    &lt;/script&gt;
-
-    &lt;script&gt;
-      model = {
-        text: &#39;lowercase&#39;,
-
-        collection: [
-          { popDisabled: false, inner: [1, 2, 3, 4, 5] },
-          { popDisabled: false, inner: [6, 7] },
-          { popDisabled: false, inner: [8, 9, 10, 11] }
-        ],
-
-        popDisabled: false,
-
-        field: &#39;&#39;,
-
-        &#39;bound-class&#39;: true,
-
-        innerHTML: &#39;&lt;p&gt;I am a paragraph, change me: &lt;code&gt;&lt;pre&gt;model.innerHTML = &quot;new HTML content&quot;&lt;/pre&gt;&lt;/code&gt;&lt;/p&gt;&#39;,
-
-        options: [
-          { checked: true, text: &#39;one&#39; },
-          { checked: false, text: &#39;two&#39; },
-          { checked: false, text: &#39;three&#39; }
-        ],
-
-        checkboxes: {
-          fooCheck: true,
-          barCheck: false
-        },
-
-
-        // event handlers
-        toggle: function(e) {
-          this.text = this.text == &#39;lowercase&#39; ?
-            &#39;UPPERCASE&#39;: &#39;lowercase&#39;;
-          e.preventDefault();
-        },
-        push: function() {
-          this.collection.push({
-            popDisabled: true,
-            inner: []
-          });
-          this.popDisabled = false;
-        },
-        pop: function() {
-          this.collection.pop();
-          this.popDisabled = this.collection.length == 0;
-        },
-        innerPush: function() {
-          this.inner.push(parseInt(Math.random() * 100));
-          this.popDisabled = false;
-        },
-        innerPop: function() {
-          this.inner.pop();
-          this.popDisabled = this.inner.length == 0;
-        }
-      };
-
-      jtmpl(&#39;#kitchensink&#39;, &#39;#kitchensink&#39;, model);
-    &lt;/script&gt;
-
-    &lt;h2&gt;QUnit Blackbox Tests&lt;/h2&gt;
-    &lt;div id=&quot;qunit&quot;&gt;&lt;/div&gt;
-    &lt;div id=&quot;qunit-fixture&quot;&gt;&lt;/div&gt;
-  &lt;/div&gt; &lt;!-- .wrapper --&gt;
-  &lt;script src=&quot;js/tests.js&quot;&gt;&lt;/script&gt;
-  &lt;!-- Google Analytics --&gt;
-      &lt;script&gt;
-        (function(i,s,o,g,r,a,m){i[&#39;GoogleAnalyticsObject&#39;]=r;i[r]=i[r]||function(){
-        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-        })(window,document,&#39;script&#39;,&#39;//www.google-analytics.com/analytics.js&#39;,&#39;ga&#39;);
-        ga(&#39;create&#39;, &#39;UA-43285803-1&#39;, &#39;jtmpl.com&#39;);
-        ga(&#39;send&#39;, &#39;pageview&#39;);
-      &lt;/script&gt;
-&lt;/body&gt;
-&lt;/html&gt;</code></pre>
+<p>Check the <a href="https://github.com/atmin/jtmpl/issues">issue tracker</a></p>
 
           <footer>
               Copyright &copy; 2013 Atanas Minev, <a href="LICENSE">MIT license</a>
           </footer>
         </div>
-        <script src="js/highlight.min.js"></script>
+        <script src="/js/highlight.min.js"></script>
+        <script src="/js/highlight-coffee.js"></script>
         <script>hljs.initHighlightingOnLoad();</script>
-        <script src="js/jtmpl.js"></script>
         <script>
           (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
           (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),

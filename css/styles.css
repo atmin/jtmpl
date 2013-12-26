@@ -1,63 +1,91 @@
 h1 span,
 h1 sup {
   color: #DDD;
-  font-style: normal;
+}
+h1 span {
+  font-weight: normal;
+}
+h1 span span {
+  font-size: 130%;
+  position: relative;
+  top: 0.05em;
+  left: -0.2em;
 }
 h1 sup {
   font-size: 40%;
+  position: relative;
+  top: -0.7em;
+  background-color: #fffaee;
 }
 h1 a,
 h1 a:visited {
   color: #586e75;
 }
-h2 {
-  margin-top: 64px;
-}
 ul {
   margin-bottom: 32px;
 }
 footer {
-  margin: 64px 0 10px;
+  margin: 8em 0 10px;
 }
 .wrapper {
-  margin: 1em auto;
+  margin: 0 auto;
   padding: 0 4%;
 }
-.text-center {
-  text-align: center;
+nav {
+  overflow: hidden;
 }
-.btn,
-.btn:visited {
-  padding: 16px 24px;
-  color: #fff;
-  margin: 1em 1em 0 0;
-  width: 100%;
-  display: inline-block;
-  border: 1px solid #DDD;
-  -webkit-border-radius: 3px;
-  -moz-border-radius: 3px;
-  border-radius: 3px;
+nav ul {
+  list-style: none;
+  padding: 0;
 }
-.btn i {
-  margin-right: 8px;
+nav ul i {
+  font-size: 500%;
+  float: left;
+  display: block;
+  width: 1.2em !important;
+  text-align: right;
+  margin: 0 0.3em 0 0;
 }
-.btn-readme {
-  background-color: #dc322f;
+nav ul i.icon-file-text {
+  color: #859900;
 }
-.btn-kitchensink {
-  background-color: #cb4b16;
+nav ul i.icon-gears {
+  color: #dc322f;
 }
-.btn-github {
-  background-color: #b58900;
+nav ul i.icon-github {
+  color: #b58900;
 }
-.btn-coffee {
-  background-color: #859900;
+nav ul i.icon-download-alt {
+  color: #268bd2;
 }
-.btn-js {
-  background-color: #6c71c4;
+nav li {
+  float: left;
+  width: 25em;
+  margin: 3em 1em 0 0;
 }
-.btn-min {
-  background-color: #268bd2;
+nav a,
+nav a:visited {
+  display: block;
+  margin: 0 0 0.2em 8em;
+  color: #586e75;
+  font-size: 80%;
+  border-bottom: 1px solid #f3f3f3;
+  -webkit-transition: border 300ms ease-out;
+  -moz-transition: border 300ms ease-out;
+  -o-transition: border 300ms ease-out;
+}
+nav a em,
+nav a:visited em {
+  font-size: 80%;
+  color: #AAA;
+}
+nav a:hover {
+  border-bottom: 1px solid #a0a0a0;
+}
+nav a[href^="http"]:hover:after {
+  content: "\f08e";
+  font-family: FontAwesome;
+  margin-left: 0.5em;
 }
 /* apply a natural box layout model to all elements */
 *,
@@ -121,9 +149,8 @@ video {
 	* To add a background to the WRAPPER, set it in the 'body' element
 */
 html {
-  /*height: 100%;*/
-
-  font-size: 100%;
+  letter-spacing: 1px;
+  word-spacing: 0.1em;
   overflow-y: scroll;
   /* Force a scrollbar in non-IE */
 
@@ -184,14 +211,14 @@ h3,
 h4,
 h5 {
   font-family: Monaco, Consolas, "Lucida Console", monospace;
-  margin-top: 2em;
+  margin-top: 3em;
 }
 h1 {
   font-size: 4.25em;
   /* 68px */
 
   line-height: 1.1471em;
-  margin: 2em 0 0.3824em;
+  margin: 1em 0 0.3824em;
 }
 h2 {
   font-size: 2.625em;
@@ -205,7 +232,7 @@ h3 {
   /* 26px */
 
   line-height: 1em;
-  margin: 2em 0 1em;
+  margin: 3em 0 1em;
 }
 small {
   font-size: 0.625em;
@@ -217,9 +244,9 @@ small {
 ---------------------------------------- */
 /* Allows line wrapping of 'pre' */
 pre {
+  overflow: auto;
   white-space: pre;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+  word-wrap: normal;
 }
 pre,
 code,
@@ -227,6 +254,9 @@ kbd,
 samp {
   font-family: monospace, serif;
   font-size: 1em;
+  background-color: #fffaee;
+  overflow: auto;
+  word-wrap: normal;
 }
 /* Tables
 ---------------------------------------- */
@@ -464,9 +494,9 @@ sub {
     width: 12em;
   }
 }
-@media only screen and (min-width: 1024px) {
+@media only screen and (min-width: 1200px) {
   .wrapper {
-    width: 960px;
+    width: 1200px;
   }
 }
 /* Print styles

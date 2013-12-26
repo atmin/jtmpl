@@ -1,29 +1,47 @@
 <!doctype html>
 <html>
     <head>
-        <link rel="stylesheet" href="css/styles.css">
-        <link rel="stylesheet" href="css/highlight.css">
-        <link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
+        <link rel="stylesheet" href="/css/styles.css">
+        <link rel="stylesheet" href="/css/highlight.css">
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css">
+        <script src="/js/jtmpl.js"></script>
         <title>jtmpl</title>
     </head>
     <body>
         <div class="wrapper">
-            <h1><span>{&gt;</span> <a href="/">jtmpl</a></h1>
-            <p>
-                Mustache syntax <strong>&nbsp;+&nbsp;</strong> automatic data-binding
-                <strong>&nbsp;=&nbsp;</strong> Live templates
-            </p>
-            <div class="group">
-                <a class="btn btn-readme" href="README.html"><i class="icon-file-text"></i>README</a>
-                <a class="btn btn-kitchensink" href="kitchensink.html"><i class="icon-gears"></i>Demo</a>
-                <a class="btn btn-github" href="https://github.com/atmin/jtmpl"><i class="icon-github"></i>GitHub</a>
-            </div>
-            <div class="group">
-                <a class="btn btn-coffee" href="https://github.com/atmin/jtmpl/blob/dev/src/coffee/jtmpl.coffee"><i class="icon-file-text-alt"></i>jtmpl.coffee</a>
-                <a class="btn btn-js" href="js/jtmpl.js"><i class="icon-download-alt"></i>jtmpl.js</a>
-            	<a class="btn btn-min" href="js/jtmpl.min.js"><i class="icon-download-alt"></i>jtmpl.min.js</a>
-            </div>
+          <h1 id="-span-span-rsaquo-span-span-jtmpl-sup-0-2-0-sup-"><span>{<span>&rsaquo;</span></span> <a href="/">jtmpl</a> <sup>0.2.0</sup></h1>
+          <p>Mustache syntax <em>&nbsp;+&nbsp;</em> automatic data-binding <em>&nbsp;=&nbsp;</em> Live templates</p>
+<nav>
+    <ul>
+        <li>
+            <i class="icon-file-text"></i>
+            <a href="README.html">README</a>
+            <a href="src/coffee/jtmpl.html">Literate CoffeeScript source code</a>
+        </li>
+        <li>
+            <i class="icon-gears"></i>
+            <a href="kitchensink.html">KitchenSink demo</a>
+            <a href="http://codepen.io/atmin/full/JkmrD">TodoMVC demo</a>
+        </li>
+        <li>
+            <i class="icon-github"></i>
+            <a href="https://github.com/atmin/jtmpl">jtmpl@GitHub</a>
+            <a href="https://github.com/atmin/jtmpl/issues?state=open">Issues / Planned Features</a>
+        </li>
+        <li>
+            <i class="icon-download-alt"></i>
+            <a href="js/jtmpl.js">jtmpl.js</a>
+            <a href="js/jtmpl.min.js">jtmpl.min.js <em>(4.4kb gzipped)</em></a>
+        </li>
+    </ul>
+</nav>
+          <footer>
+              Copyright &copy; 2013 Atanas Minev, <a href="LICENSE">MIT license</a>
+          </footer>
         </div>
+        <script src="/js/highlight.min.js"></script>
+        <script src="/js/highlight-coffee.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script>
         <script>
           (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
           (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
