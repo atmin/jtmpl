@@ -8,6 +8,7 @@
 @green: #859900;
 @body-color: #586e75;
 @code-bg: #FFFAEE;
+@light: #DDD;
 
 
 
@@ -15,7 +16,7 @@
 
 h1 span, 
 h1 sup {
-	color: #DDD;
+	color: @light;
 }
 
 h1 span {
@@ -33,18 +34,23 @@ h1 sup {
 	font-size: 40%;
 	position: relative;
 	top: -0.7em;
-	background-color: @code-bg;
 }
 
 h1 a, h1 a:visited {
-	color: @body-color;}
+	color: @body-color;
+}
 
 ul {
 	margin-bottom: 32px;
 }
 
 footer {
-	margin:8em 0 10px;
+	font-size: 90%;
+	margin:8em 0 1em;
+}
+
+footer span {
+	color: @light;
 }
 
 
@@ -64,25 +70,10 @@ nav {
 			font-size: 500%;
 			float: left;
 			display: block;
-			width: 1.2em !important;
-			text-align: right;
+			width: 1.5em !important;
+			text-align: center;
 			margin: 0 0.3em 0 0;
-		}
-
-		i.icon-file-text {
-			color: @green;
-		}
-
-		i.icon-gears {
-			color: @red;
-		}
-
-		i.icon-github {
-			color: @yellow;
-		}
-
-		i.icon-download-alt {
-			color: @blue;
+			color: @light;
 		}
 	}
 
@@ -96,7 +87,7 @@ nav {
 		display: block;
 		margin: 0 0 0.2em 8em;
 		color: @body-color;
-		font-size: 80%;
+		font-size: 90%;
 		border-bottom: 1px solid #f3f3f3;
 
 		-webkit-transition : border 300ms ease-out; 
@@ -105,12 +96,13 @@ nav {
 
 		em {
 			font-size: 80%;
-			color: #AAA;
+			color: @light;
 		}
 	}
 
 	a:hover {
 		border-bottom: 1px solid #a0a0a0;
+		color: #000;
 	}
 
 	a[href^="http"]:hover:after {
@@ -379,7 +371,7 @@ dl dd {
 
 a, a:visited {
 	text-decoration: none;
-	color: @orange;
+	color: #000;
 }
 
 a:hover {
@@ -451,7 +443,7 @@ hr {
 	display: block;
 	height: 1px;
 	border: 0;
-	border-bottom: 1px solid #ddd;
+	border-bottom: 1px solid @light;
 }
 
 strong, b, dt {
