@@ -185,7 +185,14 @@ String `bindingToken` (String for each group in pattern)
 
     jtmpl.compileRules = [
 
-      { # class="whatever, maybe other bindings... {{booleanVar}}
+
+
+
+#### `<tag class="{{class-name}} other-classes">`
+
+`model['class-name']` is expected to be boolean
+
+      {
         pattern: "(class=\"? [\\w \\. \\- \\s {{}}]*) {{ (#{ RE_IDENTIFIER }) }}$"
 
         replaceWith: (pre, prop, model) ->
@@ -204,7 +211,15 @@ String `bindingToken` (String for each group in pattern)
       }
 
 
-      { # onevent={{func}}
+
+#### `<tag onevent="{{handler}}">`
+
+`on`-prefixed properties are event handlers.
+`handler` is expected to be a function,
+`handler`'s `this` is the context in which the handler has been attached.
+No need to add `onchange` handlers, syncing of DOM element values and `model` is already handled.
+
+      {
         pattern: "on(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}$"
 
         replaceWith: -> ['', []]
@@ -213,7 +228,14 @@ String `bindingToken` (String for each group in pattern)
       }
 
 
-      { # attr={{prop}}
+
+#### `<tag attr="{{prop}}"`
+
+When `prop` is null property is absent, otherwise equals `prop`.
+
+When `prop` is boolean, value determines presense of attribute.
+
+      {
         pattern: "(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}$"
 
         replaceWith: (attr, prop, model) ->
@@ -232,7 +254,10 @@ String `bindingToken` (String for each group in pattern)
       }
 
 
-      { # {{^inverted_section}}
+
+#### `{{^inverted_section}}`
+
+      {
         pattern: "{{ \\^ (#{ RE_IDENTIFIER }) }}$"
 
         wrapper: 'defaultSection'
@@ -266,7 +291,10 @@ String `bindingToken` (String for each group in pattern)
       }
 
       
-      { # {{#section}}
+
+#### `{{#section}}`
+
+      {
         pattern: "{{ \\# (#{ RE_IDENTIFIER }) }}$"
 
         lastTag: (model, section) ->
@@ -305,7 +333,10 @@ String `bindingToken` (String for each group in pattern)
       }
 
 
-      { # {{&unescaped_var}}
+
+#### `{{&unescaped_var}}`
+
+      {
         pattern: "{{ & (#{ RE_IDENTIFIER }) }}$"
 
         wrapper: 'defaultVar'
@@ -316,7 +347,10 @@ String `bindingToken` (String for each group in pattern)
       }
 
 
-      { # {{var}}
+
+#### `{{var}}`
+
+      {
         pattern: "{{ (#{ RE_IDENTIFIER }) }}$"
 
         wrapper: 'defaultVar'
@@ -341,11 +375,14 @@ Matching is done on tokenized data-jt items
 Function void (AnyType val) `react`
 (DOMElement node, String for each pattern group, AnyType model, Object options)
 
-
-
     jtmpl.bindRules = [
 
-      { # value/checked/selected=var
+
+
+
+#### `value/checked/selected=var`
+
+      {
         pattern: "(value | checked | selected) = (#{ RE_IDENTIFIER })"
 
         bindTo: (attr, prop) -> prop,
@@ -382,7 +419,10 @@ Function void (AnyType val) `react`
       }
 
 
-      { # onevent=var
+
+#### onevent=var
+
+      {
         pattern: "on(#{ RE_IDENTIFIER }) = (#{ RE_IDENTIFIER })"
 
         react: (node, evnt, listener, model, options) ->
@@ -397,7 +437,11 @@ Function void (AnyType val) `react`
       }
 
 
-      { # class=var
+
+
+#### class=var
+
+      {
         pattern: "class = (#{ RE_IDENTIFIER })"
 
         bindTo: (prop) -> prop
@@ -407,7 +451,11 @@ Function void (AnyType val) `react`
       }
 
 
-      { # attr=var
+
+
+#### attr=var
+
+      {
         pattern: "(#{ RE_IDENTIFIER }) = (#{ RE_IDENTIFIER })"
 
         bindTo: (attr, prop) -> prop
@@ -417,7 +465,11 @@ Function void (AnyType val) `react`
       }
 
 
-      { # section
+
+
+#### section
+
+      {
         pattern: "(# | \\^) (#{ RE_IDENTIFIER })"
 
         bindTo: (sectionType, prop) -> prop
@@ -481,7 +533,11 @@ Function void (AnyType val) `react`
       }
 
 
-      { # var
+
+
+#### var
+
+      {
         pattern: "(#{ RE_IDENTIFIER })"
 
         bindTo: (prop) -> prop
