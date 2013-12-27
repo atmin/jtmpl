@@ -140,9 +140,10 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
 <p>[String, Array] <code>replaceWith</code> (String for each group in pattern, AnyType model)</p>
 <p>String <code>bindingToken</code> (String for each group in pattern)</p>
 <p>[String, Array] <code>contents</code> (String template, AnyType model, String section, Object options)</p>
-<pre><code>jtmpl.compileRules = [
-
-  { # class=&quot;whatever, maybe other bindings... {{booleanVar}}
+<pre><code>jtmpl.compileRules = [</code></pre>
+<h4 id="-tag-class-class-name-other-classes-"><code>&lt;tag class=&quot;{{class-name}} other-classes&quot;&gt;</code></h4>
+<p><code>model[&#39;class-name&#39;]</code> is expected to be boolean</p>
+<pre><code>  {
     pattern: &quot;(class=\&quot;? [\\w \\. \\- \\s {{}}]*) {{ (#{ RE_IDENTIFIER }) }}$&quot;
 
     replaceWith: (pre, prop, model) -&gt;
@@ -158,19 +159,23 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
       if pre.search(&#39;{&#39;) &gt; - 1 then &quot; {{#{ prop }}}&quot; else null
 
     bindingToken: (pre, prop) -&gt; &quot;class=#{ prop }&quot;
-  }
-
-
-  { # onevent={{func}}
+  }</code></pre>
+<h4 id="-tag-onevent-handler-"><code>&lt;tag onevent=&quot;{{handler}}&quot;&gt;</code></h4>
+<p><code>on</code>-prefixed properties are event handlers.
+<code>handler</code> is expected to be a function,
+<code>handler</code>&#39;s <code>this</code> is the context in which the handler has been attached.
+No need to add <code>onchange</code> handlers, syncing of DOM element values and <code>model</code> is already handled.</p>
+<pre><code>  {
     pattern: &quot;on(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}$&quot;
 
     replaceWith: -&gt; [&#39;&#39;, []]
 
     bindingToken: (event, handler) -&gt; &quot;on#{ event }=#{ handler }&quot;
-  }
-
-
-  { # attr={{prop}}
+  }</code></pre>
+<h4 id="-tag-attr-prop-"><code>&lt;tag attr=&quot;{{prop}}&quot;</code></h4>
+<p>When <code>prop</code> is null property is absent, otherwise equals <code>prop</code>.</p>
+<p>When <code>prop</code> is boolean, value determines presense of attribute.</p>
+<pre><code>  {
     pattern: &quot;(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}$&quot;
 
     replaceWith: (attr, prop, model) -&gt;
@@ -186,10 +191,9 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
         [&quot;#{ attr }=\&quot;#{ val }\&quot;&quot;, []]
 
     bindingToken: (attr, prop) -&gt; &quot;#{ attr }=#{ prop }&quot;
-  }
-
-
-  { # {{^inverted_section}}
+  }</code></pre>
+<h4 id="-inverted_section-"><code>{{^inverted_section}}</code></h4>
+<pre><code>  {
     pattern: &quot;{{ \\^ (#{ RE_IDENTIFIER }) }}$&quot;
 
     wrapper: &#39;defaultSection&#39;
@@ -220,10 +224,9 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
           if val then [[&#39;style&#39;, &#39;display:none&#39;]] else []
         ]
     bindingToken: (section) -&gt; &quot;^#{ section }&quot;
-  }
-
-
-  { # {{#section}}
+  }</code></pre>
+<h4 id="-section-"><code>{{#section}}</code></h4>
+<pre><code>  {
     pattern: &quot;{{ \\# (#{ RE_IDENTIFIER }) }}$&quot;
 
     lastTag: (model, section) -&gt;
@@ -259,10 +262,9 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
         ]
 
     bindingToken: (section) -&gt; &quot;##{ section }&quot;
-  }
-
-
-  { # {{&amp;unescaped_var}}
+  }</code></pre>
+<h4 id="-unescaped_var-"><code>{{&amp;unescaped_var}}</code></h4>
+<pre><code>  {
     pattern: &quot;{{ &amp; (#{ RE_IDENTIFIER }) }}$&quot;
 
     wrapper: &#39;defaultVar&#39;
@@ -270,10 +272,9 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
     replaceWith: (prop, model) -&gt; [prop is &#39;.&#39; and model or model[prop], []]
 
     bindingToken: (prop) -&gt; prop
-  }
-
-
-  { # {{var}}
+  }</code></pre>
+<h4 id="-var-"><code>{{var}}</code></h4>
+<pre><code>  {
     pattern: &quot;{{ (#{ RE_IDENTIFIER }) }}$&quot;
 
     wrapper: &#39;defaultVar&#39;
@@ -289,9 +290,9 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
 <p><code>react</code> signature:</p>
 <p>Function void (AnyType val) <code>react</code>
 (DOMElement node, String for each pattern group, AnyType model, Object options)</p>
-<pre><code>jtmpl.bindRules = [
-
-  { # value/checked/selected=var
+<pre><code>jtmpl.bindRules = [</code></pre>
+<h4 id="-value-checked-selected-var-"><code>value/checked/selected=var</code></h4>
+<pre><code>  {
     pattern: &quot;(value | checked | selected) = (#{ RE_IDENTIFIER })&quot;
 
     bindTo: (attr, prop) -&gt; prop,
@@ -325,10 +326,9 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
 
       # return model reactor
       (val) -&gt; if node[attr] isnt val then node[attr] = val
-  }
-
-
-  { # onevent=var
+  }</code></pre>
+<h4 id="onevent-var">onevent=var</h4>
+<pre><code>  {
     pattern: &quot;on(#{ RE_IDENTIFIER }) = (#{ RE_IDENTIFIER })&quot;
 
     react: (node, evnt, listener, model, options) -&gt;
@@ -340,30 +340,27 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
 
       # job done, no reactor to return
       null
-  }
-
-
-  { # class=var
+  }</code></pre>
+<h4 id="class-var">class=var</h4>
+<pre><code>  {
     pattern: &quot;class = (#{ RE_IDENTIFIER })&quot;
 
     bindTo: (prop) -&gt; prop
 
     react: (node, prop, model) -&gt;
       (val) -&gt; (val and addClass or removeClass)(node, prop)
-  }
-
-
-  { # attr=var
+  }</code></pre>
+<h4 id="attr-var">attr=var</h4>
+<pre><code>  {
     pattern: &quot;(#{ RE_IDENTIFIER }) = (#{ RE_IDENTIFIER })&quot;
 
     bindTo: (attr, prop) -&gt; prop
 
     react: (node, attr) -&gt;
       (val) -&gt; if node[attr] isnt val then node[attr] = val
-  }
-
-
-  { # section
+  }</code></pre>
+<h4 id="section">section</h4>
+<pre><code>  {
     pattern: &quot;(# | \\^) (#{ RE_IDENTIFIER })&quot;
 
     bindTo: (sectionType, prop) -&gt; prop
@@ -424,10 +421,9 @@ RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/</code></pre>
         # if section
         else
           node.style.display = (!val isnt (sectionType is &#39;^&#39;)) and &#39;none&#39; or &#39;&#39;
-  }
-
-
-  { # var
+  }</code></pre>
+<h4 id="var">var</h4>
+<pre><code>  {
     pattern: &quot;(#{ RE_IDENTIFIER })&quot;
 
     bindTo: (prop) -&gt; prop
