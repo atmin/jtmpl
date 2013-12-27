@@ -65,7 +65,13 @@ nav {
 	ul {
 		list-style: none;
 		padding: 0;
-	
+	}
+
+	li {
+		float: left;
+		width: 25em;
+		margin: 3em 1em 0 0;
+
 		i {
 			font-size: 500%;
 			float: left;
@@ -74,13 +80,26 @@ nav {
 			text-align: center;
 			margin: 0 0.3em 0 0;
 			color: @light;
+			-webkit-transition : color 500ms ease-out; 
+			-moz-transition : color 500ms ease-out;
+			-o-transition : color 500ms ease-out;
 		}
-	}
 
-	li {
-		float: left;
-		width: 25em;
-		margin: 3em 1em 0 0;
+		&:hover i.icon-file-text {
+			color: @green;
+		}
+
+		&:hover i.icon-gears {
+			color: @red;
+		}
+
+		&:hover i.icon-github {
+			color: @yellow;
+		}
+
+		&:hover i.icon-download-alt {
+			color: @blue;
+		}
 	}
 
 	a, a:visited {
