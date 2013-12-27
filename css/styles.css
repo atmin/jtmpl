@@ -1,6 +1,6 @@
 h1 span,
 h1 sup {
-  color: #DDD;
+  color: #dddddd;
 }
 h1 span {
   font-weight: normal;
@@ -15,7 +15,6 @@ h1 sup {
   font-size: 40%;
   position: relative;
   top: -0.7em;
-  background-color: #fffaee;
 }
 h1 a,
 h1 a:visited {
@@ -25,7 +24,11 @@ ul {
   margin-bottom: 32px;
 }
 footer {
-  margin: 8em 0 10px;
+  font-size: 90%;
+  margin: 8em 0 1em;
+}
+footer span {
+  color: #dddddd;
 }
 .wrapper {
   margin: 0 auto;
@@ -42,21 +45,10 @@ nav ul i {
   font-size: 500%;
   float: left;
   display: block;
-  width: 1.2em !important;
-  text-align: right;
+  width: 1.5em !important;
+  text-align: center;
   margin: 0 0.3em 0 0;
-}
-nav ul i.icon-file-text {
-  color: #859900;
-}
-nav ul i.icon-gears {
-  color: #dc322f;
-}
-nav ul i.icon-github {
-  color: #b58900;
-}
-nav ul i.icon-download-alt {
-  color: #268bd2;
+  color: #dddddd;
 }
 nav li {
   float: left;
@@ -68,7 +60,7 @@ nav a:visited {
   display: block;
   margin: 0 0 0.2em 8em;
   color: #586e75;
-  font-size: 80%;
+  font-size: 90%;
   border-bottom: 1px solid #f3f3f3;
   -webkit-transition: border 300ms ease-out;
   -moz-transition: border 300ms ease-out;
@@ -77,10 +69,11 @@ nav a:visited {
 nav a em,
 nav a:visited em {
   font-size: 80%;
-  color: #AAA;
+  color: #dddddd;
 }
 nav a:hover {
   border-bottom: 1px solid #a0a0a0;
+  color: #000;
 }
 nav a[href^="http"]:hover:after {
   content: "\f08e";
@@ -370,7 +363,7 @@ dl dd {
 a,
 a:visited {
   text-decoration: none;
-  color: #cb4b16;
+  color: #000;
 }
 a:hover {
   border-bottom: 1px solid;
@@ -434,7 +427,7 @@ hr {
   display: block;
   height: 1px;
   border: 0;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #dddddd;
 }
 strong,
 b,
