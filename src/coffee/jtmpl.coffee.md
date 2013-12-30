@@ -11,15 +11,48 @@ This documentation is currently a draft.
 
 ## Interface
 
-Compile (works in NodeJS and browser): jtmpl(String template, AnyType model)
-
-Compile (if needed) and bind (browser only):
-
-void jtmpl(DOMElement target, String template, AnyType model)
-
-`target` and `template` can be Strings in the format "#element-id".
 
 
+#### Compile template 
+
+_(NodeJS and browser)_
+
+jtmpl(String template, AnyType model)
+
+`jtmpl('Hello, {{who}}', { who: 'world' }) # "Hello, <span data-jt="who"></span>"`
+`jtmpl('#template-id', { who: 'world' })   # Browser only
+
+
+
+#### Compile (if needed) and bind 
+
+_(browser only)_
+
+jtmpl(DOMElement target, String template, AnyType model)
+
+`jtmpl('#target', 'Hello, {{who}}', model)`
+
+`jtmpl('#target', '#template-id', model)`
+
+`jtmpl('#target', '#target', model) # target.innerHTML will be used as template`
+
+
+
+#### Requests
+
+_(currently browser only)_
+
+Only GET and POST currently supported.
+
+jtmpl(String method, String url [, Object params] [, Function callback])
+
+`jtmpl('GET', 'api/endpoint/42') # fire and forget`
+
+`jtmpl('GET', 'api/endpoint/42', function (response) { alert(response) })`
+
+If response is valid JSON, it's automatically parsed
+
+`jtmpl('POST', 'api/endpoint', { id: 42, answer: 42 }, function (err, resp) { ... })`
 
 
 ### Main function
