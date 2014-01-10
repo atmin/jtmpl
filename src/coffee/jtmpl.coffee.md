@@ -121,17 +121,9 @@ Target NodeJS and browser
       delimiters = options.delimiters
 
       ## Preprocess template
-      template = ('' + template)
-        # Convert triple mustache (output unescaped var) to alt form
-        .replace(regexp("{{{ (#{ RE_IDENTIFIER }) }}}"), delimiters[0] + '&$1' + delimiters[1])
-        # Strip HTML comments that enclose tokens
-        .replace(regexp("<!-- #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } -->", delimiters), '$1')
-        # Strip single quotes around html element attributes associated with tokens
-        .replace(regexp("(#{ RE_IDENTIFIER })='({{ #{ RE_IDENTIFIER } }})'", delimiters), '$1=$2')
-        # Strip double quotes around html element attributes associated with tags
-        .replace(regexp("(#{ RE_IDENTIFIER })=\"({{ #{ RE_IDENTIFIER } }})\"", delimiters), '$1=$2')
-        # If tags stand on their own line remove the line, keep the tag only
-        .replace(regexp("\\n #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } \\n", delimiters), '\n$1\n')
+      template = '' + template
+      for rule in jtmpl.preprocessingRules
+        template = template.replace(regexp(rule[0], delimiters), rule[1])
 
       # Compile template
       html = jtmpl.compile(template, model, null, false, options).trim()
@@ -147,8 +139,12 @@ Target NodeJS and browser
       # Construct DOM
       target.innerHTML = html
 
-      # Bind recursively using data-jt attributes
       options.rootModel ?= model
+
+      # Pre-binding stage
+      jtmpl.prebind(model)
+
+      # Bind recursively using data-jt attributes
       jtmpl.bind(target, model, options)
 
 
@@ -191,10 +187,21 @@ Used in various matchers
 
 Transformations to clean up template for easier matching
 
-
     jtmpl.preprocessingRules = [
+      # Convert triple mustache (output unescaped var) to alt form
+      ["({{) { (#{ RE_IDENTIFIER }) } (}})", '$1&$2$3']
 
-      { pattern: "", replaceWith: "" }
+      # Strip HTML comments that enclose tokens
+      ["<!-- #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } -->", '$1']
+
+      # Strip single quotes around html element attributes associated with tokens
+      ["(#{ RE_IDENTIFIER })='({{ #{ RE_IDENTIFIER } }})'", '$1=$2']
+
+      # Strip double quotes around html element attributes associated with tags
+      ["(#{ RE_IDENTIFIER })=\"({{ #{ RE_IDENTIFIER } }})\"", '$1=$2']
+
+      # If tags stand on their own line remove the line, keep the tag only
+      ["\\n #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } \\n", '\n$1\n']
     ]
 
 
@@ -511,26 +518,20 @@ Function void (AnyType val) `react`
         recurseContext: (sectionType, attr, model) ->
           val = model[attr]
           if Array.isArray(val)
-            console.log('no recurseContext')
             null
           else if typeof val is 'object'
-            console.log('recurseContext: ' + attr)
             val
           else
-            console.log('recurseContext: model')
             model
 
         react: (node, sectionType, attr, model, options) ->
           val = model[attr]
-
-          console.log("react sectionType=#{ sectionType } attr=#{ attr } val=#{ val }")
 
           if Array.isArray(val) and sectionType is '#'
             jtmpl.bindArrayToNodeChildren(val, node, options)
             # bind collection items to node children
             for child, i in node.children
               if typeof val[i] is 'object'
-                console.log('binding val[' + i + ']')
                 jtmpl.bind(child, val[i], options)
 
           # Return reactor function
@@ -795,6 +796,43 @@ Check if contents is properly formatted closed HTML tag
 
 
 
+## Pre-binding stage
+
+Init function (`model['#']`) and routes via window onhashchange are processed here.
+
+If route definition contains a '(', then it's considered regular expression
+and groups are passed as parameters to the route handler.
+
+Example routes:
+
+`'#simple-route': function () { ...`
+
+`'#page-(\\d+)': function (pageNumber) { ...`
+
+    jtmpl.prebind = (model) ->
+      if typeof model['#'] is 'function'
+        model['#'].apply(model)
+
+      props = Object.getOwnPropertyNames(model)
+      routes = props.filter((prop) -> regexp("##{ RE_ANYTHING }").exec(prop))
+
+      if routes.length and window
+        hashchange = -> 
+          for route in routes
+            if '(' in route
+              match = new RegExp(route, 'g').exec(window.location.hash)
+              if match and typeof model[route] is 'function'
+                model[route].apply(model, match.slice(1))
+            else
+              if typeof model[route] is 'function'
+                model[route].apply(model)
+
+        hashchange()
+
+        window.addEventListener('hashchange', hashchange)
+
+
+
 
 ## Bind rules processor
 
@@ -813,13 +851,9 @@ Walk DOM and setup reactors on model and nodes.
 
             if match = regexp(rule.pattern).exec(jt)
 
-              console.log(match[0])
-              # console.log(model)
-
               reactor = rule.react([node].concat(match.slice(1), [model, options])...)
               prop = rule.bindTo?(match.slice(1)...)
-              # console.log(prop)
-              # console.log(reactor)
+              if model[prop] is undefined then model[prop] = null
               propChange(model, prop, reactor)
 
               recurseContext = rule.recurseContext?(match.slice(1).concat([model])...)
@@ -911,6 +945,7 @@ Replace `from` literal strings with `to` strings in template
 DOMElement createSectionItem (DOMElement parent, AnyType context)
 
     jtmpl.createSectionItem = createSectionItem = (parent, context, options) ->
+      if context is undefined then context = {}
       element = document.createElement('body')
       element.innerHTML = jtmpl(
         multiReplace(parent.getAttribute('data-jt-1') or '',

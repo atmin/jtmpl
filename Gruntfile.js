@@ -85,13 +85,13 @@ module.exports = function(grunt) {
     },
 
     watch: {
-      jshint: {
-        files: ['<%= jshint.files %>'],
-        tasks: ['jshint', 'concat', 'uglify', 'copy:tests']
-      },
+      // jshint: {
+      //   files: ['<%= jshint.files %>'],
+      //   tasks: ['jshint', 'concat', 'uglify', 'copy:tests']
+      // },
       coffee: {
         files: ['src/coffee/*.coffee', 'src/coffee/*.litcoffee', 'src/coffee/*.coffee.md', 'src/tests/*.litcoffee', 'src/tests/*.coffee.md', 'src/tests/*.coffee'],
-        tasks: ['coffee', 'concat', 'uglify']
+        tasks: ['coffee', 'uglify']
       },
       less: {
         files: ['src/less/*.less'],

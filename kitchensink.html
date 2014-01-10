@@ -82,6 +82,9 @@
       <div><!-- {{{innerHTML}}} --></div>
       <!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
 
+      <h3><code>model['#route42']</code></h3>
+      <a href="#route42">Link to <code>#route42</code></a>
+
       <h3>Nested collections</h3>
       <ul class="dummy-class just for the_test">
         {{#collection}}
@@ -108,6 +111,24 @@
 
     <script>
       model = {
+        // Empty init function, just for illustration
+        '#': function () {
+          // will be called on page load and when route changes
+        }
+
+        // Routes
+        '#simple-route': function () {
+          alert('A simple route without parameters')
+        },
+
+        '#route(\\d+)$': function (route) {
+          // if route definition contains braces,
+          // then route is considered regexp, matched groups are passed as parameters
+          alert('Route ' + route);
+        },
+
+
+        // Properties
         text: 'lowercase',
 
         collection: [
