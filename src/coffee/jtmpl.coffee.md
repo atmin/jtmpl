@@ -65,6 +65,7 @@ If response is valid JSON, it's automatically parsed
 `jtmpl('POST', 'api/endpoint', { id: 42, answer: 42 }, function (err, resp) { ... })`
 
 
+
 Main function
 
 Export for NodeJS and browser
@@ -78,6 +79,24 @@ A big `if..else if` statement as arguments pattern matcher
       # Deprecated. `jtmpl(selector)`?
       if args.length is 1 and typeof args[0] is 'string'
         [].slice.call(document.querySelectorAll(args[0]))
+
+      # `jtmpl('HTTP_METHOD', url[, parameters[, callback[, options]]])`?
+      else if args[0] in ['GET', 'POST']
+        xhr = new XMLHttpRequest()
+        callback = args.reduce(
+          (prev, curr) -> typeof curr is 'function' and curr or prev,
+          null
+        )
+        opts = args[args.length - 1]
+        if typeof opts isnt 'object' then opts = {}
+        for prop in Object.getOwnPropertyNames(opts)
+          xhr[prop] = opts[prop]
+        request = if typeof args[2] is 'string' then args[2] else if typeof args[2] is 'object' then JSON.stringify(args[2]) else ''
+        xhr.onload = (event) ->
+          if callback
+            callback.call(this, this.responseText, event)
+        xhr.open(args[0], args[1], opts.async or true, opts.user, opts.password)
+        xhr.send(request)
 
       # `jtmpl(template, model[, options])`?
       else if typeof args[0] is 'string' and typeof args[1] isnt 'string' and args[1] isnt null and args.length in [2, 3]
@@ -135,13 +154,19 @@ Default options
       defaultTargetTag: 'div'
     }
 
+
 Construct options object by merging default and specified options    
 
     jtmpl.options = (options, rootModel) ->
-      opts = merge(jtmpl.defaultOptions, options or {})
+      options = options or {}
+      opts = JSON.parse(JSON.stringify(jtmpl.defaultOptions))
+      for prop of Object.getOwnPropertyNames(options)
+        opts[prop] = options[prop]
+      # if typeof options.delimiters is 'string'
       opts.delimiters = opts.delimiters.split(' ')
+      # if typeof options.compiledDelimiters is 'string'
       opts.compiledDelimiters = opts.compiledDelimiters.split(' ')
-      opts.rootModel = if options?.rootModel then options.rootModel else rootModel
+      opts.rootModel = if options.rootModel then options.rootModel else rootModel
       opts
 
 
@@ -867,16 +892,7 @@ Walk DOM and setup reactors on model and nodes.
 ## Supporting code
 
 
-### Merge properties into obj copy
 
-    merge = (obj, props) ->
-      result = JSON.parse(JSON.stringify(obj))
-      for prop of Object.getOwnPropertyNames(props)
-        result[prop] = props[prop]
-      result
-
-
-    
 
 
 ### Regular expression utilities
