@@ -114,7 +114,7 @@
         // Empty init function, just for illustration
         '#': function () {
           // will be called on page load and when route changes
-        }
+        },
 
         // Routes
         '#simple-route': function () {
@@ -159,7 +159,7 @@
 
         // event handlers
         toggle: function(e) {
-          this.text = this.text == 'lowercase' ?
+          this.text = this.text === 'lowercase' ?
             'UPPERCASE': 'lowercase';
           e.preventDefault();
         },
@@ -172,7 +172,7 @@
         },
         pop: function() {
           this.collection.pop();
-          this.popDisabled = this.collection.length == 0;
+          this.popDisabled = this.collection.length === 0;
         },
         innerPush: function() {
           this.inner.push(parseInt(Math.random() * 100));
@@ -180,7 +180,7 @@
         },
         innerPop: function() {
           this.inner.pop();
-          this.popDisabled = this.inner.length == 0;
+          this.popDisabled = this.inner.length === 0;
         }
       };
 

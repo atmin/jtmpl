@@ -15,13 +15,13 @@ module.exports = function(grunt) {
 
     uglify: {
       options: {
-        banner: '/*! <%= pkg.name %> <%= grunt.template.today("dd-mm-yyyy") %> */\n',
+        banner: '/*! <%= pkg.name %> <%= grunt.template.today("dd-mm-yyyy") %> */\n'
         // sourceMap: '<%= pkg.buildDir %>/js/<%= pkg.name %>.min.js.map',
         // sourceMapIn: '<%= pkg.buildDir %>/js/<%= pkg.name %>.js.map',
         // sourceMappingURL: '/js/<%= pkg.name %>.min.js.map'
-        sourceMap: '<%= pkg.buildDir %>/js/<%= pkg.name %>.min.js.map',
-        sourceMapIn: '<%= pkg.buildDir %>/js/<%= pkg.name %>.js.map',
-        sourceMappingURL: '<%= pkg.name %>.min.js.map'
+        // sourceMap: '<%= pkg.buildDir %>/js/<%= pkg.name %>.min.js.map',
+        // sourceMapIn: '<%= pkg.buildDir %>/js/<%= pkg.name %>.js.map',
+        // sourceMappingURL: '<%= pkg.name %>.min.js.map'
       },
       dist: {
         // files: [
@@ -59,8 +59,8 @@ module.exports = function(grunt) {
     coffee: {
       compile: {
         options: {
-          sourceMap: true,
-          sourceRoot: '../src/coffee'
+          // sourceMap: true,
+          // sourceRoot: '../src/coffee'
         },
         files: {
           '<%= pkg.buildDir %>/js/jtmpl.js': ['src/coffee/*.coffee.md'],

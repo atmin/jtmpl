@@ -24,6 +24,16 @@ jtmpl(String template, AnyType model)
 
 
 
+#### Bind
+
+Bind model to DOM node using data-jt attributes
+
+_(browser only)_
+
+jtmpl(DOMElement target, Object model)
+
+
+
 #### Compile (if needed) and bind 
 
 _(browser only)_
@@ -55,98 +65,84 @@ If response is valid JSON, it's automatically parsed
 `jtmpl('POST', 'api/endpoint', { id: 42, answer: 42 }, function (err, resp) { ... })`
 
 
-### Main function
+Main function
 
-Target NodeJS and browser
+Export for NodeJS and browser
+
+A big `if..else if` statement as arguments pattern matcher
 
     jtmpl = (exports ? this).jtmpl = (target, template, model, options) ->
 
+      args = [].slice.call(arguments)
+
       # Deprecated. `jtmpl(selector)`?
-      if (target is null or typeof target is 'string') and not template?
+      if args.length is 1 and typeof args[0] is 'string'
+        [].slice.call(document.querySelectorAll(args[0]))
 
-        if not document?
-          throw new Error(':( this API is only available in a browser')
+      # `jtmpl(template, model[, options])`?
+      else if typeof args[0] is 'string' and typeof args[1] isnt 'string' and args[1] isnt null and args.length in [2, 3]
+        template = '' + (args[0].match(RE_NODE_ID) and document.querySelector(args[0]).innerHTML or args[0])
+        opts = jtmpl.options(args[2], args[1])
 
-        return ap.slice.call(document.querySelectorAll(target))
+        ## Preprocess template
+        for rule in jtmpl.preprocessingRules
+          template = template.replace(regexp(rule[0], opts.delimiters), rule[1])
 
-      # `jtmpl(template, model)`?
-      if typeof target is 'string' and
-          typeof template in ['number', 'string', 'boolean', 'object'] and
-          (model is undefined or model is null)
+        jtmpl.compile(template, args[1], null, false, opts).trim()
 
-        model = template
-        template = target
-        target = undefined
+      # `jtmpl(target, model[, options])`?
+      else if typeof args[0].cloneNode is 'function' and typeof args[1] is 'object'
+        # Pre-binding stage
+        jtmpl.prebind(args[1])
 
-      # `jtmpl('#element-id', ...)`?
-      if typeof target is 'string' and target.match(RE_NODE_ID)
-        target = document.getElementById(target.substring(1))
+        # Bind recursively using data-jt attributes
+        jtmpl.bind(args[0], args[1], jtmpl.options(args[2], args[1]))
+
+      # `jtmpl(target, template, model[, options])`
+      else
+        target = typeof args[0].cloneNode is 'function' and args[0] or document.querySelector(args[0])
+        template = args[1].match(RE_NODE_ID) and document.querySelector(args[1]).innerHTML or args[1]
+        model = args[2]
+        opts = jtmpl.options(args[3], args[2])
+
+        if target.nodeName is 'SCRIPT'
+          newTarget = document.createElement(opts.defaultTargetTag)
+          newTarget.id = target.id
+          target.parentNode.replaceChild(newTarget, target)
+          target = newTarget
+
+        html = jtmpl(template, model, opts)
+        if target.innerHTML isnt html then target.innerHTML = html
+
+        jtmpl(target, model, opts)
+
+
+
+Default options
+
+    jtmpl.defaultOptions = {
       
-      if not model?
-        throw new Error(':( no model')
+      delimiters: '{{ }}'
 
-      # `jtmpl('#template-id', ...)` or `jtmpl(element, '#template-id', ...)`      
-      if template.match and template.match(RE_NODE_ID)
-        template = document.getElementById(template.substring(1)).innerHTML
+      compiledDelimiters: '#{ }#'
 
-      # options
-      options = options or {}
+      defaultSection: 'div'
 
-      # string-separated opening and closing delimiter
-      options.delimiters = (
-        if Array.isArray(options.delimiters)
-          options.delimiters.join(' ')
-        else
-          options.delimiters or '{{ }}'
-      ).split(' ')
-      # delimiters are changed in the generated HTML comment-enclosed section prototype
-      # to avoid double-parsing
-      options.compiledDelimiters = (
-        if Array.isArray(options.compiledDelimiters)
-          options.compiledDelimiters.join(' ')
-        else
-          options.compiledDelimiters or  '#{ }#'
-      ).split(' ')
+      defaultSectionItem: 'div'
 
-      # sections not enclosed in HTML tag are automatically enclosed
-      options.defaultSection = options.defaultSectionTag or 'div'
-      # default for section items
-      options.defaultSectionItem = options.defaultSectionItem or 'div'
-      # default for section items
-      options.defaultVar = options.defaultVar or 'span'
+      defaultVar: 'span'
 
-      # default target tag
-      options.defaultTargetTag = options.defaultTargetTag or 'div'
+      defaultTargetTag: 'div'
+    }
 
-      delimiters = options.delimiters
+Construct options object by merging default and specified options    
 
-      ## Preprocess template
-      template = '' + template
-      for rule in jtmpl.preprocessingRules
-        template = template.replace(regexp(rule[0], delimiters), rule[1])
-
-      # Compile template
-      html = jtmpl.compile(template, model, null, false, options).trim()
-
-      # Done?
-      if not target then return html
-
-      if target.nodeName is 'SCRIPT'
-        newTarget = document.createElement(options.defaultTargetTag)
-        target.parentNode.replaceChild(newTarget, target)
-        target = newTarget
-
-      # Construct DOM
-      target.innerHTML = html
-
-      options.rootModel ?= model
-
-      # Pre-binding stage
-      jtmpl.prebind(model)
-
-      # Bind recursively using data-jt attributes
-      jtmpl.bind(target, model, options)
-
+    jtmpl.options = (options, rootModel) ->
+      opts = merge(jtmpl.defaultOptions, options or {})
+      opts.delimiters = opts.delimiters.split(' ')
+      opts.compiledDelimiters = opts.compiledDelimiters.split(' ')
+      opts.rootModel ?= rootModel
+      opts
 
 
 
@@ -347,7 +343,7 @@ When `prop` is boolean, value determines presense of attribute.
           # Sequence?
           if Array.isArray(val)
             [ # Render body for each item
-              (jtmpl(template, item, null, { asArrayItem: true }) for item in val).join(''),
+              (jtmpl(template, item, { asArrayItem: true }) for item in val).join(''),
               [ # template as node data attribute
                 [
                   'data-jt-1',
@@ -824,7 +820,7 @@ Example routes:
               if match and typeof model[route] is 'function'
                 model[route].apply(model, match.slice(1))
             else
-              if typeof model[route] is 'function'
+              if route is window.location.hash and typeof model[route] is 'function'
                 model[route].apply(model)
 
         hashchange()
@@ -874,6 +870,16 @@ Walk DOM and setup reactors on model and nodes.
 ### Useful shortcut
 
     ap = Array.prototype
+
+
+
+### Merge properties into obj copy
+
+    merge = (obj, props) ->
+      result = JSON.parse(JSON.stringify(obj))
+      for prop of Object.getOwnPropertyNames(props)
+        result[prop] = props[prop]
+      result
 
 
     
