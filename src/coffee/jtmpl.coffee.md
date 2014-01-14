@@ -867,12 +867,6 @@ Walk DOM and setup reactors on model and nodes.
 ## Supporting code
 
 
-### Useful shortcut
-
-    ap = Array.prototype
-
-
-
 ### Merge properties into obj copy
 
     merge = (obj, props) ->
@@ -1041,24 +1035,24 @@ and setting a proxy for each mutable operation.
           this.__removeEmpty()
           this.__garbageCollectNodes()
           node.removeChild(node.children[node.children.length - 1]) for node in this.__nodes
-          ap.pop.apply(this, arguments)
-          ap.pop.apply(this.__values, arguments)
+          [].pop.apply(this, arguments)
+          [].pop.apply(this.__values, arguments)
           this.__addEmpty()
 
         array.push = (item) ->
           this.__removeEmpty()
           this.__garbageCollectNodes()
           node.appendChild(createSectionItem(node, item, options)) for node in this.__nodes
-          ap.push.apply(this, arguments)
+          [].push.apply(this, arguments)
           len = this.__values.length
-          result = ap.push.apply(this.__values, arguments)
+          result = [].push.apply(this.__values, arguments)
           bindProp(item, len)
           result
 
         array.reverse = ->
           this.__removeEmpty()
           this.__garbageCollectNodes()
-          result = ap.reverse.apply(this.__values, arguments)
+          result = [].reverse.apply(this.__values, arguments)
           for node in this.__nodes
             node.innerHTML = ''
             for item, i in this.__values
@@ -1070,8 +1064,8 @@ and setting a proxy for each mutable operation.
         array.shift = ->
           this.__removeEmpty()
           this.__garbageCollectNodes()
-          ap.shift.apply(this, arguments)
-          result = ap.shift.apply(this.__values, arguments)
+          [].shift.apply(this, arguments)
+          result = [].shift.apply(this.__values, arguments)
           for node in this.__nodes
             node.removeChild(node.children[0])
           for item, i in this.__values
@@ -1082,11 +1076,11 @@ and setting a proxy for each mutable operation.
         array.unshift = ->
           this.__removeEmpty()
           this.__garbageCollectNodes()
-          for item in ap.slice.call(arguments).reverse()
+          for item in [].slice.call(arguments).reverse()
             for node in this.__nodes
               node.insertBefore(createSectionItem(node, item, options), node.children[0])
-          ap.unshift.apply(this, arguments)
-          result = ap.unshift.apply(this.__values, arguments)
+          [].unshift.apply(this, arguments)
+          result = [].unshift.apply(this.__values, arguments)
           for item, i in this.__values
             bindProp(item, i)
           this.__addEmpty()
@@ -1095,8 +1089,8 @@ and setting a proxy for each mutable operation.
         array.sort = ->
           this.__removeEmpty()
           this.__garbageCollectNodes()
-          ap.sort.apply(this, arguments)
-          result = ap.sort.apply(this.__values, arguments)
+          [].sort.apply(this, arguments)
+          result = [].sort.apply(this.__values, arguments)
           for node in this.__nodes
             node.innerHTML = ''
             for item, i in array
@@ -1111,11 +1105,11 @@ and setting a proxy for each mutable operation.
           for node in this.__nodes
             for i in [0...howMany]
               node.removeChild(node.children[index])
-            for item in ap.slice.call(arguments, 2)
+            for item in [].slice.call(arguments, 2)
               node.insertBefore(createSectionItem(node, item, options), node.children[index])
               bindProp(item, index)
-          ap.splice.apply(this, arguments)
-          ap.splice.apply(this.__values, arguments)
+          [].splice.apply(this, arguments)
+          [].splice.apply(this.__values, arguments)
           this.__addEmpty()
 
         # Bind property
