@@ -141,7 +141,7 @@ Construct options object by merging default and specified options
       opts = merge(jtmpl.defaultOptions, options or {})
       opts.delimiters = opts.delimiters.split(' ')
       opts.compiledDelimiters = opts.compiledDelimiters.split(' ')
-      opts.rootModel ?= rootModel
+      opts.rootModel = if options?.rootModel then options.rootModel else rootModel
       opts
 
 
