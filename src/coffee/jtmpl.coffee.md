@@ -476,8 +476,13 @@ Function void (AnyType val) `react`
           else
             node.addEventListener('change', -> model[prop] = node[attr])
 
-          # return model reactor
-          (val) -> if node[attr] isnt val then node[attr] = val
+          reactor = (val) ->
+            val = getValue(model, prop, true, reactor)
+            if val is undefined then return
+
+            if node[attr] isnt val then node[attr] = val
+
+          reactor
       }
 
 
@@ -509,7 +514,13 @@ Function void (AnyType val) `react`
         bindTo: (prop) -> prop
 
         react: (node, prop, model) ->
-          (val) -> (val and addClass or removeClass)(node, prop)
+          reactor = (val) ->
+            val = getValue(model, prop, true, reactor)
+            if val is undefined then return
+
+            (val and addClass or removeClass)(node, prop)
+
+          reactor
       }
 
 
@@ -522,8 +533,14 @@ Function void (AnyType val) `react`
 
         bindTo: (attr, prop) -> prop
 
-        react: (node, attr) ->
-          (val) -> if node[attr] isnt val then node[attr] = val
+        react: (node, attr, model) ->
+          reactor = (val) ->
+            val = getValue(model, attr, true, reactor)
+            if val is undefined then return
+
+            if node[attr] isnt val then node[attr] = val
+
+          reactor
       }
 
 
@@ -556,8 +573,10 @@ Function void (AnyType val) `react`
               if typeof val[i] is 'object'
                 jtmpl.bind(child, val[i], options)
 
-          # Return reactor function
-          (val) ->
+          reactor = (val) ->
+            val = getValue(model, attr, true, reactor)
+            if val is undefined then return
+
             # collection?
             if Array.isArray(val)
               jtmpl.bindArrayToNodeChildren(val, node, options)
@@ -586,6 +605,9 @@ Function void (AnyType val) `react`
             # if section
             else
               node.style.display = (!val isnt (sectionType is '^')) and 'none' or ''
+
+          # Return reactor function
+          reactor
       }
 
 
@@ -599,9 +621,14 @@ Function void (AnyType val) `react`
         bindTo: (prop) -> prop
 
         react: (node, prop, model, options) ->
-          (val) -> 
+          reactor = (val) ->
+            val = getValue(model, prop, true, reactor)
+            if val is undefined then return
+
             node.innerHTML = val
             if typeof val is 'object' then jtmpl.bind(node, model, options)
+
+          reactor
       }
 
 
@@ -929,18 +956,33 @@ AnyType getValue(AnyType model, String prop[, Function callback[, Function self]
 
 Get value of `model[prop]`, evaluate value function if computed value
 
-When `callback` is passed value function can compute the result asynchronously,
+When `model[prop]` is function, it should use `this` to refer to model properties,
+like `this('foo')` or even `@ 'foo'` in CoffeeScript. 
+
+When in `trackDependencies` mode:
+
+value function can compute the result asynchronously,
 return undefined to signal this, finally call `callback` with computed value on success.
 
-`self` function is used by the value function to refer to model properties,
-like `this('foo')`. Default `self` function just returns `model['foo']`.
-Binding rules provide theirs function to track dependencies.
+`model.__dependents[prop]` registers all descendents for a `prop`
 
-    getValue = (model, prop, callback, self) ->
+    getValue = (model, prop, trackDependencies, callback) ->
       if prop is '.' then return model
       val = model[prop]
       if typeof val is 'function'
-        val.call(self or ((prop) -> model[prop]), callback)
+        result = val.call(
+          # `this` function
+          if trackDependencies 
+            model.__dependents ?= {}
+            (propToReturn) ->
+              model.__dependents[propToReturn] ?= []
+              model.__dependents[propToReturn].push(prop)
+              model[propToReturn]
+          else
+            (propToReturn) -> model[propToReturn]
+          ,
+          callback
+        )
       else
         val
 
