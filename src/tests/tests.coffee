@@ -88,7 +88,17 @@ test 'compile', ->
 		'<div data-jt="#links" data-jt-1="&lt;a href=#{href}# class=#{selected}#&gt;#{title}#&lt;/a&gt;"><a data-jt="href=href class=selected title" href="/" class=selected>root</a></div>',
 		'array of links with many bound attributes'
 
+	equal jtmpl('{{a}}', {a: -> 'computed'}),
+		'<span data-jt="a">computed</span>',
+		'computed variable'
 
+	equal jtmpl('{{a}}', {a: (-> @('b')), b: 'dependent'}),
+		'<span data-jt="a">dependent</span>',
+		'computed dependent variable'
+
+	equal jtmpl('{{#a}}{{.}}{{/a}}', {a: -> [1, 2, 3]}),
+		'<div data-jt="#a" data-jt-1="#{.}#"><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div>',
+		'computed collection'
 
 
 

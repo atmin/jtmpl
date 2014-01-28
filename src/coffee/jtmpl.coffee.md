@@ -257,7 +257,7 @@ String `bindingToken` (String for each group in pattern)
         pattern: "(class=\"? [\\w \\. \\- \\s {{}}]*) {{ (#{ RE_IDENTIFIER }) }}$"
 
         replaceWith: (pre, prop, model) ->
-          val = model[prop]
+          val = getValue(model, prop)
           [ # Emit match, and class name if booleanVar
             (pre.search('{') is -1 and pre or ' ') +
             (typeof val is 'boolean' and val and prop or '')
@@ -300,7 +300,7 @@ When `prop` is boolean, value determines presense of attribute.
         pattern: "(#{ RE_IDENTIFIER }) = {{ (#{ RE_IDENTIFIER }) }}$"
 
         replaceWith: (attr, prop, model) ->
-          val = model[prop]
+          val = getValue(model, prop)
           # null?
           if not val? or val is null
             ['', []]
@@ -327,7 +327,7 @@ When `prop` is boolean, value determines presense of attribute.
           if Array.isArray(model[section]) then section else null
 
         contents: (template, model, section, options) ->
-          val = model[section]
+          val = getValue(model, section)
 
           # Sequence?
           if Array.isArray(val)
@@ -348,6 +348,7 @@ When `prop` is boolean, value determines presense of attribute.
             [ jtmpl(template, model),
               if val then [['style', 'display:none']] else []
             ]
+
         bindingToken: (section) -> "^#{ section }"
       }
 
@@ -364,7 +365,7 @@ When `prop` is boolean, value determines presense of attribute.
         wrapper: 'defaultSection'
 
         contents: (template, model, section, options) ->
-          val = model[section]
+          val = getValue(model, section)
           # Sequence?
           if Array.isArray(val)
             [ # Render body for each item
@@ -402,7 +403,7 @@ When `prop` is boolean, value determines presense of attribute.
 
         wrapper: 'defaultVar'
 
-        replaceWith: (prop, model) -> [prop is '.' and model or model[prop], []]
+        replaceWith: (prop, model) -> [getValue(model, prop), []]
 
         bindingToken: (prop) -> prop
       }
@@ -416,7 +417,7 @@ When `prop` is boolean, value determines presense of attribute.
 
         wrapper: 'defaultVar'
 
-        replaceWith: (prop, model) -> [escapeHTML(prop is '.' and model or model[prop]), []]
+        replaceWith: (prop, model) -> [escapeHTML(getValue(model, prop)), []]
 
         bindingToken: (prop) -> prop
       }
@@ -602,6 +603,8 @@ Function void (AnyType val) `react`
             node.innerHTML = val
             if typeof val is 'object' then jtmpl.bind(node, model, options)
       }
+
+
 
     ]
 
@@ -918,6 +921,28 @@ Replace mustaches with given delimiters, strip whitespace, return RegExp
         .replace('}}',  escapeRE(delimiters[1]))
         else src)
       , 'g')
+
+
+
+
+AnyType getValue(AnyType model, String prop[, Function callback[, Function self]])
+
+Get value of `model[prop]`, evaluate value function if computed value
+
+When `callback` is passed value function can compute the result asynchronously,
+return undefined to signal this, finally call `callback` with computed value on success.
+
+`self` function is used by the value function to refer to model properties,
+like `this('foo')`. Default `self` function just returns `model['foo']`.
+Binding rules provide theirs function to track dependencies.
+
+    getValue = (model, prop, callback, self) ->
+      if prop is '.' then return model
+      val = model[prop]
+      if typeof val is 'function'
+        val.call(self or ((prop) -> model[prop]), callback)
+      else
+        val
 
 
 
