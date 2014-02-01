@@ -82,7 +82,23 @@
       <div><!-- {{{innerHTML}}} --></div>
       <!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
 
-      <h3><code>model['#route42']</code></h3>
+      <h3>Computed properties</h3>
+      <p>
+        a=<input size="2" value="{{a}}">,
+        b=<input size="2" value="{{b}}">,
+        c=<input size="2" value="{{c}}">
+      </p>
+      <p>
+        <code>model.sum</code> = -> a+b+c = <strong><code id="sum">{{sum}}</code></strong>
+      </p>
+      <p>
+        <code>model.sumSquared</code> = -> sum^2 = <strong><code id="sumSquared">{{sumSquared}}</code></strong>
+      </p>
+      <p>
+        <code>model.delayedSum</code> = -> setTimeout(sum, 2000) = <strong><code>{{delayedSum}}</code></strong>
+      </p>
+
+      <h3><code>model['#route(\\d+)$']</code>, dynamic route handler </h3>
       <a href="#route42">Link to <code>#route42</code></a>
 
       <h3>Nested collections</h3>
@@ -156,29 +172,54 @@
           barCheck: false
         },
 
+        a: 2,
+        b: 2,
+        c: 2,
+
+        // Computed properties
+        sum: function () {
+          return [this('a'), this('b'), this('c')]
+            .reduce(function (prev, curr) {
+              return parseInt(prev) + parseInt(curr);
+            }, 0);
+        },
+
+        sumSquared: function () {
+          var sum = this('sum');
+          return sum * sum;
+        },
+
+        // Asynchronous computed property
+        delayedSum: function (callback) {
+          var sum = this('sum');
+          setTimeout(function () {
+            callback(sum);
+          }, 2000);
+        },
+
 
         // event handlers
-        toggle: function(e) {
+        toggle: function (e) {
           this.text = this.text === 'lowercase' ?
             'UPPERCASE': 'lowercase';
           e.preventDefault();
         },
-        push: function() {
+        push: function () {
           this.collection.push({
             popDisabled: true,
             inner: []
           });
           this.popDisabled = false;
         },
-        pop: function() {
+        pop: function () {
           this.collection.pop();
           this.popDisabled = this.collection.length === 0;
         },
-        innerPush: function() {
+        innerPush: function () {
           this.inner.push(parseInt(Math.random() * 100));
           this.popDisabled = false;
         },
-        innerPop: function() {
+        innerPop: function () {
           this.inner.pop();
           this.popDisabled = this.inner.length === 0;
         }

@@ -96,6 +96,10 @@ test 'compile', ->
 		'<span data-jt="a">dependent</span>',
 		'computed dependent variable'
 
+	equal jtmpl('{{a}}', {a: (-> @('b')), b: (-> @('c')), c: 'dependent-on-dependent'}),
+		'<span data-jt="a">dependent-on-dependent</span>',
+		'computed dependent on computed variable'
+
 	equal jtmpl('{{#a}}{{.}}{{/a}}', {a: -> [1, 2, 3]}),
 		'<div data-jt="#a" data-jt-1="#{.}#"><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div>',
 		'computed collection'
@@ -163,3 +167,11 @@ test 'bind', ->
 	equal collectionDOMText(),
 		'1,2,3,4',
 		'collection.sort'
+
+	model.a = model.b = model.c = 1
+	equal jtmpl('#sum')[0].innerHTML,
+		'3',
+		'computed property on change'
+	equal jtmpl('#sumSquared')[0].innerHTML,
+		'9',
+		'dependent on computed property on change'

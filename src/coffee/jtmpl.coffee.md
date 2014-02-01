@@ -533,9 +533,9 @@ Function void (AnyType val) `react`
 
         bindTo: (attr, prop) -> prop
 
-        react: (node, attr, model) ->
+        react: (node, attr, prop, model) ->
           reactor = (val) ->
-            val = getValue(model, attr, true, reactor)
+            val = getValue(model, prop, true, reactor)
             if val is undefined then return
 
             if node[attr] isnt val then node[attr] = val
@@ -627,6 +627,8 @@ Function void (AnyType val) `react`
 
             node.innerHTML = val
             if typeof val is 'object' then jtmpl.bind(node, model, options)
+
+          if typeof model[prop] is 'function' then reactor(getValue(model, prop, true, reactor))
 
           reactor
       }
@@ -967,19 +969,30 @@ return undefined to signal this, finally call `callback` with computed value on 
 `model.__dependents[prop]` registers all descendents for a `prop`
 
     getValue = (model, prop, trackDependencies, callback) ->
+      getter = (prop) ->
+        result = model[prop]
+        if typeof result is 'function'
+          result.call(getter)
+        else
+          result
+
+      dependencyTracker = (propToReturn) ->
+        model.__dependents[propToReturn] ?= []
+        if model.__dependents[propToReturn].indexOf(prop) is -1
+          model.__dependents[propToReturn].push(prop)
+        getter(propToReturn)
+
       if prop is '.' then return model
+
       val = model[prop]
       if typeof val is 'function'
         result = val.call(
           # `this` function
           if trackDependencies 
             model.__dependents ?= {}
-            (propToReturn) ->
-              model.__dependents[propToReturn] ?= []
-              model.__dependents[propToReturn].push(prop)
-              model[propToReturn]
+            dependencyTracker
           else
-            (propToReturn) -> model[propToReturn]
+            getter
           ,
           callback
         )
@@ -1069,8 +1082,19 @@ Register a callback to handle object property change.
       Object.defineProperty(obj, prop, {
         get: oldDescriptor.get or -> oldDescriptor.value,
         set: ((val) ->
-          oldDescriptor.set?(val) or oldDescriptor.value = val
-          callback(val)
+          if val.__type is 'function'
+            callback(val.__func())
+          else
+            oldDescriptor.set?(val) or oldDescriptor.value = val
+            callback(val)
+
+          for dependent in obj.__dependents?[prop] or []
+            obj[dependent] = {
+              __type: 'function',
+              __func: -> val
+            }
+
+          return
         ),
         configurable: true
       })
