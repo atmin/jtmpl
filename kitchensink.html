@@ -191,6 +191,11 @@
 
         // Asynchronous computed property
         delayedSum: function (callback) {
+          // Detect compiler phase
+          if (callback === undefined) {
+            return '...';
+          }
+
           var sum = this('sum');
           setTimeout(function () {
             callback(sum);

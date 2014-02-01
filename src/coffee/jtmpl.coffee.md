@@ -476,11 +476,16 @@ Function void (AnyType val) `react`
           else
             node.addEventListener('change', -> model[prop] = node[attr])
 
-          reactor = (val) ->
+          reaction = (val) ->
             val = getValue(model, prop, true, reactor)
             if val is undefined then return
 
             if node[attr] isnt val then node[attr] = val
+
+          reactor = (val) ->
+            if val isnt undefined then reaction(val)
+
+          if typeof model[prop] is 'function' then reactor(getValue(model, prop, true, reaction))
 
           reactor
       }
@@ -621,14 +626,14 @@ Function void (AnyType val) `react`
         bindTo: (prop) -> prop
 
         react: (node, prop, model, options) ->
-          reactor = (val) ->
-            val = getValue(model, prop, true, reactor)
-            if val is undefined then return
-
+          reaction = (val) ->
             node.innerHTML = val
             if typeof val is 'object' then jtmpl.bind(node, model, options)
 
-          if typeof model[prop] is 'function' then reactor(getValue(model, prop, true, reactor))
+          reactor = (val) ->
+            if val isnt undefined then reaction(val)
+
+          if typeof model[prop] is 'function' then reactor(getValue(model, prop, true, reaction))
 
           reactor
       }
@@ -986,7 +991,7 @@ return undefined to signal this, finally call `callback` with computed value on 
 
       val = model[prop]
       if typeof val is 'function'
-        result = val.call(
+        val.call(
           # `this` function
           if trackDependencies 
             model.__dependents ?= {}
@@ -1082,16 +1087,16 @@ Register a callback to handle object property change.
       Object.defineProperty(obj, prop, {
         get: oldDescriptor.get or -> oldDescriptor.value,
         set: ((val) ->
-          if val.__type is 'function'
-            callback(val.__func())
+          if val.__signal
+            callback(val.__val)
           else
             oldDescriptor.set?(val) or oldDescriptor.value = val
             callback(val)
 
           for dependent in obj.__dependents?[prop] or []
             obj[dependent] = {
-              __type: 'function',
-              __func: -> val
+              __signal: true,
+              __val: getValue(obj, dependent, true, callback)
             }
 
           return
