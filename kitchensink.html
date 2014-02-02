@@ -95,7 +95,7 @@
         <code>model.sumSquared</code> = -> sum^2 = <strong><code id="sumSquared">{{sumSquared}}</code></strong>
       </p>
       <p>
-        <code>model.delayedSum</code> = -> setTimeout(sum, 2000) = <strong><code>{{delayedSum}}</code></strong>
+        <code>model.delayedNegatedSum</code> = -> -sum after 2s = <strong><code>{{delayedNegatedSum}}</code></strong>
       </p>
 
       <h3><code>model['#route(\\d+)$']</code>, dynamic route handler </h3>
@@ -190,7 +190,7 @@
         },
 
         // Asynchronous computed property
-        delayedSum: function (callback) {
+        delayedNegatedSum: function (callback) {
           // Detect compiler phase
           if (callback === undefined) {
             return '...';
@@ -198,7 +198,7 @@
 
           var sum = this('sum');
           setTimeout(function () {
-            callback(sum);
+            callback(-sum);
           }, 2000);
         },
 
