@@ -519,11 +519,13 @@ Function void (AnyType val) `react`
         bindTo: (prop) -> prop
 
         react: (node, prop, model) ->
-          reactor = (val) ->
-            val = getValue(model, prop, true, reactor)
-            if val is undefined then return
-
+          reaction = (val) ->
             (val and addClass or removeClass)(node, prop)
+
+          reactor = (val) ->
+            if val isnt undefined then reaction(val)
+
+          if typeof model[prop] is 'function' then reactor(getValue(model, prop, true, reaction))
 
           reactor
       }
@@ -539,11 +541,13 @@ Function void (AnyType val) `react`
         bindTo: (attr, prop) -> prop
 
         react: (node, attr, prop, model) ->
-          reactor = (val) ->
-            val = getValue(model, prop, true, reactor)
-            if val is undefined then return
-
+          reaction = (val) ->
             if node[attr] isnt val then node[attr] = val
+
+          reactor = (val) ->
+            if val isnt undefined then reaction(val)
+
+          if typeof model[prop] is 'function' then reactor(getValue(model, prop, true, reaction))
 
           reactor
       }
@@ -578,10 +582,7 @@ Function void (AnyType val) `react`
               if typeof val[i] is 'object'
                 jtmpl.bind(child, val[i], options)
 
-          reactor = (val) ->
-            val = getValue(model, attr, true, reactor)
-            if val is undefined then return
-
+          reaction = (val) ->
             # collection?
             if Array.isArray(val)
               jtmpl.bindArrayToNodeChildren(val, node, options)
@@ -611,7 +612,11 @@ Function void (AnyType val) `react`
             else
               node.style.display = (!val isnt (sectionType is '^')) and 'none' or ''
 
-          # Return reactor function
+          reactor = (val) ->
+            if val isnt undefined then reaction(val)
+
+          if typeof model[attr] is 'function' then reactor(getValue(model, attr, true, reaction))
+
           reactor
       }
 
