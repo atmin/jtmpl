@@ -36,7 +36,7 @@
       <p>
         <label for="field">Enter something</label> <input id="field" value={{field}}>
       </p>
-      {{#field}} <p><code>model.field</code> = "{{field}}"</p> {{/field}}
+      {{#field}} <p><code>model.field</code> = {{field|quote}}</p> {{/field}}
       {{^field}} <p><code>model.field</code> is empty</p> {{/field}}
 
       <h3>Data binding, toggle class</h3>
@@ -82,6 +82,37 @@
       <div><!-- {{{innerHTML}}} --></div>
       <!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
 
+      <h3>Computed properties</h3>
+      <p>
+        a=<input size="2" value="{{a}}">,
+        b=<input size="2" value="{{b}}">,
+        c=<input size="2" value="{{c}}">
+      </p>
+      <p>
+        <code>model.sum</code> = -> a+b+c = <strong><code id="sum">{{sum}}</code></strong>
+      </p>
+      <p>
+        <code>model.sumSquared</code> = -> sum^2 = <strong><code id="sumSquared">{{sumSquared}}</code></strong>
+      </p>
+      <p>
+        <code>model.delayedNegatedSum</code> = -> -sum after 2s = <strong><code>{{delayedNegatedSum}}</code></strong>
+      </p>
+
+      <h3>Set computed properties</h3>
+      <p>
+        <code>model.fullName</code> <input value="{{fullName}}">
+      </p>
+      <p>
+        <code>model.firstName</code> = {{firstName}}
+      </p>
+      <p>
+        <code>model.lastName</code> = {{lastName}}
+      </p>
+
+
+      <h3><code>model['#route(\\d+)$']</code>, dynamic route handler </h3>
+      <a href="#route42">Link to <code>#route42</code></a>
+
       <h3>Nested collections</h3>
       <ul class="dummy-class just for the_test">
         {{#collection}}
@@ -108,6 +139,24 @@
 
     <script>
       model = {
+        // Empty init function, just for illustration
+        '#': function () {
+          // will be called on page load and when route changes
+        },
+
+        // Routes
+        '#simple-route': function () {
+          alert('A simple route without parameters')
+        },
+
+        '#route(\\d+)$': function (route) {
+          // if route definition contains braces,
+          // then route is considered regexp, matched groups are passed as parameters
+          alert('Route ' + route);
+        },
+
+
+        // Properties
         text: 'lowercase',
 
         collection: [
@@ -135,31 +184,84 @@
           barCheck: false
         },
 
+        a: 2,
+        b: 2,
+        c: 2,
+
+        // Computed properties
+        sum: function () {
+          return [this('a'), this('b'), this('c')]
+            .reduce(function (prev, curr) {
+              return parseInt(prev) + parseInt(curr);
+            }, 0);
+        },
+
+        sumSquared: function () {
+          var sum = this('sum');
+          return sum * sum;
+        },
+
+        // Asynchronous computed property
+        delayedNegatedSum: function (callback) {
+          // Detect compiler phase
+          if (callback === undefined) {
+            return '...';
+          }
+
+          var sum = this('sum');
+          setTimeout(function () {
+            callback(-sum);
+          }, 2000);
+        },
+
+        // Computed property setter
+        firstName: 'Random',
+        lastName: 'Number',
+        fullName: function (newValue) {
+
+          // Setter? (idiomatic comparison, getters always receive a callback argument)
+          if (newValue && typeof newValue !== 'function') {
+            var names = newValue.split(' ');
+            this('firstName', names[0]);
+            this('lastName', names[1]);
+            return;
+          }
+
+          // Getter
+          return this('firstName') + ' ' + this('lastName');
+        },
+
+
+        // Formatters
+        quote: function (val) {
+          return '"' + val + '"';
+        },
+
 
         // event handlers
-        toggle: function(e) {
-          this.text = this.text == 'lowercase' ?
+        toggle: function (e) {
+          this.text = this.text === 'lowercase' ?
             'UPPERCASE': 'lowercase';
           e.preventDefault();
         },
-        push: function() {
+        push: function () {
           this.collection.push({
             popDisabled: true,
             inner: []
           });
           this.popDisabled = false;
         },
-        pop: function() {
+        pop: function () {
           this.collection.pop();
-          this.popDisabled = this.collection.length == 0;
+          this.popDisabled = this.collection.length === 0;
         },
-        innerPush: function() {
+        innerPush: function () {
           this.inner.push(parseInt(Math.random() * 100));
           this.popDisabled = false;
         },
-        innerPop: function() {
+        innerPop: function () {
           this.inner.pop();
-          this.popDisabled = this.inner.length == 0;
+          this.popDisabled = this.inner.length === 0;
         }
       };
 

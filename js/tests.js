@@ -84,7 +84,7 @@
     equal(jtmpl('<a prop="{{prop}}">', {
       prop: 1
     }), '<a data-jt="prop=prop" prop="1">', 'output non-null attribute');
-    return equal(jtmpl('{{#links}}<a href="{{href}}" class="{{selected}}">{{title}}</a>{{/links}}', {
+    equal(jtmpl('{{#links}}<a href="{{href}}" class="{{selected}}">{{title}}</a>{{/links}}', {
       links: [
         {
           href: '/',
@@ -93,6 +93,31 @@
         }
       ]
     }), '<div data-jt="#links" data-jt-1="&lt;a href=#{href}# class=#{selected}#&gt;#{title}#&lt;/a&gt;"><a data-jt="href=href class=selected title" href="/" class=selected>root</a></div>', 'array of links with many bound attributes');
+    equal(jtmpl('{{a}}', {
+      a: function() {
+        return 'computed';
+      }
+    }), '<span data-jt="a">computed</span>', 'computed variable');
+    equal(jtmpl('{{a}}', {
+      a: (function() {
+        return this('b');
+      }),
+      b: 'dependent'
+    }), '<span data-jt="a">dependent</span>', 'computed dependent variable');
+    equal(jtmpl('{{a}}', {
+      a: (function() {
+        return this('b');
+      }),
+      b: (function() {
+        return this('c');
+      }),
+      c: 'dependent-on-dependent'
+    }), '<span data-jt="a">dependent-on-dependent</span>', 'computed dependent on computed variable');
+    return equal(jtmpl('{{#a}}{{.}}{{/a}}', {
+      a: function() {
+        return [1, 2, 3];
+      }
+    }), '<div data-jt="#a" data-jt-1="#{.}#"><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div>', 'computed collection');
   });
 
   test('bind', function() {
@@ -114,7 +139,7 @@
     equal(jtmpl('ul li ul li')[0].innerHTML, '42', 'nested section item innerHTML');
     equal(jtmpl('ul')[0].children.length, model.collection.length, 'collection.length equals li.length');
     model.field = 'qunit';
-    equal(jtmpl('p')[3].innerHTML, '<code>model.field</code> = "<span data-jt="field">qunit</span>"', 'positive if section');
+    equal(jtmpl('p')[3].innerHTML, '<code>model.field</code> = <span data-jt="field|quote">"qunit"</span>', 'positive if section');
     model.collection[0].inner.splice(4, 1);
     model.collection[0].inner[3] = 42;
     equal(jtmpl('ul li ul li')[3].innerHTML, '42', 'collection.splice delete last element');
@@ -137,7 +162,10 @@
     model.collection[0].inner[0] = 3;
     model.collection[0].inner[2] = 1;
     model.collection[0].inner.sort();
-    return equal(collectionDOMText(), '1,2,3,4', 'collection.sort');
+    equal(collectionDOMText(), '1,2,3,4', 'collection.sort');
+    model.a = model.b = model.c = 1;
+    equal(jtmpl('#sum')[0].innerHTML, '3', 'computed property on change');
+    return equal(jtmpl('#sumSquared')[0].innerHTML, '9', 'dependent on computed property on change');
   });
 
 }).call(this);
