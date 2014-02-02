@@ -178,3 +178,6 @@ There's never need to touch the DOM directly, `model` is the [single source of t
 #### Planned features
 
 Check the [issue tracker](https://github.com/atmin/jtmpl/issues)
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/atmin/jtmpl/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
