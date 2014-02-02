@@ -98,6 +98,18 @@
         <code>model.delayedNegatedSum</code> = -> -sum after 2s = <strong><code>{{delayedNegatedSum}}</code></strong>
       </p>
 
+      <h3>Set computed properties</h3>
+      <p>
+        <code>model.fullName</code> <input value="{{fullName}}">,
+      </p>
+      <p>
+        <code>model.firstName</code> = {{firstName}}
+      </p>
+      <p>
+        <code>model.lastName</code> = {{lastName}}
+      </p>
+
+
       <h3><code>model['#route(\\d+)$']</code>, dynamic route handler </h3>
       <a href="#route42">Link to <code>#route42</code></a>
 
@@ -200,6 +212,23 @@
           setTimeout(function () {
             callback(-sum);
           }, 2000);
+        },
+
+        // Computed property setter
+        firstName: 'Random',
+        lastName: 'Number',
+        fullName: function (newValue) {
+
+          // Setter? (idiomatic comparison, getters always receive a callback argument)
+          if (newValue && typeof newValue !== 'function') {
+            var names = newValue.split(' ');
+            this('firstName', names[0]);
+            this('lastName', names[1]);
+            return;
+          }
+
+          // Getter
+          return this('firstName') + ' ' + this('lastName');
         },
 
 

@@ -1087,11 +1087,16 @@ Register a callback to handle object property change.
       Object.defineProperty(obj, prop, {
         get: oldDescriptor.get or -> oldDescriptor.value,
         set: ((val) ->
-          if signal = val.__signal
+          if signal = val?.__signal
             val = getValue(signal.obj, signal.prop, true, callback)
             if val isnt undefined then callback(val)
           else
-            oldDescriptor.set?(val) or oldDescriptor.value = val
+            oldDescriptor.set?(val) or (
+              if typeof oldDescriptor.value is 'function'
+                oldDescriptor.value.call(((p, val) -> obj[p] = val), val)
+              else
+                oldDescriptor.value = val
+            )
             callback(val)
 
           for dependent in obj.__dependents?[prop] or []
