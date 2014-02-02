@@ -229,6 +229,16 @@ Transformations to clean up template for easier matching
 
 
 
+### Formatters and mappings
+
+None provided by default, put yours like `jtmpl.formatters.myFormatter = function (val) {...}`
+
+    jtmpl.formatters = {}    
+    jtmpl.mappings = {}    
+
+
+
+
 ### Compile rules 
 
 Delimiters in `pattern`s are replaced with escaped options.delimiters, whitespace - stripped.
@@ -358,17 +368,21 @@ When `prop` is boolean, value determines presense of attribute.
 #### `{{#section}}`
 
       {
-        pattern: "{{ \\# (#{ RE_IDENTIFIER }) }}$"
+        pattern: "{{ \\# (#{ RE_IDENTIFIER }) #{ RE_PIPE } }}$"
 
         lastTag: (model, section) ->
           if Array.isArray(model[section]) then section else null
 
         wrapper: 'defaultSection'
 
-        contents: (template, model, section, options) ->
+        contents: (template, model, section, mapping, options) ->
           val = getValue(model, section)
           # Sequence?
           if Array.isArray(val)
+            mapping = options.rootModel[mapping] or model[mapping] or jtmpl.mappings[mapping]
+            if typeof mapping is 'function'
+              val = val.map(mapping).filter((x) -> x isnt null and x isnt undefined)
+
             [ # Render body for each item
               (jtmpl(template, item, { asArrayItem: true }) for item in val).join(''),
               [ # template as node data attribute
@@ -633,7 +647,7 @@ Function void (AnyType val) `react`
 
         react: (node, prop, formatter, model, options) ->
           reaction = (val) ->
-            node.innerHTML = (model[formatter] or jtmpl.formatters?[formatter] or ((x) -> x))(val)
+            node.innerHTML = (options.rootModel?[formatter] or model[formatter] or jtmpl.formatters?[formatter] or ((x) -> x))(val)
             if typeof val is 'object' then jtmpl.bind(node, model, options)
 
           reactor = (val) ->
@@ -741,7 +755,8 @@ Boolean asArrayItem
                 result += token[0] + tmpl + closing[0]
               else
                 section = match[1]
-                [contents, wrapperAttrs] = rule.contents(tmpl, model, section, options)
+                args = [tmpl, model].concat(match.slice(1)).concat([options])
+                [contents, wrapperAttrs] = rule.contents(args...)
 
                 if htagPos is -1
                   tag = options[rule.wrapper]
@@ -997,7 +1012,7 @@ return undefined to signal this, finally call `callback` with computed value on 
           model.__dependents[propToReturn].push(prop)
         getter(propToReturn)
 
-      if prop is '.' then return model
+      if prop is '.' then return formatter(model)
 
       val = model[prop]
       if typeof val is 'function'
