@@ -198,6 +198,7 @@ Used in various matchers
     RE_NODE_ID = '^#[\\w\\.\\-]+$'
     RE_ANYTHING = '[\\s\\S]*?'
     RE_SPACE = '\\s*'
+    RE_PIPE = "(?: \\| (#{ RE_IDENTIFIER }) )?"
     RE_DATA_JT = '(?: ( \\s* data-jt = " [^"]* )" )?'
     RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/
 
@@ -413,7 +414,7 @@ When `prop` is boolean, value determines presense of attribute.
 #### `{{var}}`
 
       {
-        pattern: "{{ (#{ RE_IDENTIFIER }) (?: \\| (#{ RE_IDENTIFIER}))? }}$"
+        pattern: "{{ (#{ RE_IDENTIFIER }) #{ RE_PIPE } }}$"
 
         wrapper: 'defaultVar'
 
@@ -626,7 +627,7 @@ Function void (AnyType val) `react`
 #### var
 
       {
-        pattern: "(#{ RE_IDENTIFIER })(?: \\| (#{ RE_IDENTIFIER}))?"
+        pattern: "(#{ RE_IDENTIFIER }) #{ RE_PIPE }"
 
         bindTo: (prop) -> prop
 
