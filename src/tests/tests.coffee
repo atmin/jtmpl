@@ -121,7 +121,7 @@ test 'bind', ->
 
 	model.field = 'qunit'
 	equal jtmpl('p')[3].innerHTML, 
-		'<code>model.field</code> = "<span data-jt="field">qunit</span>"',
+		'<code>model.field</code> = <span data-jt="field|quote">"qunit"</span>',
 		'positive if section'
 
 	model.collection[0].inner.splice(4, 1)

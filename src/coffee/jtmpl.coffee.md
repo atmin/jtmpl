@@ -413,13 +413,13 @@ When `prop` is boolean, value determines presense of attribute.
 #### `{{var}}`
 
       {
-        pattern: "{{ (#{ RE_IDENTIFIER }) }}$"
+        pattern: "{{ (#{ RE_IDENTIFIER }) (?: \\| (#{ RE_IDENTIFIER}))? }}$"
 
         wrapper: 'defaultVar'
 
-        replaceWith: (prop, model) -> [escapeHTML(getValue(model, prop)), []]
+        replaceWith: (prop, formatter, model) -> [escapeHTML(getValue(model, prop, undefined, undefined, model[formatter] || jtmpl.formatters?[formatter] || null)), []]
 
-        bindingToken: (prop) -> prop
+        bindingToken: (prop, formatter) -> prop + (if formatter then '|' + formatter else '')
       }
 
     ]
@@ -626,19 +626,19 @@ Function void (AnyType val) `react`
 #### var
 
       {
-        pattern: "(#{ RE_IDENTIFIER })"
+        pattern: "(#{ RE_IDENTIFIER })(?: \\| (#{ RE_IDENTIFIER}))?"
 
         bindTo: (prop) -> prop
 
-        react: (node, prop, model, options) ->
+        react: (node, prop, formatter, model, options) ->
           reaction = (val) ->
-            node.innerHTML = val
+            node.innerHTML = (model[formatter] or jtmpl.formatters?[formatter] or ((x) -> x))(val)
             if typeof val is 'object' then jtmpl.bind(node, model, options)
 
           reactor = (val) ->
             if val isnt undefined then reaction(val)
 
-          if typeof model[prop] is 'function' then reactor(getValue(model, prop, true, reaction))
+          if typeof model[prop] is 'function' then reactor(getValue(model, prop, true, reaction, formatter))
 
           reactor
       }
@@ -978,13 +978,17 @@ return undefined to signal this, finally call `callback` with computed value on 
 
 `model.__dependents[prop]` registers all descendents for a `prop`
 
-    getValue = (model, prop, trackDependencies, callback) ->
+    getValue = (model, prop, trackDependencies, callback, formatter) ->
+      formatter = formatter or (x) -> x
+
       getter = (prop) ->
         result = model[prop]
-        if typeof result is 'function'
-          result.call(getter)
-        else
-          result
+        formatter(
+          if typeof result is 'function'
+            result.call(getter)
+          else
+            result
+        )
 
       dependencyTracker = (propToReturn) ->
         model.__dependents[propToReturn] ?= []
@@ -1007,7 +1011,7 @@ return undefined to signal this, finally call `callback` with computed value on 
           callback
         )
       else
-        val
+        formatter(val)
 
 
 
