@@ -29,7 +29,7 @@
       };
       xhr.open(args[0], args[1], opts.async || true, opts.user, opts.password);
       return xhr.send(request);
-    } else if (typeof args[0] === 'string' && typeof args[1] !== 'string' && args[1] !== null && ((_ref2 = args.length) === 2 || _ref2 === 3)) {
+    } else if (typeof args[0] === 'string' && (typeof args[1] !== 'string' || args.length === 2) && args[1] !== null && ((_ref2 = args.length) === 2 || _ref2 === 3)) {
       template = '' + (args[0].match(RE_NODE_ID) && document.querySelector(args[0]).innerHTML || args[0]);
       opts = jtmpl.options(args[2], args[1]);
       _ref3 = jtmpl.preprocessingRules;
@@ -39,8 +39,8 @@
       }
       return jtmpl.compile(template, args[1], null, false, opts).trim();
     } else if (typeof args[0].cloneNode === 'function' && typeof args[1] === 'object') {
-      jtmpl.prebind(args[1]);
-      return jtmpl.bind(args[0], args[1], jtmpl.options(args[2], args[1]));
+      jtmpl.bind(args[0], args[1], jtmpl.options(args[2], args[1]));
+      return jtmpl.postbind(args[1]);
     } else {
       target = typeof args[0].cloneNode === 'function' && args[0] || document.querySelector(args[0]);
       template = args[1].match(RE_NODE_ID) && document.querySelector(args[1]).innerHTML || args[1];
@@ -544,7 +544,7 @@
     return !!contents.trim().match(regexp("^<(" + RE_IDENTIFIER + ") " + RE_SPACE + "        [^>]*? > " + RE_ANYTHING + " </\\1>$ | < [^>]*? />$"));
   };
 
-  jtmpl.prebind = function(model) {
+  jtmpl.postbind = function(model) {
     var hashchange, props, routes;
     if (typeof model['#'] === 'function') {
       model['#'].apply(model);

@@ -99,7 +99,7 @@ A big `if..else if` statement as arguments pattern matcher
         xhr.send(request)
 
       # `jtmpl(template, model[, options])`?
-      else if typeof args[0] is 'string' and typeof args[1] isnt 'string' and args[1] isnt null and args.length in [2, 3]
+      else if typeof args[0] is 'string' and (typeof args[1] isnt 'string' or args.length is 2) and args[1] isnt null and args.length in [2, 3]
         template = '' + (args[0].match(RE_NODE_ID) and document.querySelector(args[0]).innerHTML or args[0])
         opts = jtmpl.options(args[2], args[1])
 
@@ -111,11 +111,11 @@ A big `if..else if` statement as arguments pattern matcher
 
       # `jtmpl(target, model[, options])`?
       else if typeof args[0].cloneNode is 'function' and typeof args[1] is 'object'
-        # Pre-binding stage
-        jtmpl.prebind(args[1])
-
         # Bind recursively using data-jt attributes
         jtmpl.bind(args[0], args[1], jtmpl.options(args[2], args[1]))
+
+        # Post-binding stage
+        jtmpl.postbind(args[1])
 
       # `jtmpl(target, template, model[, options])`
       else
@@ -875,7 +875,7 @@ Check if contents is properly formatted closed HTML tag
 
 
 
-## Pre-binding stage
+## Post-binding stage
 
 Init function (`model['#']`) and routes via window onhashchange are processed here.
 
@@ -888,7 +888,7 @@ Example routes:
 
 `'#page-(\\d+)': function (pageNumber) { ...`
 
-    jtmpl.prebind = (model) ->
+    jtmpl.postbind = (model) ->
       if typeof model['#'] is 'function'
         model['#'].apply(model)
 
