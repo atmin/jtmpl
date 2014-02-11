@@ -157,11 +157,7 @@
       contents: function(template, model, section, options) {
         var val;
         val = getValue(model, section);
-        if (Array.isArray(val)) {
-          return [!val.length ? jtmpl(template, model) : '', [['data-jt-0', multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)]]];
-        } else {
-          return [jtmpl(template, model), val ? [['style', 'display:none']] : []];
-        }
+        return [Array.isArray(val) ? !val.length ? jtmpl(template, model) : '' : !val ? jtmpl(template, model) : '', [['data-jt-0', multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)]]];
       },
       bindingToken: function(section) {
         return "^" + section;
@@ -179,31 +175,21 @@
       contents: function(template, model, section, mapping, options) {
         var item, val;
         val = getValue(model, section);
-        if (Array.isArray(val)) {
-          mapping = options.rootModel[mapping] || model[mapping] || jtmpl.mappings[mapping];
-          if (typeof mapping === 'function') {
-            val = val.map(mapping).filter(function(x) {
-              return x !== null && x !== void 0;
-            });
-          }
-          return [
-            ((function() {
-              var _i, _len, _results;
-              _results = [];
-              for (_i = 0, _len = val.length; _i < _len; _i++) {
-                item = val[_i];
-                _results.push(jtmpl(template, item, {
-                  asArrayItem: true
-                }));
-              }
-              return _results;
-            })()).join(''), [['data-jt-1', multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)]]
-          ];
-        } else if (typeof val === 'object') {
-          return [jtmpl(template, val), []];
-        } else {
-          return [jtmpl(template, model), !val ? [['style', 'display:none']] : []];
-        }
+        return [
+          Array.isArray(val) ? (mapping = options.rootModel[mapping] || model[mapping] || jtmpl.mappings[mapping], typeof mapping === 'function' ? val = val.map(mapping).filter(function(x) {
+            return x !== null && x !== void 0;
+          }) : void 0, ((function() {
+            var _i, _len, _results;
+            _results = [];
+            for (_i = 0, _len = val.length; _i < _len; _i++) {
+              item = val[_i];
+              _results.push(jtmpl(template, item, {
+                asArrayItem: true
+              }));
+            }
+            return _results;
+          })()).join('')) : typeof val === 'object' ? jtmpl(template, val) : val ? jtmpl(template, model) : '', [['data-jt-1', multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)]]
+        ];
       },
       bindingToken: function(section) {
         return "#" + section;
@@ -382,13 +368,19 @@
               _results.push(node.appendChild(jtmpl.createSectionItem(node, item, options)));
             }
             return _results;
-          } else if (typeof val === 'object') {
-            node.innerHTML = jtmpl(multiReplace(node.getAttribute('data-jt-1') || '', options.compiledDelimiters, options.delimiters), val);
-            return jtmpl(node, node.innerHTML, val, {
-              rootModel: model
-            });
           } else {
-            return node.style.display = (!val !== (sectionType === '^')) && 'none' || '';
+            if (typeof val === 'object') {
+              node.innerHTML = jtmpl(multiReplace(node.getAttribute('data-jt-1') || '', options.compiledDelimiters, options.delimiters), val, {
+                rootModel: model
+              });
+              return jtmpl(node, model, {
+                rootModel: model
+              });
+            } else {
+              return jtmpl(node, multiReplace(sectionType === '#' && val ? node.getAttribute('data-jt-1') || '' : sectionType === '^' && !val ? node.getAttribute('data-jt-0') || '' : '', options.compiledDelimiters, options.delimiters), model, {
+                rootModel: model
+              });
+            }
           }
         };
         reactor = function(val) {

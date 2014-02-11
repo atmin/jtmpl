@@ -340,25 +340,22 @@ When `prop` is boolean, value determines presense of attribute.
         contents: (template, model, section, options) ->
           val = getValue(model, section)
 
-          # Sequence?
-          if Array.isArray(val)
-            [
+          [
+            # Sequence?
+            if Array.isArray(val)
               # Render body if array empty
               if not val.length then jtmpl(template, model) else ''
-              ,
-              [
-                [ # template as node data attribute
-                  'data-jt-0',
+            else
+              if not val then jtmpl(template, model) else ''
+            ,
+            [
+              [ # template as node data attribute
+                'data-jt-0',
 
-                  multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)
-                ]
+                multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)
               ]
             ]
-
-          else
-            [ jtmpl(template, model),
-              if val then [['style', 'display:none']] else []
-            ]
+          ]
 
         bindingToken: (section) -> "^#{ section }"
       }
@@ -377,34 +374,33 @@ When `prop` is boolean, value determines presense of attribute.
 
         contents: (template, model, section, mapping, options) ->
           val = getValue(model, section)
-          # Sequence?
-          if Array.isArray(val)
-            mapping = options.rootModel[mapping] or model[mapping] or jtmpl.mappings[mapping]
-            if typeof mapping is 'function'
-              val = val.map(mapping).filter((x) -> x isnt null and x isnt undefined)
 
-            [ # Render body for each item
-              (jtmpl(template, item, { asArrayItem: true }) for item in val).join(''),
-              [ # template as node data attribute
-                [
-                  'data-jt-1',
+          [ 
+            # Sequence?
+            if Array.isArray(val)
+              mapping = options.rootModel[mapping] or model[mapping] or jtmpl.mappings[mapping]
+              if typeof mapping is 'function'
+                val = val.map(mapping).filter((x) -> x isnt null and x isnt undefined)
 
-                  multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)
-                ]
+              # Render body for each item
+              (jtmpl(template, item, { asArrayItem: true }) for item in val).join('')
+
+            # Context
+            else if typeof val is 'object'
+              jtmpl(template, val)
+
+            # as Boolean
+            else
+              if val then jtmpl(template, model) else ''
+
+            [ # template as node data attribute
+              [
+                'data-jt-1',
+
+                multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)
               ]
             ]
-
-          # Context?
-          else if typeof val is 'object'
-            # Render body using context
-            [ jtmpl(template, val),
-              []
-            ]
-
-          else
-            [ jtmpl(template, model),
-              if not val then [['style', 'display:none']] else []
-            ]
+          ]
 
         bindingToken: (section) -> "##{ section }"
       }
@@ -614,18 +610,35 @@ Function void (AnyType val) `react`
 
               node.appendChild(jtmpl.createSectionItem(node, item, options)) for item in val
 
-            # local context?
-            else if typeof val is 'object'
-              node.innerHTML = jtmpl(
-                multiReplace(node.getAttribute('data-jt-1') or '',
-                    options.compiledDelimiters, options.delimiters),
-                val
-              )
-              jtmpl(node, node.innerHTML, val, { rootModel: model })
-
-            # if section
+            # local context or if section
             else
-              node.style.display = (!val isnt (sectionType is '^')) and 'none' or ''
+              if typeof val is 'object'
+                node.innerHTML = jtmpl(
+                  multiReplace(
+                    node.getAttribute('data-jt-1') or '',
+                    options.compiledDelimiters, options.delimiters
+                  ),
+                  val,
+                  { rootModel: model }
+                )
+                jtmpl(node, model, { rootModel: model })
+
+              else
+                jtmpl(
+                  node,
+                  multiReplace(
+                    if sectionType is '#' and val
+                      node.getAttribute('data-jt-1') or ''
+                    else if sectionType is '^' and not val
+                      node.getAttribute('data-jt-0') or ''
+                    else
+                      ''
+                    ,
+                    options.compiledDelimiters, options.delimiters
+                  ),
+                  model,
+                  { rootModel: model }
+                )
 
           reactor = (val) ->
             if val isnt undefined then reaction(val)

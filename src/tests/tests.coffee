@@ -20,19 +20,19 @@ test 'compile', ->
 		'object array false'
 
 	equal jtmpl('{{#a}}1{{/a}}', { a: true }),
-		'<div data-jt="#a">1</div>',
+		'<div data-jt="#a" data-jt-1="1">1</div>',
 		'positive condition'
 
 	equal jtmpl('{{^a}}1{{/a}}', { a: true }), 
-		'<div data-jt="^a" style="display:none">1</div>',
+		'<div data-jt="^a" data-jt-0="1"></div>',
 		'negative condition'
 
 	equal jtmpl('{{#a}}1{{/a}}', { a: false }), 
-		'<div data-jt="#a" style="display:none">1</div>',
+		'<div data-jt="#a" data-jt-1="1"></div>',
 		'positive condition false'
 
 	equal jtmpl('{{^a}}1{{/a}}', { a: false }),
-		'<div data-jt="^a">1</div>',
+		'<div data-jt="^a" data-jt-0="1">1</div>',
 		'negative condition false'
 
 	equal jtmpl('<p>{{a}}</p>', { a: 1}),
@@ -175,3 +175,9 @@ test 'bind', ->
 	equal jtmpl('#sumSquared')[0].innerHTML,
 		'9',
 		'dependent on computed property on change'
+
+
+	model.checkboxes = { fooCheck: false, barCheck: true }
+	equal jtmpl('[data-jt="#fooCheck"]')[0].innerHTML is '' and jtmpl('[data-jt="#barCheck"]')[0].innerHTML.length > 0,
+		true,
+		'model.checkboxes = { some object }'
