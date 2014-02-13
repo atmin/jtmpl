@@ -223,7 +223,7 @@
         return prop;
       },
       react: function(node, attr, prop, model) {
-        var reaction, reactor;
+        var reaction, reactor, _ref;
         if (node.nodeName === 'OPTION') {
           node.parentNode.addEventListener('change', function() {
             if (model[prop] !== node.selected) {
@@ -246,7 +246,7 @@
             return model[prop] = node[attr];
           });
         }
-        if (node.type === 'text') {
+        if ((_ref = node.type) === 'text' || _ref === 'password') {
           node.addEventListener('input', function() {
             return model[prop] = node[attr];
           });
@@ -358,28 +358,25 @@
           }
         }
         reaction = function(val) {
-          var item, _j, _len1, _results;
+          var item, opts, _j, _len1, _results;
+          opts = jtmpl.options(options, model);
           if (Array.isArray(val)) {
-            jtmpl.bindArrayToNodeChildren(val, node, options);
-            node.innerHTML = !val.length ? jtmpl(multiReplace(node.getAttribute('data-jt-0') || '', options.compiledDelimiters, options.delimiters), {}) : '';
+            jtmpl.bindArrayToNodeChildren(val, node, opts);
+            node.innerHTML = !val.length ? jtmpl(multiReplace(node.getAttribute('data-jt-0') || '', opts.compiledDelimiters, opts.delimiters), {}) : '';
             _results = [];
             for (_j = 0, _len1 = val.length; _j < _len1; _j++) {
               item = val[_j];
-              _results.push(node.appendChild(jtmpl.createSectionItem(node, item, options)));
+              _results.push(node.appendChild(jtmpl.createSectionItem(node, item, opts)));
             }
             return _results;
           } else {
             if (typeof val === 'object') {
-              node.innerHTML = jtmpl(multiReplace(node.getAttribute('data-jt-1') || '', options.compiledDelimiters, options.delimiters), val, {
-                rootModel: model
-              });
-              return jtmpl(node, model, {
+              node.innerHTML = jtmpl(multiReplace(node.getAttribute('data-jt-1') || '', opts.compiledDelimiters, opts.delimiters), val, opts);
+              return jtmpl.bind(node, model, {
                 rootModel: model
               });
             } else {
-              return jtmpl(node, multiReplace(sectionType === '#' && val ? node.getAttribute('data-jt-1') || '' : sectionType === '^' && !val ? node.getAttribute('data-jt-0') || '' : '', options.compiledDelimiters, options.delimiters), model, {
-                rootModel: model
-              });
+              return jtmpl(node, multiReplace(sectionType === '#' && val ? node.getAttribute('data-jt-1') || '' : sectionType === '^' && !val ? node.getAttribute('data-jt-0') || '' : '', opts.compiledDelimiters, opts.delimiters), model, opts);
             }
           }
         };
@@ -708,16 +705,28 @@
         return oldDescriptor.value;
       },
       set: (function(val) {
-        var dependent, signal, _i, _len, _ref, _ref1;
+        var dependent, p, signal, _i, _len, _ref, _ref1;
         if (signal = val != null ? val.__signal : void 0) {
           val = getValue(signal.obj, signal.prop, true, callback);
           if (val !== void 0) {
             callback(val);
           }
         } else {
-          (typeof oldDescriptor.set === "function" ? oldDescriptor.set(val) : void 0) || (typeof oldDescriptor.value === 'function' ? oldDescriptor.value.call((function(p, val) {
-            return obj[p] = val;
-          }), val) : oldDescriptor.value = val);
+          if (typeof val === 'object' && !Array.isArray(val)) {
+            for (p in val) {
+              obj[prop][p] = val[p];
+            }
+          } else if ((typeof val !== 'object' || Array.isArray(val)) && typeof oldDescriptor.set === 'function') {
+            oldDescriptor.set(val);
+          } else {
+            if (typeof oldDescriptor.value === 'function') {
+              oldDescriptor.value.call((function(p, val) {
+                return obj[p] = val;
+              }), val);
+            } else {
+              oldDescriptor.value = val;
+            }
+          }
           callback(val);
         }
         _ref1 = ((_ref = obj.__dependents) != null ? _ref[prop] : void 0) || [];

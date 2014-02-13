@@ -480,7 +480,7 @@ Function void (AnyType val) `react`
             )
 
           # text input?
-          if node.type is 'text'
+          if node.type in ['text', 'password']
             node.addEventListener('input', -> model[prop] = node[attr])
 
           # other inputs
@@ -594,21 +594,23 @@ Function void (AnyType val) `react`
                 jtmpl.bind(child, val[i], options)
 
           reaction = (val) ->
+            opts = jtmpl.options(options, model)
+
             # collection?
             if Array.isArray(val)
-              jtmpl.bindArrayToNodeChildren(val, node, options)
+              jtmpl.bindArrayToNodeChildren(val, node, opts)
 
               node.innerHTML =
                 if not val.length
                   jtmpl(
                     multiReplace(node.getAttribute('data-jt-0') or '',
-                      options.compiledDelimiters, options.delimiters),
+                      opts.compiledDelimiters, opts.delimiters),
                     {}
                   )
                 else 
                   ''
 
-              node.appendChild(jtmpl.createSectionItem(node, item, options)) for item in val
+              node.appendChild(jtmpl.createSectionItem(node, item, opts)) for item in val
 
             # local context or if section
             else
@@ -616,12 +618,12 @@ Function void (AnyType val) `react`
                 node.innerHTML = jtmpl(
                   multiReplace(
                     node.getAttribute('data-jt-1') or '',
-                    options.compiledDelimiters, options.delimiters
+                    opts.compiledDelimiters, opts.delimiters
                   ),
                   val,
-                  { rootModel: model }
+                  opts
                 )
-                jtmpl(node, model, { rootModel: model })
+                jtmpl.bind(node, model, { rootModel: model })
 
               else
                 jtmpl(
@@ -634,10 +636,10 @@ Function void (AnyType val) `react`
                     else
                       ''
                     ,
-                    options.compiledDelimiters, options.delimiters
+                    opts.compiledDelimiters, opts.delimiters
                   ),
                   model,
-                  { rootModel: model }
+                  opts
                 )
 
           reactor = (val) ->
@@ -1129,12 +1131,21 @@ Register a callback to handle object property change.
             val = getValue(signal.obj, signal.prop, true, callback)
             if val isnt undefined then callback(val)
           else
-            oldDescriptor.set?(val) or (
+            if typeof val is 'object' and not Array.isArray(val)
+              # Shallow copy
+              for p of val
+                obj[prop][p] = val[p]
+            else if (typeof val isnt 'object' or Array.isArray(val)) and typeof oldDescriptor.set is 'function' 
+              # Existing setter
+              oldDescriptor.set(val) 
+            else
               if typeof oldDescriptor.value is 'function'
+                # computed value
                 oldDescriptor.value.call(((p, val) -> obj[p] = val), val)
               else
+                # simple value
                 oldDescriptor.value = val
-            )
+
             callback(val)
 
           for dependent in obj.__dependents?[prop] or []
