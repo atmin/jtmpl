@@ -1178,7 +1178,7 @@ and setting a proxy for each mutable operation.
     jtmpl.bindArrayToNodeChildren = bindArrayToNodeChildren = (array, node, options) ->
 
       # array already augmented?
-      if not array.__garbageCollectNodes
+      if not array.__nodes
 
         # it's possible for a referenced node to be destroyed. free the reference
         array.__garbageCollectNodes = ->
@@ -1198,98 +1198,108 @@ and setting a proxy for each mutable operation.
               {}
             )
 
+
+
         # Mutable array operations
+        mutable = (method) ->
+          ->
+            # remove <empty> element
+            if not @length then node.innerHTML = ''
+            # it's possible for a referenced node to be destroyed. garbage collect references
+            i = @__nodes.length
+            while --i
+              if not @__nodes[i].parentNode
+                @__nodes.splice(i, 1)
+            # call mutable method
+            result = method.apply(this, arguments)
+            # add <empty> element
+            if not this.length
+              node.innerHTML = jtmpl(
+                multiReplace(node.getAttribute('data-jt-0') or '',
+                  options.compiledDelimiters, options.delimiters),
+                {}
+              )
+            # what method returned
+            result
 
-        array.pop = ->
-          this.__removeEmpty()
-          this.__garbageCollectNodes()
-          node.removeChild(node.children[node.children.length - 1]) for node in this.__nodes
-          [].pop.apply(this, arguments)
-          [].pop.apply(this.__values, arguments)
-          this.__addEmpty()
+        array.pop = mutable(
+          -> 
+            node.removeChild(node.children[node.children.length - 1]) for node in @__nodes
+            [].pop.apply(@, arguments)
+        )
 
-        array.push = (item) ->
-          this.__removeEmpty()
-          this.__garbageCollectNodes()
-          node.appendChild(createSectionItem(node, item, options)) for node in this.__nodes
-          [].push.apply(this, arguments)
-          len = this.__values.length
-          result = [].push.apply(this.__values, arguments)
-          bindProp(item, len)
-          result
+        array.push = mutable(
+          ->
+            item = arguments[0]
+            node.appendChild(createSectionItem(node, item, options)) for node in @__nodes
+            result = [].push.apply(@, arguments)
+            bindProp(item, @length - 1)
+            result
+        )
 
-        array.reverse = ->
-          this.__removeEmpty()
-          this.__garbageCollectNodes()
-          result = [].reverse.apply(this.__values, arguments)
-          for node in this.__nodes
-            node.innerHTML = ''
-            for item, i in this.__values
-              node.appendChild(createSectionItem(node, item, options))
+        array.reverse = mutable(
+          ->
+            for node in @__nodes
+              node.innerHTML = ''
+              for item, i in @ by -1
+                node.appendChild(createSectionItem(node, item, options))
+                bindProp(item, i)
+            [].reverse.apply(@, arguments)
+        )
+
+        array.shift = mutable(
+          ->
+            for node in @__nodes
+              node.removeChild(node.children[0])
+            result = [].shift.apply(@, arguments)
+            for item, i in @
               bindProp(item, i)
-          this.__addEmpty()
-          result
+            result
+        )
 
-        array.shift = ->
-          this.__removeEmpty()
-          this.__garbageCollectNodes()
-          [].shift.apply(this, arguments)
-          result = [].shift.apply(this.__values, arguments)
-          for node in this.__nodes
-            node.removeChild(node.children[0])
-          for item, i in this.__values
-            bindProp(item, i)
-          this.__addEmpty()
-          result
-
-        array.unshift = ->
-          this.__removeEmpty()
-          this.__garbageCollectNodes()
-          for item in [].slice.call(arguments).reverse()
-            for node in this.__nodes
-              node.insertBefore(createSectionItem(node, item, options), node.children[0])
-          [].unshift.apply(this, arguments)
-          result = [].unshift.apply(this.__values, arguments)
-          for item, i in this.__values
-            bindProp(item, i)
-          this.__addEmpty()
-          result
-
-        array.sort = ->
-          this.__removeEmpty()
-          this.__garbageCollectNodes()
-          [].sort.apply(this, arguments)
-          result = [].sort.apply(this.__values, arguments)
-          for node in this.__nodes
-            node.innerHTML = ''
-            for item, i in array
-              node.appendChild(createSectionItem(node, item, options)) for node in this.__nodes
+        array.unshift = mutable(
+          ->
+            for item in [].slice.call(arguments).reverse()
+              for node in @__nodes
+                node.insertBefore(createSectionItem(node, item, options), node.children[0])
+            result = [].unshift.apply(@, arguments)
+            for item, i in @
               bindProp(item, i)
-          this.__addEmpty()
-          result
+            result
+        )
 
-        array.splice = (index, howMany) ->
-          this.__removeEmpty()
-          this.__garbageCollectNodes()
-          for node in this.__nodes
-            for i in [0...howMany]
-              node.removeChild(node.children[index])
-            for item in [].slice.call(arguments, 2)
-              node.insertBefore(createSectionItem(node, item, options), node.children[index])
-              bindProp(item, index)
-          [].splice.apply(this, arguments)
-          [].splice.apply(this.__values, arguments)
-          this.__addEmpty()
+        array.sort = mutable(
+          ->
+            [].sort.apply(@, arguments)
+            for node in @__nodes
+              node.innerHTML = ''
+              for item, i in @
+                node.appendChild(createSectionItem(node, item, options)) for node in this.__nodes
+                bindProp(item, i)
+            @
+        )
+
+        array.splice = mutable(
+          (index, howMany) ->
+            for node in @__nodes
+              for i in [0...howMany]
+                node.removeChild(node.children[index])
+              for item in [].slice.call(arguments, 2)
+                node.insertBefore(createSectionItem(node, item, options), node.children[index])
+                bindProp(item, index)
+            [].splice.apply(@, arguments)
+        )
 
         # Bind property
         bindProp = (item, i) ->
           array.__values[i] = item
           Object.defineProperty(array, i, 
-            get: -> this.__values[i]
-            set: (val) -> 
-              this.__garbageCollectNodes()
-              this.__values[i] = val
-              node.replaceChild(createSectionItem(node, val, options), node.children[i]) for node in this.__nodes
+            get: -> @__values[i]
+            set: mutable(
+              (val) -> 
+                @__values[i] = val
+                node.replaceChild(createSectionItem(node, val, options), node.children[i]) for node in @__nodes
+            )
           )
 
         # bound nodes
