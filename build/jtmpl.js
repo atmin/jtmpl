@@ -1,5 +1,5 @@
 (function() {
-  var RE_ANYTHING, RE_COLLECTION_TEMPLATE, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_PIPE, RE_SPACE, RE_URL, addClass, bindArrayToNodeChildren, createSectionItem, escapeHTML, escapeRE, getValue, hasClass, injectAttributes, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp, removeClass,
+  var RE_ANYTHING, RE_COLLECTION_TEMPLATE, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_PIPE, RE_SPACE, RE_URL, addClass, bindArrayToNodeChildren, createSectionItem, escapeHTML, escapeRE, getValue, hasClass, injectAttributes, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp, removeClass, unescapeHTML,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   jtmpl = (typeof exports !== "undefined" && exports !== null ? exports : this).jtmpl = function(target, template, model, options) {
@@ -355,7 +355,7 @@
         return reactor;
       }
     }, {
-      pattern: "(# | \\^) (" + RE_IDENTIFIER + ")",
+      pattern: "^(# | \\^) (" + RE_IDENTIFIER + ")$",
       bindTo: function(sectionType, prop) {
         return prop;
       },
@@ -399,6 +399,7 @@
             if (typeof val === 'object') {
               if (Object.getOwnPropertyNames(val).length) {
                 node.innerHTML = jtmpl(multiReplace(node.getAttribute('data-jt-1') || '', opts.compiledDelimiters, opts.delimiters), val, opts);
+                jtmpl.unbind(val);
                 return jtmpl.bind(node, model, opts);
               }
             } else {
@@ -417,7 +418,10 @@
         return reactor;
       }
     }, {
-      pattern: '>"([^"]+)"',
+      pattern: '>"(.*?)"',
+      recurseContext: function() {
+        return model;
+      },
       bindTo: function(partial) {
         return null;
       },
@@ -534,6 +538,7 @@
     match = regexp("^ (" + RE_SPACE + " < " + RE_IDENTIFIER + ") (" + RE_ANYTHING + ") " + RE_DATA_JT).exec(template);
     attrLen = (match[3] || '').length;
     pos = match[1].length + match[2].length + attrLen;
+    token = escapeHTML(token);
     return template.slice(0, pos) + (attrLen ? (match[3].trim() === 'data-jt="' ? '' : ' ') + token : ' data-jt="' + token + '"') + template.slice(pos);
   };
 
@@ -550,7 +555,7 @@
         _results = [];
         for (_i = 0, _len = attributes.length; _i < _len; _i++) {
           pair = attributes[_i];
-          _results.push(" " + pair[0] + "=\"" + (pair[1].replace(/"/g, '&quot;').replace(/>/g, '&gt;').replace(/</g, '&lt;')) + "\"");
+          _results.push(" " + pair[0] + "=\"" + (escapeHTML(pair[1])) + "\"");
         }
         return _results;
       })()
@@ -603,21 +608,14 @@
   };
 
   jtmpl.bind = function(node, model, options) {
-    var child, data_jt, descriptor, jt, match, prop, reactor, recurseContext, rule, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3, _results;
+    var child, data_jt, jt, match, prop, reactor, recurseContext, rule, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _results;
     if (data_jt = node.getAttribute('data-jt')) {
-      _ref = model.__descriptors || {};
-      for (prop in _ref) {
-        descriptor = _ref[prop];
-        Object.defineProperty(model, prop, descriptor);
-      }
-      delete model.__listeners;
-      delete model.__descriptors;
-      _ref1 = data_jt.trim().split(' ');
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        jt = _ref1[_i];
-        _ref2 = jtmpl.bindRules;
-        for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
-          rule = _ref2[_j];
+      _ref = data_jt.trim().split(' ');
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        jt = _ref[_i];
+        _ref1 = jtmpl.bindRules;
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          rule = _ref1[_j];
           if (match = regexp(rule.pattern).exec(jt)) {
             reactor = rule.react.apply(rule, [node].concat(match.slice(1), [model, options]));
             prop = typeof rule.bindTo === "function" ? rule.bindTo.apply(rule, match.slice(1)) : void 0;
@@ -632,14 +630,27 @@
       }
     }
     if (recurseContext !== null) {
-      _ref3 = node.children;
+      _ref2 = node.children;
       _results = [];
-      for (_k = 0, _len2 = _ref3.length; _k < _len2; _k++) {
-        child = _ref3[_k];
+      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+        child = _ref2[_k];
         _results.push(jtmpl.bind(child, recurseContext || model, options));
       }
       return _results;
     }
+  };
+
+  jtmpl.unbind = function(model) {
+    var descriptor, prop, _ref;
+    if (typeof model.__descriptors === 'object') {
+      _ref = model.__descriptors;
+      for (prop in _ref) {
+        descriptor = _ref[prop];
+        Object.defineProperty(model, prop, descriptor);
+      }
+    }
+    delete model.__listeners;
+    return delete model.__descriptors;
   };
 
   escapeRE = function(s) {
@@ -687,11 +698,15 @@
       return {
         '&': '&amp;',
         '\\': '\\\\',
-        '"': '\"',
+        '"': '&quot;',
         '<': '&lt;',
         '>': '&gt;'
       }[s];
     });
+  };
+
+  jtmpl.unescapeHTML = unescapeHTML = function(val) {
+    return ((val != null) && val || '').toString().replace(/&amp/g, '&').replace(/\\\\/g, '\\').replace(/&quot;/g, '"').replace(/&lt;/g, '<');
   };
 
   multiReplace = function(template, from, to) {

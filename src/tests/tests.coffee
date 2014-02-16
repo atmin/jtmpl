@@ -104,6 +104,11 @@ test 'compile', ->
 		'<div data-jt="#a" data-jt-1="#{.}#"><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div>',
 		'computed collection'
 
+	jtmpl.partials.test = 'test partial'
+	equal jtmpl('{{>"#test"}}', {}),
+		'<div data-jt="&gt;&quot;#test&quot;">test partial</div>',
+		'jtmpl.partials.test'
+
 
 
 test 'bind', ->

@@ -618,7 +618,7 @@ Function void (AnyType val) `react`
 #### section
 
       {
-        pattern: "(# | \\^) (#{ RE_IDENTIFIER })"
+        pattern: "^(# | \\^) (#{ RE_IDENTIFIER })$"
 
         bindTo: (sectionType, prop) -> prop
 
@@ -705,11 +705,14 @@ Function void (AnyType val) `react`
 #### partial
 
       {
-        pattern: '>"([^"]+)"'
+        pattern: '>"(.*?)"'
+
+        recurseContext: -> model
 
         bindTo: (partial) -> null
 
         react: (node, partial, model, options) ->
+          console.log(1)
           # jtmpl(node, partial, model, options)
           return
       }
@@ -905,6 +908,7 @@ wrapperAttrs is array of pairs [attribute, value] to inject in element
       match = regexp("^ (#{ RE_SPACE } < #{ RE_IDENTIFIER }) (#{ RE_ANYTHING }) #{ RE_DATA_JT }").exec(template)
       attrLen = (match[3] or '').length
       pos = match[1].length + match[2].length + attrLen
+      token = escapeHTML(token)
       # inject, return result
       ( template.slice(0, pos) +
         ( if attrLen
@@ -922,7 +926,7 @@ wrapperAttrs is array of pairs [attribute, value] to inject in element
       pos = match[1].length
       (
         template.slice(0, pos) + 
-        [" #{ pair[0] }=\"#{ pair[1].replace(/"/g, '&quot;').replace(/>/g, '&gt;').replace(/</g, '&lt;') }\"" for pair in attributes].join('') +
+        [" #{ pair[0] }=\"#{ escapeHTML(pair[1]) }\"" for pair in attributes].join('') +
         '>' +
         (contents or '') +
         template.slice(pos + 1)
@@ -1131,7 +1135,7 @@ Replace HTML special characters
         .replace /[&"<>\\]/g, (s) -> { 
             '&': '&amp;'
             '\\': '\\\\'
-            '"': '\"'
+            '"': '&quot;'
             '<': '&lt;'
             '>': '&gt;'
           }[s]
