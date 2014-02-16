@@ -707,12 +707,9 @@ Function void (AnyType val) `react`
       {
         pattern: '>"(.*?)"'
 
-        recurseContext: -> model
-
         bindTo: (partial) -> null
 
         react: (node, partial, model, options) ->
-          console.log(1)
           # jtmpl(node, partial, model, options)
           return
       }
@@ -1014,7 +1011,6 @@ Walk DOM and setup reactors on model and nodes.
 
               reactor = rule.react([node].concat(match.slice(1), [model, options])...)
               prop = rule.bindTo?(match.slice(1)...)
-              if model[prop] is undefined then model[prop] = null
               propChange(model, prop, reactor)
 
               recurseContext = rule.recurseContext?(match.slice(1).concat([model])...)

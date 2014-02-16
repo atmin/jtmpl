@@ -399,7 +399,7 @@
             if (typeof val === 'object') {
               if (Object.getOwnPropertyNames(val).length) {
                 node.innerHTML = jtmpl(multiReplace(node.getAttribute('data-jt-1') || '', opts.compiledDelimiters, opts.delimiters), val, opts);
-                jtmpl.unbind(val);
+                jtmpl.unbind(model[attr]);
                 return jtmpl.bind(node, model, opts);
               }
             } else {
