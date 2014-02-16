@@ -673,7 +673,7 @@ Function void (AnyType val) `react`
                     val,
                     opts
                   )
-                  jtmpl.unbind(val)
+                  jtmpl.unbind(model[attr])
                   jtmpl.bind(node, model, opts)
 
               else

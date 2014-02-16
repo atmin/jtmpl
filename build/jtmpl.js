@@ -1,5 +1,5 @@
 (function() {
-  var RE_ANYTHING, RE_COLLECTION_TEMPLATE, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_PIPE, RE_SPACE, RE_URL, addClass, bindArrayToNodeChildren, createSectionItem, escapeHTML, escapeRE, getValue, hasClass, injectAttributes, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp, removeClass, unescapeHTML,
+  var RE_ANYTHING, RE_COLLECTION_TEMPLATE, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_PIPE, RE_SPACE, RE_URL, addClass, bindArrayToNodeChildren, createSectionItem, escapeHTML, escapeRE, getValue, hasClass, injectAttributes, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp, removeClass,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   jtmpl = (typeof exports !== "undefined" && exports !== null ? exports : this).jtmpl = function(target, template, model, options) {
@@ -425,7 +425,9 @@
       bindTo: function(partial) {
         return null;
       },
-      react: function(node, partial, model, options) {}
+      react: function(node, partial, model, options) {
+        console.log(1);
+      }
     }, {
       pattern: "(" + RE_IDENTIFIER + ") " + RE_PIPE,
       bindTo: function(prop) {
@@ -703,10 +705,6 @@
         '>': '&gt;'
       }[s];
     });
-  };
-
-  jtmpl.unescapeHTML = unescapeHTML = function(val) {
-    return ((val != null) && val || '').toString().replace(/&amp/g, '&').replace(/\\\\/g, '\\').replace(/&quot;/g, '"').replace(/&lt;/g, '<');
   };
 
   multiReplace = function(template, from, to) {
