@@ -1,40 +1,20 @@
 (function() {
-  var RE_ANYTHING, RE_COLLECTION_TEMPLATE, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_PIPE, RE_SPACE, addClass, bindArrayToNodeChildren, createSectionItem, escapeHTML, escapeRE, getValue, hasClass, injectAttributes, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp, removeClass,
+  var RE_ANYTHING, RE_COLLECTION_TEMPLATE, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_PIPE, RE_SPACE, RE_URL, addClass, bindArrayToNodeChildren, createSectionItem, escapeHTML, escapeRE, getValue, hasClass, injectAttributes, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp, removeClass,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   jtmpl = (typeof exports !== "undefined" && exports !== null ? exports : this).jtmpl = function(target, template, model, options) {
-    var args, callback, html, newTarget, opts, prop, request, rule, xhr, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
+    var args, html, newTarget, opts, rule, _i, _len, _ref, _ref1, _ref2;
     args = [].slice.call(arguments);
     if (args.length === 1 && typeof args[0] === 'string') {
       return [].slice.call(document.querySelectorAll(args[0]));
     } else if ((_ref = args[0]) === 'GET' || _ref === 'POST') {
-      xhr = new XMLHttpRequest();
-      callback = args.reduce(function(prev, curr) {
-        return typeof curr === 'function' && curr || prev;
-      }, null);
-      opts = args[args.length - 1];
-      if (typeof opts !== 'object') {
-        opts = {};
-      }
-      _ref1 = Object.getOwnPropertyNames(opts);
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        prop = _ref1[_i];
-        xhr[prop] = opts[prop];
-      }
-      request = typeof args[2] === 'string' ? args[2] : typeof args[2] === 'object' ? JSON.stringify(args[2]) : '';
-      xhr.onload = function(event) {
-        if (callback) {
-          return callback.call(this, this.responseText, event);
-        }
-      };
-      xhr.open(args[0], args[1], opts.async || true, opts.user, opts.password);
-      return xhr.send(request);
-    } else if (typeof args[0] === 'string' && (typeof args[1] !== 'string' || args.length === 2) && args[1] !== null && ((_ref2 = args.length) === 2 || _ref2 === 3)) {
+      return jtmpl.xhr(args);
+    } else if (typeof args[0] === 'string' && (typeof args[1] !== 'string' || args.length === 2) && args[1] !== null && ((_ref1 = args.length) === 2 || _ref1 === 3)) {
       template = '' + (args[0].match(RE_NODE_ID) && document.querySelector(args[0]).innerHTML || args[0]);
       opts = jtmpl.options(args[2], args[1]);
-      _ref3 = jtmpl.preprocessingRules;
-      for (_j = 0, _len1 = _ref3.length; _j < _len1; _j++) {
-        rule = _ref3[_j];
+      _ref2 = jtmpl.preprocessingRules;
+      for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+        rule = _ref2[_i];
         template = template.replace(regexp(rule[0], opts.delimiters), rule[1]);
       }
       return jtmpl.compile(template, args[1], null, false, opts).trim();
@@ -66,6 +46,7 @@
     defaultSection: 'div',
     defaultSectionItem: 'div',
     defaultVar: 'span',
+    defaultPartial: 'div',
     defaultTargetTag: 'div'
   };
 
@@ -82,6 +63,37 @@
     return opts;
   };
 
+  jtmpl.xhr = function(args) {
+    var callback, opts, prop, request, xhr, _i, _len, _ref;
+    xhr = new XMLHttpRequest();
+    callback = args.reduce(function(prev, curr) {
+      return typeof curr === 'function' && curr || prev;
+    }, null);
+    opts = args[args.length - 1];
+    if (typeof opts !== 'object') {
+      opts = {};
+    }
+    _ref = Object.getOwnPropertyNames(opts);
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      prop = _ref[_i];
+      xhr[prop] = opts[prop];
+    }
+    request = typeof args[2] === 'string' ? args[2] : typeof args[2] === 'object' ? JSON.stringify(args[2]) : '';
+    xhr.onload = function(event) {
+      var resp;
+      if (callback) {
+        try {
+          resp = JSON.parse(this.responseText);
+        } catch (_error) {
+          resp = this.responseText;
+        }
+        return callback.call(this, resp, event);
+      }
+    };
+    xhr.open(args[0], args[1], opts.async || true, opts.user, opts.password);
+    return xhr.send(request);
+  };
+
   RE_IDENTIFIER = '[\\w\\.\\-]+';
 
   RE_NODE_ID = '^#[\\w\\.\\-]+$';
@@ -96,11 +108,15 @@
 
   RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/;
 
+  RE_URL = '(?:(?:https?|ftp|file):)?//[-A-Za-z0-9+&@#/%?=~_|!:,.;]*[-A-Za-z0-9+&@#/%=~_|]';
+
   jtmpl.preprocessingRules = [["({{) { (" + RE_IDENTIFIER + ") } (}})", '$1&$2$3'], ["<!-- " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " -->", '$1'], ["(" + RE_IDENTIFIER + ")='({{ " + RE_IDENTIFIER + " }})'", '$1=$2'], ["(" + RE_IDENTIFIER + ")=\"({{ " + RE_IDENTIFIER + " }})\"", '$1=$2'], ["\\n " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " \\n", '\n$1\n']];
 
   jtmpl.formatters = {};
 
   jtmpl.mappings = {};
+
+  jtmpl.partials = {};
 
   jtmpl.compileRules = [
     {
@@ -193,6 +209,15 @@
       },
       bindingToken: function(section) {
         return "#" + section;
+      }
+    }, {
+      pattern: "{{ > \"( (?: " + RE_IDENTIFIER + ") | (?: " + RE_URL + ") )\" }}",
+      wrapper: 'defaultPartial',
+      replaceWith: function(partial, model) {
+        return jtmpl.partials[partial] || '';
+      },
+      bindingToken: function(partial) {
+        return ">\"" + partial + "\"";
       }
     }, {
       pattern: "{{ & (" + RE_IDENTIFIER + ") }}$",
@@ -371,10 +396,10 @@
             return _results;
           } else {
             if (typeof val === 'object') {
-              node.innerHTML = jtmpl(multiReplace(node.getAttribute('data-jt-1') || '', opts.compiledDelimiters, opts.delimiters), val, opts);
-              return jtmpl.bind(node, model, {
-                rootModel: model
-              });
+              if (Object.getOwnPropertyNames(val).length) {
+                node.innerHTML = jtmpl(multiReplace(node.getAttribute('data-jt-1') || '', opts.compiledDelimiters, opts.delimiters), val, opts);
+                return jtmpl.bind(node, model, opts);
+              }
             } else {
               return jtmpl(node, multiReplace(sectionType === '#' && val ? node.getAttribute('data-jt-1') || '' : sectionType === '^' && !val ? node.getAttribute('data-jt-0') || '' : '', opts.compiledDelimiters, opts.delimiters), model, opts);
             }
@@ -705,18 +730,14 @@
         return oldDescriptor.value;
       },
       set: (function(val) {
-        var dependent, p, signal, _i, _len, _ref, _ref1;
+        var dependent, signal, _i, _len, _ref, _ref1;
         if (signal = val != null ? val.__signal : void 0) {
           val = getValue(signal.obj, signal.prop, true, callback);
           if (val !== void 0) {
             callback(val);
           }
         } else {
-          if (typeof val === 'object' && !Array.isArray(val)) {
-            for (p in val) {
-              obj[prop][p] = val[p];
-            }
-          } else if ((typeof val !== 'object' || Array.isArray(val)) && typeof oldDescriptor.set === 'function') {
+          if ((typeof val !== 'object' || Array.isArray(val)) && typeof oldDescriptor.set === 'function') {
             oldDescriptor.set(val);
           } else {
             if (typeof oldDescriptor.value === 'function') {
@@ -745,101 +766,78 @@
   };
 
   jtmpl.bindArrayToNodeChildren = bindArrayToNodeChildren = function(array, node, options) {
-    var bindProp, i, item, _i, _len;
-    if (!array.__garbageCollectNodes) {
-      array.__garbageCollectNodes = function() {
-        var i, _results;
-        i = this.__nodes.length;
-        _results = [];
-        while (--i) {
-          if (!this.__nodes[i].parentNode) {
-            _results.push(this.__nodes.splice(i, 1));
-          } else {
-            _results.push(void 0);
+    var bindProp, i, item, mutable, _i, _len;
+    if (!array.__nodes) {
+      mutable = function(method) {
+        return function() {
+          var i, result;
+          if (!this.length) {
+            node.innerHTML = '';
           }
-        }
-        return _results;
+          i = this.__nodes.length;
+          while (--i) {
+            if (!this.__nodes[i].parentNode) {
+              this.__nodes.splice(i, 1);
+            }
+          }
+          result = method.apply(this, arguments);
+          if (!this.length) {
+            node.innerHTML = jtmpl(multiReplace(node.getAttribute('data-jt-0') || '', options.compiledDelimiters, options.delimiters), {});
+          }
+          return result;
+        };
       };
-      array.__removeEmpty = function() {
-        if (!this.length) {
-          return node.innerHTML = '';
-        }
-      };
-      array.__addEmpty = function() {
-        if (!this.length) {
-          return node.innerHTML = jtmpl(multiReplace(node.getAttribute('data-jt-0') || '', options.compiledDelimiters, options.delimiters), {});
-        }
-      };
-      array.pop = function() {
+      array.pop = mutable(function() {
         var _i, _len, _ref;
-        this.__removeEmpty();
-        this.__garbageCollectNodes();
         _ref = this.__nodes;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           node = _ref[_i];
           node.removeChild(node.children[node.children.length - 1]);
         }
-        [].pop.apply(this, arguments);
-        [].pop.apply(this.__values, arguments);
-        return this.__addEmpty();
-      };
-      array.push = function(item) {
-        var len, result, _i, _len, _ref;
-        this.__removeEmpty();
-        this.__garbageCollectNodes();
+        return [].pop.apply(this, arguments);
+      });
+      array.push = mutable(function() {
+        var item, result, _i, _len, _ref;
+        item = arguments[0];
         _ref = this.__nodes;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           node = _ref[_i];
           node.appendChild(createSectionItem(node, item, options));
         }
-        [].push.apply(this, arguments);
-        len = this.__values.length;
-        result = [].push.apply(this.__values, arguments);
-        bindProp(item, len);
+        result = [].push.apply(this, arguments);
+        bindProp(item, this.length - 1);
         return result;
-      };
-      array.reverse = function() {
-        var i, item, result, _i, _j, _len, _len1, _ref, _ref1;
-        this.__removeEmpty();
-        this.__garbageCollectNodes();
-        result = [].reverse.apply(this.__values, arguments);
+      });
+      array.reverse = mutable(function() {
+        var i, item, _i, _j, _len, _ref;
         _ref = this.__nodes;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           node = _ref[_i];
           node.innerHTML = '';
-          _ref1 = this.__values;
-          for (i = _j = 0, _len1 = _ref1.length; _j < _len1; i = ++_j) {
-            item = _ref1[i];
+          for (i = _j = this.length - 1; _j >= 0; i = _j += -1) {
+            item = this[i];
             node.appendChild(createSectionItem(node, item, options));
             bindProp(item, i);
           }
         }
-        this.__addEmpty();
-        return result;
-      };
-      array.shift = function() {
-        var i, item, result, _i, _j, _len, _len1, _ref, _ref1;
-        this.__removeEmpty();
-        this.__garbageCollectNodes();
-        [].shift.apply(this, arguments);
-        result = [].shift.apply(this.__values, arguments);
+        return [].reverse.apply(this, arguments);
+      });
+      array.shift = mutable(function() {
+        var i, item, result, _i, _j, _len, _len1, _ref;
         _ref = this.__nodes;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           node = _ref[_i];
           node.removeChild(node.children[0]);
         }
-        _ref1 = this.__values;
-        for (i = _j = 0, _len1 = _ref1.length; _j < _len1; i = ++_j) {
-          item = _ref1[i];
+        result = [].shift.apply(this, arguments);
+        for (i = _j = 0, _len1 = this.length; _j < _len1; i = ++_j) {
+          item = this[i];
           bindProp(item, i);
         }
-        this.__addEmpty();
         return result;
-      };
-      array.unshift = function() {
-        var i, item, result, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
-        this.__removeEmpty();
-        this.__garbageCollectNodes();
+      });
+      array.unshift = mutable(function() {
+        var i, item, result, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
         _ref = [].slice.call(arguments).reverse();
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           item = _ref[_i];
@@ -849,28 +847,22 @@
             node.insertBefore(createSectionItem(node, item, options), node.children[0]);
           }
         }
-        [].unshift.apply(this, arguments);
-        result = [].unshift.apply(this.__values, arguments);
-        _ref2 = this.__values;
-        for (i = _k = 0, _len2 = _ref2.length; _k < _len2; i = ++_k) {
-          item = _ref2[i];
+        result = [].unshift.apply(this, arguments);
+        for (i = _k = 0, _len2 = this.length; _k < _len2; i = ++_k) {
+          item = this[i];
           bindProp(item, i);
         }
-        this.__addEmpty();
         return result;
-      };
-      array.sort = function() {
-        var i, item, result, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
-        this.__removeEmpty();
-        this.__garbageCollectNodes();
+      });
+      array.sort = mutable(function() {
+        var i, item, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
         [].sort.apply(this, arguments);
-        result = [].sort.apply(this.__values, arguments);
         _ref = this.__nodes;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           node = _ref[_i];
           node.innerHTML = '';
-          for (i = _j = 0, _len1 = array.length; _j < _len1; i = ++_j) {
-            item = array[i];
+          for (i = _j = 0, _len1 = this.length; _j < _len1; i = ++_j) {
+            item = this[i];
             _ref1 = this.__nodes;
             for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
               node = _ref1[_k];
@@ -879,13 +871,10 @@
             bindProp(item, i);
           }
         }
-        this.__addEmpty();
-        return result;
-      };
-      array.splice = function(index, howMany) {
+        return this;
+      });
+      array.splice = mutable(function(index, howMany) {
         var i, item, _i, _j, _k, _len, _len1, _ref, _ref1;
-        this.__removeEmpty();
-        this.__garbageCollectNodes();
         _ref = this.__nodes;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           node = _ref[_i];
@@ -899,19 +888,16 @@
             bindProp(item, index);
           }
         }
-        [].splice.apply(this, arguments);
-        [].splice.apply(this.__values, arguments);
-        return this.__addEmpty();
-      };
+        return [].splice.apply(this, arguments);
+      });
       bindProp = function(item, i) {
         array.__values[i] = item;
         return Object.defineProperty(array, i, {
           get: function() {
             return this.__values[i];
           },
-          set: function(val) {
+          set: mutable(function(val) {
             var _i, _len, _ref, _results;
-            this.__garbageCollectNodes();
             this.__values[i] = val;
             _ref = this.__nodes;
             _results = [];
@@ -920,7 +906,7 @@
               _results.push(node.replaceChild(createSectionItem(node, val, options), node.children[i]));
             }
             return _results;
-          }
+          })
         });
       };
       Object.defineProperty(array, '__nodes', {

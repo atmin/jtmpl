@@ -48,18 +48,9 @@
       </p>
       <p class="{{bound-class}}">Lorem ipsum ...</p>
 
-      <h3>Checkboxes toggling "if" sections</h3>
+      <h3>Checkboxes (via included template) toggling "if" sections</h3>
       {{#checkboxes}}
-        <p>
-          <label><input type="checkbox" checked={{fooCheck}}> check foo</label>
-          <label><input type="checkbox" checked={{barCheck}}> check bar</label>
-        </p>
-        {{#fooCheck}}
-        <p><code>model.checkboxes.fooCheck</code> is checked<p>
-        {{/fooCheck}}
-        {{#barCheck}}
-        <p><code>model.checkboxes.barCheck</code> is checked<p>
-        {{/barCheck}}
+        {{>"#checkboxes-template"}}
       {{/checkboxes}}
 
       <h3>Select and radiogroup</h3>
@@ -135,6 +126,19 @@
       <button onclick={{push}}>push</button>
       <button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
 
+    </script>
+
+    <script id="checkboxes-template" type="text/template">
+      <p>
+        <label><input type="checkbox" checked={{fooCheck}}> check foo</label>
+        <label><input type="checkbox" checked={{barCheck}}> check bar</label>
+      </p>
+      {{#fooCheck}}
+      <p><code>model.checkboxes.fooCheck</code> is checked<p>
+      {{/fooCheck}}
+      {{#barCheck}}
+      <p><code>model.checkboxes.barCheck</code> is checked<p>
+      {{/barCheck}}
     </script>
 
     <script>

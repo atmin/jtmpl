@@ -82,21 +82,7 @@ A big `if..else if` statement as arguments pattern matcher
 
       # `jtmpl('HTTP_METHOD', url[, parameters[, callback[, options]]])`?
       else if args[0] in ['GET', 'POST']
-        xhr = new XMLHttpRequest()
-        callback = args.reduce(
-          (prev, curr) -> typeof curr is 'function' and curr or prev,
-          null
-        )
-        opts = args[args.length - 1]
-        if typeof opts isnt 'object' then opts = {}
-        for prop in Object.getOwnPropertyNames(opts)
-          xhr[prop] = opts[prop]
-        request = if typeof args[2] is 'string' then args[2] else if typeof args[2] is 'object' then JSON.stringify(args[2]) else ''
-        xhr.onload = (event) ->
-          if callback
-            callback.call(this, this.responseText, event)
-        xhr.open(args[0], args[1], opts.async or true, opts.user, opts.password)
-        xhr.send(request)
+        jtmpl.xhr(args)
 
       # `jtmpl(template, model[, options])`?
       else if typeof args[0] is 'string' and (typeof args[1] isnt 'string' or args.length is 2) and args[1] isnt null and args.length in [2, 3]
@@ -151,6 +137,8 @@ Default options
 
       defaultVar: 'span'
 
+      defaultPartial: 'div'
+
       defaultTargetTag: 'div'
     }
 
@@ -170,6 +158,29 @@ Construct options object by merging default and specified options
       opts
 
 
+
+## Requests API
+
+    jtmpl.xhr = (args) ->
+      xhr = new XMLHttpRequest()
+      callback = args.reduce(
+        (prev, curr) -> typeof curr is 'function' and curr or prev,
+        null
+      )
+      opts = args[args.length - 1]
+      if typeof opts isnt 'object' then opts = {}
+      for prop in Object.getOwnPropertyNames(opts)
+        xhr[prop] = opts[prop]
+      request = if typeof args[2] is 'string' then args[2] else if typeof args[2] is 'object' then JSON.stringify(args[2]) else ''
+      xhr.onload = (event) ->
+        if callback
+          try
+            resp = JSON.parse(this.responseText)
+          catch
+            resp = this.responseText
+          callback.call(this, resp, event)
+      xhr.open(args[0], args[1], opts.async or true, opts.user, opts.password)
+      xhr.send(request)
 
 
 
@@ -201,6 +212,7 @@ Used in various matchers
     RE_PIPE = "(?: \\| (#{ RE_IDENTIFIER }) )?"
     RE_DATA_JT = '(?: ( \\s* data-jt = " [^"]* )" )?'
     RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/
+    RE_URL = '(?:(?:https?|ftp|file):)?//[-A-Za-z0-9+&@#/%?=~_|!:,.;]*[-A-Za-z0-9+&@#/%=~_|]'
 
 
 
@@ -229,12 +241,23 @@ Transformations to clean up template for easier matching
 
 
 
-### Formatters and mappings
+### Formatters, mappings
 
 None provided by default, put yours like `jtmpl.formatters.myFormatter = function (val) {...}`
 
-    jtmpl.formatters = {}    
-    jtmpl.mappings = {}    
+    jtmpl.formatters = {}
+    jtmpl.mappings = {}
+
+
+
+
+### Partials
+
+Resolve `{{>"#partial-id"}}` during compiling stage.
+
+jtmpl.partials['partial-id'] is a template string.
+
+    jtmpl.partials = {}
 
 
 
@@ -404,6 +427,32 @@ When `prop` is boolean, value determines presense of attribute.
 
         bindingToken: (section) -> "##{ section }"
       }
+
+
+
+
+### `{{>"#partial-id or //url"}}` partial
+
+      {
+        pattern: "{{ > \"( (?: \\# #{ RE_IDENTIFIER }) | (?: #{ RE_URL }) )\" }}"
+
+        wrapper: 'defaultPartial'
+
+        replaceWith: (partial, model) ->
+          [
+            (
+              if document
+                jtmpl(document.querySelector(partial)?.innerHTML or jtmpl.partials[partial.slice(1)] or '', model)
+              else
+                jtmpl(jtmpl.partials[partial.slice(1)] or '', model)
+
+            ), []
+            # document.querySelector(partial)?.innerHTML, []
+          ]
+
+        bindingToken: (partial) -> ">\"#{ partial }\""
+      }
+
 
 
 
@@ -615,19 +664,19 @@ Function void (AnyType val) `react`
             # local context or if section
             else
               if typeof val is 'object'
-                node.innerHTML = jtmpl(
-                  multiReplace(
-                    node.getAttribute('data-jt-1') or '',
-                    opts.compiledDelimiters, opts.delimiters
-                  ),
-                  val,
-                  opts
-                )
-                jtmpl.bind(node, model, { rootModel: model })
+                if Object.getOwnPropertyNames(val).length
+                  node.innerHTML = jtmpl(
+                    multiReplace(
+                      node.getAttribute('data-jt-1') or '',
+                      opts.compiledDelimiters, opts.delimiters
+                    ),
+                    val,
+                    opts
+                  )
+                  jtmpl.bind(node, model, opts)
 
               else
-                jtmpl(
-                  node,
+                node.innerHTML = jtmpl(
                   multiReplace(
                     if sectionType is '#' and val
                       node.getAttribute('data-jt-1') or ''
@@ -650,6 +699,19 @@ Function void (AnyType val) `react`
           reactor
       }
 
+
+
+#### partial
+
+      {
+        pattern: '>"([^"]+)"'
+
+        bindTo: (partial) -> null
+
+        react: (node, partial, model, options) ->
+          # jtmpl(node, partial, model, options)
+          return
+      }
 
 
 
@@ -1121,45 +1183,63 @@ Register a callback to handle object property change.
       # All must be specified, don't fail if not
       if not (obj and prop and callback) then return
 
+      # Init __listeners property
+      if not obj.__listeners then obj.__listeners = {}
+
+      # We have listeners for this object property?
+      if Array.isArray(obj.__listeners[prop])
+        if obj.__listeners[prop].indexOf(callback) is -1
+          obj.__listeners[prop].push(callback)
+        return
+
+      obj.__listeners[prop] = [callback]
+
       oldDescriptor = (Object.getOwnPropertyDescriptor(obj, prop) or
         Object.getOwnPropertyDescriptor(obj.constructor.prototype, prop))
 
+      catchSignal = (val) ->
+        if signal = val?.__signal
+          val = getValue(signal.obj, signal.prop, true, callback)
+          if val isnt undefined then callback(val)
+          true
+        else
+          false
+
+      alertDependents = ->
+        for dependent in obj.__dependents?[prop] or []
+          obj[dependent] = {
+            __signal: {
+              obj: obj,
+              prop: dependent
+            }
+          }
+    
+      setter = (val) ->
+        if not catchSignal(val)
+          if (typeof val isnt 'object' or Array.isArray(val)) and typeof oldDescriptor.set is 'function' 
+            # Existing setter
+            oldDescriptor.set(val) 
+          else
+            if typeof oldDescriptor.value is 'function'
+              # computed value
+              oldDescriptor.value.call(((p, val) -> obj[p] = val), val)
+            else
+              # simple value
+              oldDescriptor.value = val
+
+          for cb in obj.__listeners[prop]
+            cb(val)
+
+        alertDependents()
+
       Object.defineProperty(obj, prop, {
         get: oldDescriptor.get or -> oldDescriptor.value,
-        set: ((val) ->
-          if signal = val?.__signal
-            val = getValue(signal.obj, signal.prop, true, callback)
-            if val isnt undefined then callback(val)
-          else
-            if typeof val is 'object' and not Array.isArray(val)
-              # Shallow copy
-              for p of val
-                obj[prop][p] = val[p]
-            else if (typeof val isnt 'object' or Array.isArray(val)) and typeof oldDescriptor.set is 'function' 
-              # Existing setter
-              oldDescriptor.set(val) 
-            else
-              if typeof oldDescriptor.value is 'function'
-                # computed value
-                oldDescriptor.value.call(((p, val) -> obj[p] = val), val)
-              else
-                # simple value
-                oldDescriptor.value = val
-
-            callback(val)
-
-          for dependent in obj.__dependents?[prop] or []
-            obj[dependent] = {
-              __signal: {
-                obj: obj,
-                prop: dependent
-              }
-            }
-
-          return
-        ),
-        configurable: true
+        set: setter,
+        configurable: true,
+        enumerable: false
       })
+
+
 
 
 
@@ -1180,27 +1260,7 @@ and setting a proxy for each mutable operation.
       # array already augmented?
       if not array.__nodes
 
-        # it's possible for a referenced node to be destroyed. free the reference
-        array.__garbageCollectNodes = ->
-          i = this.__nodes.length
-          while --i
-            if not this.__nodes[i].parentNode
-              this.__nodes.splice(i, 1)
-
-        array.__removeEmpty = ->
-          if not this.length then node.innerHTML = ''
-
-        array.__addEmpty = ->
-          if not this.length
-            node.innerHTML = jtmpl(
-              multiReplace(node.getAttribute('data-jt-0') or '',
-                options.compiledDelimiters, options.delimiters),
-              {}
-            )
-
-
-
-        # Mutable array operations
+        # Mutable array operations decorator
         mutable = (method) ->
           ->
             # remove <empty> element
@@ -1222,6 +1282,7 @@ and setting a proxy for each mutable operation.
             # what method returned
             result
 
+        # Proxy all mutable operations
         array.pop = mutable(
           -> 
             node.removeChild(node.children[node.children.length - 1]) for node in @__nodes
