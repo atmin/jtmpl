@@ -673,6 +673,7 @@ Function void (AnyType val) `react`
                     val,
                     opts
                   )
+                  jtmpl.unbind(val)
                   jtmpl.bind(node, model, opts)
 
               else
@@ -1000,7 +1001,7 @@ Walk DOM and setup reactors on model and nodes.
     jtmpl.bind = (node, model, options) ->
 
       if data_jt = node.getAttribute('data-jt')
-
+        # iterate bindings
         for jt in data_jt.trim().split(' ')
 
           for rule in jtmpl.bindRules
@@ -1020,6 +1021,15 @@ Walk DOM and setup reactors on model and nodes.
         for child in node.children
           jtmpl.bind(child, recurseContext or model, options)
 
+
+
+    jtmpl.unbind = (model) ->
+      if typeof model.__descriptors is 'object'
+        for prop, descriptor of model.__descriptors
+          Object.defineProperty(model, prop, descriptor)
+
+      delete model.__listeners
+      delete model.__descriptors
 
 
 
@@ -1188,14 +1198,18 @@ Register a callback to handle object property change.
 
       # We have listeners for this object property?
       if Array.isArray(obj.__listeners[prop])
-        if obj.__listeners[prop].indexOf(callback) is -1
-          obj.__listeners[prop].push(callback)
+        obj.__listeners[prop].push(callback)
         return
 
       obj.__listeners[prop] = [callback]
 
-      oldDescriptor = (Object.getOwnPropertyDescriptor(obj, prop) or
+      # Remember descriptors of modified properties
+      if not obj.__descriptors then obj.__descriptors = {}
+
+      descriptor = (Object.getOwnPropertyDescriptor(obj, prop) or
         Object.getOwnPropertyDescriptor(obj.constructor.prototype, prop))
+
+      obj.__descriptors[prop]
 
       catchSignal = (val) ->
         if signal = val?.__signal
@@ -1216,16 +1230,16 @@ Register a callback to handle object property change.
     
       setter = (val) ->
         if not catchSignal(val)
-          if (typeof val isnt 'object' or Array.isArray(val)) and typeof oldDescriptor.set is 'function' 
+          if (typeof val isnt 'object' or Array.isArray(val)) and typeof descriptor.set is 'function' 
             # Existing setter
-            oldDescriptor.set(val) 
+            descriptor.set(val) 
           else
-            if typeof oldDescriptor.value is 'function'
+            if typeof descriptor.value is 'function'
               # computed value
-              oldDescriptor.value.call(((p, val) -> obj[p] = val), val)
+              descriptor.value.call(((p, val) -> obj[p] = val), val)
             else
               # simple value
-              oldDescriptor.value = val
+              descriptor.value = val
 
           for cb in obj.__listeners[prop]
             cb(val)
@@ -1233,7 +1247,7 @@ Register a callback to handle object property change.
         alertDependents()
 
       Object.defineProperty(obj, prop, {
-        get: oldDescriptor.get or -> oldDescriptor.value,
+        get: descriptor.get or -> descriptor.value,
         set: setter,
         configurable: true,
         enumerable: false

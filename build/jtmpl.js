@@ -211,10 +211,11 @@
         return "#" + section;
       }
     }, {
-      pattern: "{{ > \"( (?: " + RE_IDENTIFIER + ") | (?: " + RE_URL + ") )\" }}",
+      pattern: "{{ > \"( (?: \\# " + RE_IDENTIFIER + ") | (?: " + RE_URL + ") )\" }}",
       wrapper: 'defaultPartial',
       replaceWith: function(partial, model) {
-        return jtmpl.partials[partial] || '';
+        var _ref;
+        return [(document ? jtmpl(((_ref = document.querySelector(partial)) != null ? _ref.innerHTML : void 0) || jtmpl.partials[partial.slice(1)] || '', model) : jtmpl(jtmpl.partials[partial.slice(1)] || '', model)), []];
       },
       bindingToken: function(partial) {
         return ">\"" + partial + "\"";
@@ -401,7 +402,7 @@
                 return jtmpl.bind(node, model, opts);
               }
             } else {
-              return jtmpl(node, multiReplace(sectionType === '#' && val ? node.getAttribute('data-jt-1') || '' : sectionType === '^' && !val ? node.getAttribute('data-jt-0') || '' : '', opts.compiledDelimiters, opts.delimiters), model, opts);
+              return node.innerHTML = jtmpl(multiReplace(sectionType === '#' && val ? node.getAttribute('data-jt-1') || '' : sectionType === '^' && !val ? node.getAttribute('data-jt-0') || '' : '', opts.compiledDelimiters, opts.delimiters), model, opts);
             }
           }
         };
@@ -415,6 +416,12 @@
         }
         return reactor;
       }
+    }, {
+      pattern: '>"([^"]+)"',
+      bindTo: function(partial) {
+        return null;
+      },
+      react: function(node, partial, model, options) {}
     }, {
       pattern: "(" + RE_IDENTIFIER + ") " + RE_PIPE,
       bindTo: function(prop) {
@@ -596,14 +603,21 @@
   };
 
   jtmpl.bind = function(node, model, options) {
-    var child, data_jt, jt, match, prop, reactor, recurseContext, rule, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _results;
+    var child, data_jt, descriptor, jt, match, prop, reactor, recurseContext, rule, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3, _results;
     if (data_jt = node.getAttribute('data-jt')) {
-      _ref = data_jt.trim().split(' ');
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        jt = _ref[_i];
-        _ref1 = jtmpl.bindRules;
-        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-          rule = _ref1[_j];
+      _ref = model.__descriptors || {};
+      for (prop in _ref) {
+        descriptor = _ref[prop];
+        Object.defineProperty(model, prop, descriptor);
+      }
+      delete model.__listeners;
+      delete model.__descriptors;
+      _ref1 = data_jt.trim().split(' ');
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        jt = _ref1[_i];
+        _ref2 = jtmpl.bindRules;
+        for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+          rule = _ref2[_j];
           if (match = regexp(rule.pattern).exec(jt)) {
             reactor = rule.react.apply(rule, [node].concat(match.slice(1), [model, options]));
             prop = typeof rule.bindTo === "function" ? rule.bindTo.apply(rule, match.slice(1)) : void 0;
@@ -618,10 +632,10 @@
       }
     }
     if (recurseContext !== null) {
-      _ref2 = node.children;
+      _ref3 = node.children;
       _results = [];
-      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-        child = _ref2[_k];
+      for (_k = 0, _len2 = _ref3.length; _k < _len2; _k++) {
+        child = _ref3[_k];
         _results.push(jtmpl.bind(child, recurseContext || model, options));
       }
       return _results;
@@ -720,48 +734,79 @@
   };
 
   propChange = function(obj, prop, callback) {
-    var oldDescriptor;
+    var alertDependents, catchSignal, descriptor, setter;
     if (!(obj && prop && callback)) {
       return;
     }
-    oldDescriptor = Object.getOwnPropertyDescriptor(obj, prop) || Object.getOwnPropertyDescriptor(obj.constructor.prototype, prop);
-    return Object.defineProperty(obj, prop, {
-      get: oldDescriptor.get || function() {
-        return oldDescriptor.value;
-      },
-      set: (function(val) {
-        var dependent, signal, _i, _len, _ref, _ref1;
-        if (signal = val != null ? val.__signal : void 0) {
-          val = getValue(signal.obj, signal.prop, true, callback);
-          if (val !== void 0) {
-            callback(val);
-          }
-        } else {
-          if ((typeof val !== 'object' || Array.isArray(val)) && typeof oldDescriptor.set === 'function') {
-            oldDescriptor.set(val);
-          } else {
-            if (typeof oldDescriptor.value === 'function') {
-              oldDescriptor.value.call((function(p, val) {
-                return obj[p] = val;
-              }), val);
-            } else {
-              oldDescriptor.value = val;
-            }
-          }
+    if (!obj.__listeners) {
+      obj.__listeners = {};
+    }
+    if (Array.isArray(obj.__listeners[prop])) {
+      obj.__listeners[prop].push(callback);
+      return;
+    }
+    obj.__listeners[prop] = [callback];
+    if (!obj.__descriptors) {
+      obj.__descriptors = {};
+    }
+    descriptor = Object.getOwnPropertyDescriptor(obj, prop) || Object.getOwnPropertyDescriptor(obj.constructor.prototype, prop);
+    obj.__descriptors[prop];
+    catchSignal = function(val) {
+      var signal;
+      if (signal = val != null ? val.__signal : void 0) {
+        val = getValue(signal.obj, signal.prop, true, callback);
+        if (val !== void 0) {
           callback(val);
         }
-        _ref1 = ((_ref = obj.__dependents) != null ? _ref[prop] : void 0) || [];
-        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-          dependent = _ref1[_i];
-          obj[dependent] = {
-            __signal: {
-              obj: obj,
-              prop: dependent
-            }
-          };
+        return true;
+      } else {
+        return false;
+      }
+    };
+    alertDependents = function() {
+      var dependent, _i, _len, _ref, _ref1, _results;
+      _ref1 = ((_ref = obj.__dependents) != null ? _ref[prop] : void 0) || [];
+      _results = [];
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        dependent = _ref1[_i];
+        _results.push(obj[dependent] = {
+          __signal: {
+            obj: obj,
+            prop: dependent
+          }
+        });
+      }
+      return _results;
+    };
+    setter = function(val) {
+      var cb, _i, _len, _ref;
+      if (!catchSignal(val)) {
+        if ((typeof val !== 'object' || Array.isArray(val)) && typeof descriptor.set === 'function') {
+          descriptor.set(val);
+        } else {
+          if (typeof descriptor.value === 'function') {
+            descriptor.value.call((function(p, val) {
+              return obj[p] = val;
+            }), val);
+          } else {
+            descriptor.value = val;
+          }
         }
-      }),
-      configurable: true
+        _ref = obj.__listeners[prop];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          cb = _ref[_i];
+          cb(val);
+        }
+      }
+      return alertDependents();
+    };
+    return Object.defineProperty(obj, prop, {
+      get: descriptor.get || function() {
+        return descriptor.value;
+      },
+      set: setter,
+      configurable: true,
+      enumerable: false
     });
   };
 
