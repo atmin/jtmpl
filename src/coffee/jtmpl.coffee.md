@@ -235,7 +235,9 @@ Transformations to clean up template for easier matching
       ["(#{ RE_IDENTIFIER })=\"({{ #{ RE_IDENTIFIER } }})\"", '$1=$2']
 
       # If tags stand on their own line remove the line, keep the tag only
-      ["\\n #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } \\n", '\n$1\n']
+      ["\\n #{ RE_SPACE } ({{ #{ RE_ANYTHING } }}) #{ RE_SPACE } \\n", '\n$1\n'],
+
+      ['{{&gt;', '{{>']
     ]
 
 

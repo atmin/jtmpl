@@ -110,7 +110,7 @@
 
   RE_URL = '\w?\\:?\\/\\/[^\\s"\']+';
 
-  jtmpl.preprocessingRules = [["({{) { (" + RE_IDENTIFIER + ") } (}})", '$1&$2$3'], ["<!-- " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " -->", '$1'], ["(" + RE_IDENTIFIER + ")='({{ " + RE_IDENTIFIER + " }})'", '$1=$2'], ["(" + RE_IDENTIFIER + ")=\"({{ " + RE_IDENTIFIER + " }})\"", '$1=$2'], ["\\n " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " \\n", '\n$1\n']];
+  jtmpl.preprocessingRules = [["({{) { (" + RE_IDENTIFIER + ") } (}})", '$1&$2$3'], ["<!-- " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " -->", '$1'], ["(" + RE_IDENTIFIER + ")='({{ " + RE_IDENTIFIER + " }})'", '$1=$2'], ["(" + RE_IDENTIFIER + ")=\"({{ " + RE_IDENTIFIER + " }})\"", '$1=$2'], ["\\n " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " \\n", '\n$1\n'], ['{{&gt;', '{{>']];
 
   jtmpl.formatters = {};
 
