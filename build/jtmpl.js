@@ -108,7 +108,7 @@
 
   RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/;
 
-  RE_URL = '(?:(?:https?|ftp|file):)?//[-A-Za-z0-9+&@#/%?=~_|!:,.;]*[-A-Za-z0-9+&@#/%=~_|]';
+  RE_URL = '\w?\\:?\\/\\/[^\\s"\']+';
 
   jtmpl.preprocessingRules = [["({{) { (" + RE_IDENTIFIER + ") } (}})", '$1&$2$3'], ["<!-- " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " -->", '$1'], ["(" + RE_IDENTIFIER + ")='({{ " + RE_IDENTIFIER + " }})'", '$1=$2'], ["(" + RE_IDENTIFIER + ")=\"({{ " + RE_IDENTIFIER + " }})\"", '$1=$2'], ["\\n " + RE_SPACE + " ({{ " + RE_ANYTHING + " }}) " + RE_SPACE + " \\n", '\n$1\n']];
 
@@ -400,6 +400,7 @@
               if (Object.getOwnPropertyNames(val).length) {
                 node.innerHTML = jtmpl(multiReplace(node.getAttribute('data-jt-1') || '', opts.compiledDelimiters, opts.delimiters), val, opts);
                 jtmpl.unbind(model[attr]);
+                delete model.__listeners[attr];
                 return jtmpl.bind(node, model, opts);
               }
             } else {
@@ -419,14 +420,21 @@
       }
     }, {
       pattern: '>"(.*?)"',
-      recurseContext: function() {
-        return model;
-      },
       bindTo: function(partial) {
         return null;
       },
       react: function(node, partial, model, options) {
-        console.log(1);
+        console.log('bind partial');
+        if (!node.innerHTML) {
+          if (partial.match(RE_NODE_ID)) {
+            node.innerHTML = jtmpl(partial, model, options);
+          }
+          if (partial.match(RE_URL)) {
+            jtmpl('GET', partial, (function(resp) {
+              return node.innerHTML = resp;
+            }));
+          }
+        }
       }
     }, {
       pattern: "(" + RE_IDENTIFIER + ") " + RE_PIPE,
@@ -621,9 +629,6 @@
           if (match = regexp(rule.pattern).exec(jt)) {
             reactor = rule.react.apply(rule, [node].concat(match.slice(1), [model, options]));
             prop = typeof rule.bindTo === "function" ? rule.bindTo.apply(rule, match.slice(1)) : void 0;
-            if (model[prop] === void 0) {
-              model[prop] = null;
-            }
             propChange(model, prop, reactor);
             recurseContext = typeof rule.recurseContext === "function" ? rule.recurseContext.apply(rule, match.slice(1).concat([model])) : void 0;
             break;
@@ -644,7 +649,7 @@
 
   jtmpl.unbind = function(model) {
     var descriptor, prop, _ref;
-    if (typeof model.__descriptors === 'object') {
+    if ((model != null ? model.__descriptors : void 0) && typeof model.__descriptors === 'object') {
       _ref = model.__descriptors;
       for (prop in _ref) {
         descriptor = _ref[prop];
@@ -750,6 +755,9 @@
     var alertDependents, catchSignal, descriptor, setter;
     if (!(obj && prop && callback)) {
       return;
+    }
+    if (obj[prop] === void 0) {
+      obj[prop] = null;
     }
     if (!obj.__listeners) {
       obj.__listeners = {};

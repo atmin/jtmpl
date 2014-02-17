@@ -212,7 +212,7 @@ Used in various matchers
     RE_PIPE = "(?: \\| (#{ RE_IDENTIFIER }) )?"
     RE_DATA_JT = '(?: ( \\s* data-jt = " [^"]* )" )?'
     RE_COLLECTION_TEMPLATE = /^(#|\^)\s([\s\S]*)$/
-    RE_URL = '(?:(?:https?|ftp|file):)?//[-A-Za-z0-9+&@#/%?=~_|!:,.;]*[-A-Za-z0-9+&@#/%=~_|]'
+    RE_URL = '\w?\\:?\\/\\/[^\\s"\']+'
 
 
 
@@ -445,9 +445,7 @@ When `prop` is boolean, value determines presense of attribute.
                 jtmpl(document.querySelector(partial)?.innerHTML or jtmpl.partials[partial.slice(1)] or '', model)
               else
                 jtmpl(jtmpl.partials[partial.slice(1)] or '', model)
-
             ), []
-            # document.querySelector(partial)?.innerHTML, []
           ]
 
         bindingToken: (partial) -> ">\"#{ partial }\""
@@ -674,6 +672,7 @@ Function void (AnyType val) `react`
                     opts
                   )
                   jtmpl.unbind(model[attr])
+                  delete model.__listeners[attr]
                   jtmpl.bind(node, model, opts)
 
               else
@@ -710,7 +709,18 @@ Function void (AnyType val) `react`
         bindTo: (partial) -> null
 
         react: (node, partial, model, options) ->
-          # jtmpl(node, partial, model, options)
+          console.log('bind partial')
+          # partial resolved during compiling phase?
+          if not node.innerHTML
+
+            # template_element.innerHTML?
+            if partial.match(RE_NODE_ID)
+              node.innerHTML = jtmpl(partial, model, options)
+
+            # fetch template from URL
+            if partial.match(RE_URL)
+              jtmpl('GET', partial, ((resp) -> node.innerHTML = resp))
+
           return
       }
 
@@ -1024,7 +1034,7 @@ Walk DOM and setup reactors on model and nodes.
 
 
     jtmpl.unbind = (model) ->
-      if typeof model.__descriptors is 'object'
+      if model?.__descriptors and typeof model.__descriptors is 'object'
         for prop, descriptor of model.__descriptors
           Object.defineProperty(model, prop, descriptor)
 
@@ -1193,6 +1203,9 @@ Register a callback to handle object property change.
       # All must be specified, don't fail if not
       if not (obj and prop and callback) then return
 
+      # If property to bind to is not existent
+      if obj[prop] is undefined then obj[prop] = null
+
       # Init __listeners property
       if not obj.__listeners then obj.__listeners = {}
 
@@ -1239,6 +1252,9 @@ Register a callback to handle object property change.
               descriptor.value.call(((p, val) -> obj[p] = val), val)
             else
               # simple value
+              # if typeof val is 'object'
+              #   jtmpl.unbind(obj[prop])
+              #   jtmpl.unbind(val)
               descriptor.value = val
 
           for cb in obj.__listeners[prop]
