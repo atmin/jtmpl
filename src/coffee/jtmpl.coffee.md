@@ -622,8 +622,8 @@ Function void (AnyType val) `react`
           else
             model
 
-        react: (node, sectionType, attr, model, options) ->
-          val = model[attr]
+        react: (node, sectionType, prop, model, options) ->
+          val = model[prop]
           opts = jtmpl.options(options)
 
           if Array.isArray(val) and sectionType is '#'
@@ -655,8 +655,6 @@ Function void (AnyType val) `react`
                     val,
                     opts
                   )
-                  jtmpl.unbind(model[attr])
-                  delete model.__listeners[attr]
                   jtmpl.bind(node, model, opts)
 
               else
@@ -678,7 +676,7 @@ Function void (AnyType val) `react`
           reactor = (val) ->
             if val isnt undefined then reaction(val)
 
-          if typeof model[attr] is 'function' then reactor(getValue(model, attr, true, reaction))
+          if typeof model[prop] is 'function' then reactor(getValue(model, prop, true, reaction))
 
           reactor
       }
@@ -1005,7 +1003,16 @@ Walk DOM and setup reactors on model and nodes.
 
               reactor = rule.react([node].concat(match.slice(1), [model, options])...)
               prop = rule.bindTo?(match.slice(1)...)
-              propChange(model, prop, reactor)
+
+              # This rule already applied? bind must be idempotent
+              if not model?.__boundRules?[prop]?[rule.pattern]?[jt]
+                propChange(model, prop, reactor)
+
+              if typeof model is 'object'
+                if not model.__boundRules then model.__boundRules = {}
+                if not model.__boundRules[prop] then model.__boundRules[prop] = {}
+                if not model.__boundRules[prop][rule.pattern] then model.__boundRules[prop][rule.pattern] = {}
+                model.__boundRules[prop][rule.pattern][jt] = true
 
               recurseContext = rule.recurseContext?(match.slice(1).concat([model])...)
 
@@ -1205,10 +1212,10 @@ Register a callback to handle object property change.
       if not (obj and prop and callback) then return
 
       # Callback already registered?
-      if obj.__listeners?[prop]
-        for listener in obj.__listeners[prop]
-          if listener is callback
-            return
+      # if obj.__listeners?[prop]
+      #   for listener in obj.__listeners[prop]
+      #     if listener is callback
+      #       return
 
       # If property to bind to is not existent
       if obj[prop] is undefined then obj[prop] = null
@@ -1222,14 +1229,6 @@ Register a callback to handle object property change.
         return
 
       obj.__listeners[prop] = [callback]
-
-      # Remember descriptors of modified properties
-      if not obj.__descriptors then obj.__descriptors = {}
-
-      descriptor = (Object.getOwnPropertyDescriptor(obj, prop) or
-        Object.getOwnPropertyDescriptor(obj.constructor.prototype, prop))
-
-      obj.__descriptors[prop]
 
       catchSignal = (val) ->
         if signal = val?.__signal
@@ -1247,31 +1246,29 @@ Register a callback to handle object property change.
               prop: dependent
             }
           }
-    
-      setter = (val) ->
-        if not catchSignal(val)
-          if typeof descriptor.set is 'function' 
-            # Existing setter
-            descriptor.set(val) 
-          else
-            if typeof descriptor.value is 'function'
-              # computed value
-              descriptor.value.call(((p, val) -> obj[p] = val), val)
-            else
-              # simple value
-              if typeof val is 'object'
-                jtmpl.unbind(obj[prop])
-                jtmpl.unbind(val)
-              descriptor.value = val
 
-          for cb in obj.__listeners[prop]
-            cb(val)
-
-        alertDependents()
+      value = obj[prop]
 
       Object.defineProperty(obj, prop, {
-        get: descriptor.get or -> descriptor.value,
-        set: setter,
+        get: -> value,
+        set: (val) ->
+          console.log('set ' + prop)
+          if not catchSignal(val)
+            if typeof value is 'function'
+              # computed value
+              value.call(((p, val) -> obj[p] = val), val)
+            else
+              # simple value
+              # if typeof val is 'object' then jtmpl.unbind(obj[prop])
+              value = val
+
+            # notify listeners
+            for cb in obj.__listeners[prop]
+              console.log('notify ' + prop + ' listener')
+              cb(val)
+
+          alertDependents()
+        ,
         configurable: true,
         enumerable: false
       })
@@ -1361,8 +1358,7 @@ and setting a proxy for each mutable operation.
         )
 
         array.push = mutable(
-          ->
-            item = arguments[0]
+          (item) ->
             node.appendChild(createSectionItem(node, item, options)) for node in @__nodes
             result = [].push.apply(@, arguments)
             bindProp(item, @length - 1)

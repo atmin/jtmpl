@@ -399,10 +399,7 @@
           } else {
             if (typeof val === 'object') {
               if (Object.getOwnPropertyNames(val).length) {
-                node.innerHTML = jtmpl(decompileTemplate(node.getAttribute('data-jt-1') || '', opts), val, opts);
-                jtmpl.unbind(model[attr]);
-                delete model.__listeners[attr];
-                return jtmpl.bind(node, model, opts);
+                return jtmpl(node, decompileTemplate(node.getAttribute('data-jt-1') || '', opts), val, opts);
               }
             } else {
               return node.innerHTML = jtmpl(decompileTemplate(sectionType === '#' && val ? node.getAttribute('data-jt-1') || '' : sectionType === '^' && !val ? node.getAttribute('data-jt-0') || '' : '', opts), model, opts);
