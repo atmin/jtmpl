@@ -373,13 +373,8 @@ When `prop` is boolean, value determines presense of attribute.
             else
               if not val then jtmpl(template, model) else ''
             ,
-            [
-              [ # template as node data attribute
-                'data-jt-0',
 
-                multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)
-              ]
-            ]
+            [['data-jt-0', compileTemplate(template, options)]]
           ]
 
         bindingToken: (section) -> "^#{ section }"
@@ -418,13 +413,7 @@ When `prop` is boolean, value determines presense of attribute.
             else
               if val then jtmpl(template, model) else ''
 
-            [ # template as node data attribute
-              [
-                'data-jt-1',
-
-                multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)
-              ]
-            ]
+            [['data-jt-1', compileTemplate(template, options)]]
           ]
 
         bindingToken: (section) -> "##{ section }"
@@ -558,9 +547,10 @@ Function void (AnyType val) `react`
         pattern: "on(#{ RE_IDENTIFIER }) = (#{ RE_IDENTIFIER })"
 
         react: (node, evnt, listener, model, options) ->
+          console.log('on')
           handler = options?.rootModel?[listener] or model[listener]
           if typeof handler is 'function'
-            node.addEventListener(evnt, handler.bind(model))
+            addEventListener(node, evnt, model, listener, handler.bind(model))
           else
             throw ":( #{ listener } is not a function, cannot attach event handler"
 
@@ -634,28 +624,23 @@ Function void (AnyType val) `react`
 
         react: (node, sectionType, attr, model, options) ->
           val = model[attr]
+          opts = jtmpl.options(options)
 
           if Array.isArray(val) and sectionType is '#'
             jtmpl.bindArrayToNodeChildren(val, node, options)
             # bind collection items to node children
             for child, i in node.children
               if typeof val[i] is 'object'
-                jtmpl.bind(child, val[i], options)
+                jtmpl.bind(child, val[i], opts)
 
           reaction = (val) ->
-            opts = jtmpl.options(options, model)
-
             # collection?
             if Array.isArray(val)
               jtmpl.bindArrayToNodeChildren(val, node, opts)
 
               node.innerHTML =
                 if not val.length
-                  jtmpl(
-                    multiReplace(node.getAttribute('data-jt-0') or '',
-                      opts.compiledDelimiters, opts.delimiters),
-                    {}
-                  )
+                  jtmpl(decompileTemplate(node.getAttribute('data-jt-0') or '', opts), model)
                 else 
                   ''
 
@@ -666,10 +651,7 @@ Function void (AnyType val) `react`
               if typeof val is 'object'
                 if Object.getOwnPropertyNames(val).length
                   node.innerHTML = jtmpl(
-                    multiReplace(
-                      node.getAttribute('data-jt-1') or '',
-                      opts.compiledDelimiters, opts.delimiters
-                    ),
+                    decompileTemplate(node.getAttribute('data-jt-1') or '', opts),
                     val,
                     opts
                   )
@@ -679,7 +661,7 @@ Function void (AnyType val) `react`
 
               else
                 node.innerHTML = jtmpl(
-                  multiReplace(
+                  decompileTemplate(
                     if sectionType is '#' and val
                       node.getAttribute('data-jt-1') or ''
                     else if sectionType is '^' and not val
@@ -687,7 +669,7 @@ Function void (AnyType val) `react`
                     else
                       ''
                     ,
-                    opts.compiledDelimiters, opts.delimiters
+                    opts
                   ),
                   model,
                   opts
@@ -1036,9 +1018,18 @@ Walk DOM and setup reactors on model and nodes.
 
 
     jtmpl.unbind = (model) ->
+      if not model or typeof model isnt 'object' then return
+
       if model?.__descriptors and typeof model.__descriptors is 'object'
         for prop, descriptor of model.__descriptors
           Object.defineProperty(model, prop, descriptor)
+
+      for prop of model
+        if Array.isArray(model[prop])
+          for _, i in model[prop]
+            jtmpl.unbind(model[prop][i])
+        else
+          jtmpl.unbind(model[prop])
 
       delete model.__listeners
       delete model.__descriptors
@@ -1161,6 +1152,14 @@ Replace `from` literal strings with `to` strings in template
       template
 
 
+    compileTemplate = (template, options) ->
+      multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)
+
+
+    decompileTemplate = (template, options) ->
+      multiReplace(template.trim(), options.compiledDelimiters, options.delimiters)
+
+
 
 
 
@@ -1205,6 +1204,12 @@ Register a callback to handle object property change.
       # All must be specified, don't fail if not
       if not (obj and prop and callback) then return
 
+      # Callback already registered?
+      if obj.__listeners?[prop]
+        for listener in obj.__listeners[prop]
+          if listener is callback
+            return
+
       # If property to bind to is not existent
       if obj[prop] is undefined then obj[prop] = null
 
@@ -1245,7 +1250,7 @@ Register a callback to handle object property change.
     
       setter = (val) ->
         if not catchSignal(val)
-          if (typeof val isnt 'object' or Array.isArray(val)) and typeof descriptor.set is 'function' 
+          if typeof descriptor.set is 'function' 
             # Existing setter
             descriptor.set(val) 
           else
@@ -1254,9 +1259,9 @@ Register a callback to handle object property change.
               descriptor.value.call(((p, val) -> obj[p] = val), val)
             else
               # simple value
-              # if typeof val is 'object'
-              #   jtmpl.unbind(obj[prop])
-              #   jtmpl.unbind(val)
+              if typeof val is 'object'
+                jtmpl.unbind(obj[prop])
+                jtmpl.unbind(val)
               descriptor.value = val
 
           for cb in obj.__listeners[prop]
@@ -1272,6 +1277,40 @@ Register a callback to handle object property change.
       })
 
 
+
+Manage book keeping
+
+track('listeners', [callback], model, prop, addHandler)
+
+    track = (trackType, trackInstance, model, prop, handler) ->
+
+
+    jtmpl.lens = (get, set) ->
+      f = (a) -> get(a)
+      f.set = set
+      f.mod = (f, a) -> set(a, f(get(a)))
+      f
+      
+
+
+
+
+
+
+
+
+Add event listener to node, manage book keeping
+
+    addEventListener = (node, event, model, prop, listener) ->
+      if model.__dom_listeners?[prop]
+        for [_node, _event, _listener] in model.__dom_listeners[prop]
+          if node is _node and _event is event and listener is _listener
+            return
+
+      node.addEventListener(event, listener)
+      if not model.__dom_listeners then model.__dom_listeners = {}
+      if not model.__dom_listeners[prop] then model.__dom_listeners[prop] = []
+      model.__dom_listeners[prop].push([node, event, listener])
 
 
 

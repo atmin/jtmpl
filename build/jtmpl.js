@@ -1,5 +1,5 @@
 (function() {
-  var RE_ANYTHING, RE_COLLECTION_TEMPLATE, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_PIPE, RE_SPACE, RE_URL, addClass, bindArrayToNodeChildren, createSectionItem, escapeHTML, escapeRE, getValue, hasClass, injectAttributes, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp, removeClass,
+  var RE_ANYTHING, RE_COLLECTION_TEMPLATE, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_PIPE, RE_SPACE, RE_URL, addClass, addEventListener, bindArrayToNodeChildren, compileTemplate, createSectionItem, decompileTemplate, escapeHTML, escapeRE, getValue, hasClass, injectAttributes, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp, removeClass, track,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   jtmpl = (typeof exports !== "undefined" && exports !== null ? exports : this).jtmpl = function(target, template, model, options) {
@@ -173,7 +173,7 @@
       contents: function(template, model, section, options) {
         var val;
         val = getValue(model, section);
-        return [Array.isArray(val) ? !val.length ? jtmpl(template, model) : '' : !val ? jtmpl(template, model) : '', [['data-jt-0', multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)]]];
+        return [Array.isArray(val) ? !val.length ? jtmpl(template, model) : '' : !val ? jtmpl(template, model) : '', [['data-jt-0', compileTemplate(template, options)]]];
       },
       bindingToken: function(section) {
         return "^" + section;
@@ -204,7 +204,7 @@
               }));
             }
             return _results;
-          })()).join('')) : typeof val === 'object' ? jtmpl(template, val) : val ? jtmpl(template, model) : '', [['data-jt-1', multiReplace(template.trim(), options.delimiters, options.compiledDelimiters)]]
+          })()).join('')) : typeof val === 'object' ? jtmpl(template, val) : val ? jtmpl(template, model) : '', [['data-jt-1', compileTemplate(template, options)]]
         ];
       },
       bindingToken: function(section) {
@@ -304,9 +304,10 @@
       pattern: "on(" + RE_IDENTIFIER + ") = (" + RE_IDENTIFIER + ")",
       react: function(node, evnt, listener, model, options) {
         var handler, _ref;
+        console.log('on');
         handler = (options != null ? (_ref = options.rootModel) != null ? _ref[listener] : void 0 : void 0) || model[listener];
         if (typeof handler === 'function') {
-          node.addEventListener(evnt, handler.bind(model));
+          addEventListener(node, evnt, model, listener, handler.bind(model));
         } else {
           throw ":( " + listener + " is not a function, cannot attach event handler";
         }
@@ -371,24 +372,24 @@
         }
       },
       react: function(node, sectionType, attr, model, options) {
-        var child, i, reaction, reactor, val, _i, _len, _ref;
+        var child, i, opts, reaction, reactor, val, _i, _len, _ref;
         val = model[attr];
+        opts = jtmpl.options(options);
         if (Array.isArray(val) && sectionType === '#') {
           jtmpl.bindArrayToNodeChildren(val, node, options);
           _ref = node.children;
           for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
             child = _ref[i];
             if (typeof val[i] === 'object') {
-              jtmpl.bind(child, val[i], options);
+              jtmpl.bind(child, val[i], opts);
             }
           }
         }
         reaction = function(val) {
-          var item, opts, _j, _len1, _results;
-          opts = jtmpl.options(options, model);
+          var item, _j, _len1, _results;
           if (Array.isArray(val)) {
             jtmpl.bindArrayToNodeChildren(val, node, opts);
-            node.innerHTML = !val.length ? jtmpl(multiReplace(node.getAttribute('data-jt-0') || '', opts.compiledDelimiters, opts.delimiters), {}) : '';
+            node.innerHTML = !val.length ? jtmpl(decompileTemplate(node.getAttribute('data-jt-0') || '', opts), model) : '';
             _results = [];
             for (_j = 0, _len1 = val.length; _j < _len1; _j++) {
               item = val[_j];
@@ -398,13 +399,13 @@
           } else {
             if (typeof val === 'object') {
               if (Object.getOwnPropertyNames(val).length) {
-                node.innerHTML = jtmpl(multiReplace(node.getAttribute('data-jt-1') || '', opts.compiledDelimiters, opts.delimiters), val, opts);
+                node.innerHTML = jtmpl(decompileTemplate(node.getAttribute('data-jt-1') || '', opts), val, opts);
                 jtmpl.unbind(model[attr]);
                 delete model.__listeners[attr];
                 return jtmpl.bind(node, model, opts);
               }
             } else {
-              return node.innerHTML = jtmpl(multiReplace(sectionType === '#' && val ? node.getAttribute('data-jt-1') || '' : sectionType === '^' && !val ? node.getAttribute('data-jt-0') || '' : '', opts.compiledDelimiters, opts.delimiters), model, opts);
+              return node.innerHTML = jtmpl(decompileTemplate(sectionType === '#' && val ? node.getAttribute('data-jt-1') || '' : sectionType === '^' && !val ? node.getAttribute('data-jt-0') || '' : '', opts), model, opts);
             }
           }
         };
@@ -648,12 +649,26 @@
   };
 
   jtmpl.unbind = function(model) {
-    var descriptor, prop, _ref;
+    var descriptor, i, prop, _, _i, _len, _ref, _ref1;
+    if (!model || typeof model !== 'object') {
+      return;
+    }
     if ((model != null ? model.__descriptors : void 0) && typeof model.__descriptors === 'object') {
       _ref = model.__descriptors;
       for (prop in _ref) {
         descriptor = _ref[prop];
         Object.defineProperty(model, prop, descriptor);
+      }
+    }
+    for (prop in model) {
+      if (Array.isArray(model[prop])) {
+        _ref1 = model[prop];
+        for (i = _i = 0, _len = _ref1.length; _i < _len; i = ++_i) {
+          _ = _ref1[i];
+          jtmpl.unbind(model[prop][i]);
+        }
+      } else {
+        jtmpl.unbind(model[prop]);
       }
     }
     delete model.__listeners;
@@ -721,6 +736,14 @@
     return template;
   };
 
+  compileTemplate = function(template, options) {
+    return multiReplace(template.trim(), options.delimiters, options.compiledDelimiters);
+  };
+
+  decompileTemplate = function(template, options) {
+    return multiReplace(template.trim(), options.compiledDelimiters, options.delimiters);
+  };
+
   jtmpl.createSectionItem = createSectionItem = function(parent, context, options) {
     var element;
     if (context === void 0) {
@@ -752,9 +775,18 @@
   };
 
   propChange = function(obj, prop, callback) {
-    var alertDependents, catchSignal, descriptor, setter;
+    var alertDependents, catchSignal, descriptor, listener, setter, _i, _len, _ref, _ref1;
     if (!(obj && prop && callback)) {
       return;
+    }
+    if ((_ref = obj.__listeners) != null ? _ref[prop] : void 0) {
+      _ref1 = obj.__listeners[prop];
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        listener = _ref1[_i];
+        if (listener === callback) {
+          return;
+        }
+      }
     }
     if (obj[prop] === void 0) {
       obj[prop] = null;
@@ -785,11 +817,11 @@
       }
     };
     alertDependents = function() {
-      var dependent, _i, _len, _ref, _ref1, _results;
-      _ref1 = ((_ref = obj.__dependents) != null ? _ref[prop] : void 0) || [];
+      var dependent, _j, _len1, _ref2, _ref3, _results;
+      _ref3 = ((_ref2 = obj.__dependents) != null ? _ref2[prop] : void 0) || [];
       _results = [];
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        dependent = _ref1[_i];
+      for (_j = 0, _len1 = _ref3.length; _j < _len1; _j++) {
+        dependent = _ref3[_j];
         _results.push(obj[dependent] = {
           __signal: {
             obj: obj,
@@ -800,9 +832,9 @@
       return _results;
     };
     setter = function(val) {
-      var cb, _i, _len, _ref;
+      var cb, _j, _len1, _ref2;
       if (!catchSignal(val)) {
-        if ((typeof val !== 'object' || Array.isArray(val)) && typeof descriptor.set === 'function') {
+        if (typeof descriptor.set === 'function') {
           descriptor.set(val);
         } else {
           if (typeof descriptor.value === 'function') {
@@ -810,12 +842,16 @@
               return obj[p] = val;
             }), val);
           } else {
+            if (typeof val === 'object') {
+              jtmpl.unbind(obj[prop]);
+              jtmpl.unbind(val);
+            }
             descriptor.value = val;
           }
         }
-        _ref = obj.__listeners[prop];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          cb = _ref[_i];
+        _ref2 = obj.__listeners[prop];
+        for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+          cb = _ref2[_j];
           cb(val);
         }
       }
@@ -829,6 +865,41 @@
       configurable: true,
       enumerable: false
     });
+  };
+
+  track = function(trackType, trackInstance, model, prop, handler) {};
+
+  jtmpl.lens = function(get, set) {
+    var f;
+    f = function(a) {
+      return get(a);
+    };
+    f.set = set;
+    f.mod = function(f, a) {
+      return set(a, f(get(a)));
+    };
+    return f;
+  };
+
+  addEventListener = function(node, event, model, prop, listener) {
+    var _event, _i, _len, _listener, _node, _ref, _ref1, _ref2;
+    if ((_ref = model.__dom_listeners) != null ? _ref[prop] : void 0) {
+      _ref1 = model.__dom_listeners[prop];
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        _ref2 = _ref1[_i], _node = _ref2[0], _event = _ref2[1], _listener = _ref2[2];
+        if (node === _node && _event === event && listener === _listener) {
+          return;
+        }
+      }
+    }
+    node.addEventListener(event, listener);
+    if (!model.__dom_listeners) {
+      model.__dom_listeners = {};
+    }
+    if (!model.__dom_listeners[prop]) {
+      model.__dom_listeners[prop] = [];
+    }
+    return model.__dom_listeners[prop].push([node, event, listener]);
   };
 
   jtmpl.bindArrayToNodeChildren = bindArrayToNodeChildren = function(array, node, options) {
