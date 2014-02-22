@@ -547,7 +547,7 @@ Function void (AnyType val) `react`
         pattern: "on(#{ RE_IDENTIFIER }) = (#{ RE_IDENTIFIER })"
 
         react: (node, evnt, listener, model, options) ->
-          console.log('on')
+          # console.log('on')
           handler = options?.rootModel?[listener] or model[listener]
           if typeof handler is 'function'
             addEventListener(node, evnt, model, listener, handler.bind(model))
@@ -691,7 +691,7 @@ Function void (AnyType val) `react`
         bindTo: (partial) -> null
 
         react: (node, partial, model, options) ->
-          console.log('bind partial')
+          # console.log('bind partial')
           # partial resolved during compiling phase?
           if not node.innerHTML
 
@@ -1024,25 +1024,6 @@ Walk DOM and setup reactors on model and nodes.
 
 
 
-    jtmpl.unbind = (model) ->
-      if not model or typeof model isnt 'object' then return
-
-      if model?.__descriptors and typeof model.__descriptors is 'object'
-        for prop, descriptor of model.__descriptors
-          Object.defineProperty(model, prop, descriptor)
-
-      for prop of model
-        if Array.isArray(model[prop])
-          for _, i in model[prop]
-            jtmpl.unbind(model[prop][i])
-        else
-          jtmpl.unbind(model[prop])
-
-      delete model.__listeners
-      delete model.__descriptors
-
-
-
 
 ## Supporting code
 
@@ -1211,12 +1192,6 @@ Register a callback to handle object property change.
       # All must be specified, don't fail if not
       if not (obj and prop and callback) then return
 
-      # Callback already registered?
-      # if obj.__listeners?[prop]
-      #   for listener in obj.__listeners[prop]
-      #     if listener is callback
-      #       return
-
       # If property to bind to is not existent
       if obj[prop] is undefined then obj[prop] = null
 
@@ -1252,19 +1227,18 @@ Register a callback to handle object property change.
       Object.defineProperty(obj, prop, {
         get: -> value,
         set: (val) ->
-          console.log('set ' + prop)
+          # console.log('set ' + prop)
           if not catchSignal(val)
             if typeof value is 'function'
               # computed value
               value.call(((p, val) -> obj[p] = val), val)
             else
               # simple value
-              # if typeof val is 'object' then jtmpl.unbind(obj[prop])
               value = val
 
             # notify listeners
             for cb in obj.__listeners[prop]
-              console.log('notify ' + prop + ' listener')
+              # console.log('notify ' + prop + ' listener')
               cb(val)
 
           alertDependents()
@@ -1272,24 +1246,6 @@ Register a callback to handle object property change.
         configurable: true,
         enumerable: false
       })
-
-
-
-Manage book keeping
-
-track('listeners', [callback], model, prop, addHandler)
-
-    track = (trackType, trackInstance, model, prop, handler) ->
-
-
-    jtmpl.lens = (get, set) ->
-      f = (a) -> get(a)
-      f.set = set
-      f.mod = (f, a) -> set(a, f(get(a)))
-      f
-      
-
-
 
 
 
