@@ -1,5 +1,5 @@
 (function() {
-  var RE_ANYTHING, RE_COLLECTION_TEMPLATE, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_PIPE, RE_SPACE, RE_URL, addClass, bindArrayToNodeChildren, compileTemplate, createSectionItem, decompileTemplate, escapeHTML, escapeRE, getValue, hasClass, injectAttributes, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp, removeClass,
+  var RE_ANYTHING, RE_COLLECTION_TEMPLATE, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_PIPE, RE_SPACE, RE_URL, addClass, addEventListener, bindArrayToNodeChildren, compileTemplate, createSectionItem, decompileTemplate, escapeHTML, escapeRE, getValue, hasClass, injectAttributes, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp, removeClass,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   jtmpl = (typeof exports !== "undefined" && exports !== null ? exports : this).jtmpl = function(target, template, model, options) {
@@ -826,6 +826,27 @@
       configurable: true,
       enumerable: false
     });
+  };
+
+  addEventListener = function(node, event, model, prop, listener) {
+    var _event, _i, _len, _listener, _node, _ref, _ref1, _ref2;
+    if ((_ref = model.__dom_listeners) != null ? _ref[prop] : void 0) {
+      _ref1 = model.__dom_listeners[prop];
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        _ref2 = _ref1[_i], _node = _ref2[0], _event = _ref2[1], _listener = _ref2[2];
+        if (node === _node && _event === event && listener === _listener) {
+          return;
+        }
+      }
+    }
+    node.addEventListener(event, listener);
+    if (!model.__dom_listeners) {
+      model.__dom_listeners = {};
+    }
+    if (!model.__dom_listeners[prop]) {
+      model.__dom_listeners[prop] = [];
+    }
+    return model.__dom_listeners[prop].push([node, event, listener]);
   };
 
   jtmpl.bindArrayToNodeChildren = bindArrayToNodeChildren = function(array, node, options) {

@@ -993,6 +993,15 @@ Walk DOM and setup reactors on model and nodes.
 
     jtmpl.bind = (node, model, options) ->
 
+      # Initialize bookkeeping
+      if typeof model is 'object' and not model.__jt__ 
+        model.__jt__ = {
+          dependents: {},
+          listeners: {},
+          domListeners: {},
+          bound: {}
+        }
+
       if data_jt = node.getAttribute('data-jt')
         # iterate bindings
         for jt in data_jt.trim().split(' ')
@@ -1004,15 +1013,14 @@ Walk DOM and setup reactors on model and nodes.
               reactor = rule.react([node].concat(match.slice(1), [model, options])...)
               prop = rule.bindTo?(match.slice(1)...)
 
+              key = prop + rule.pattern + jt
+
               # This rule already applied? bind must be idempotent
-              if not model?.__boundRules?[prop]?[rule.pattern]?[jt]
+              if not model?.__jt__.bound[key]
                 propChange(model, prop, reactor)
 
               if typeof model is 'object'
-                if not model.__boundRules then model.__boundRules = {}
-                if not model.__boundRules[prop] then model.__boundRules[prop] = {}
-                if not model.__boundRules[prop][rule.pattern] then model.__boundRules[prop][rule.pattern] = {}
-                model.__boundRules[prop][rule.pattern][jt] = true
+                model.__jt__.bound[key] = true
 
               recurseContext = rule.recurseContext?(match.slice(1).concat([model])...)
 
@@ -1070,7 +1078,7 @@ When in `trackDependencies` mode:
 value function can compute the result asynchronously,
 return undefined to signal this, finally call `callback` with computed value on success.
 
-`model.__dependents[prop]` registers all descendents for a `prop`
+`model.__jt__.dependents[prop]` registers all descendents for a `prop`
 
     getValue = (model, prop, trackDependencies, callback, formatter) ->
       formatter = formatter or (x) -> x
@@ -1085,9 +1093,9 @@ return undefined to signal this, finally call `callback` with computed value on 
         )
 
       dependencyTracker = (propToReturn) ->
-        model.__dependents[propToReturn] ?= []
-        if model.__dependents[propToReturn].indexOf(prop) is -1
-          model.__dependents[propToReturn].push(prop)
+        model.__jt__.dependents[propToReturn] ?= []
+        if model.__jt__.dependents[propToReturn].indexOf(prop) is -1
+          model.__jt__.dependents[propToReturn].push(prop)
         getter(propToReturn)
 
       if prop is '.' then return formatter(model)
@@ -1097,7 +1105,6 @@ return undefined to signal this, finally call `callback` with computed value on 
         val.call(
           # `this` function
           if trackDependencies 
-            model.__dependents ?= {}
             dependencyTracker
           else
             getter
@@ -1195,18 +1202,15 @@ Register a callback to handle object property change.
       # If property to bind to is not existent
       if obj[prop] is undefined then obj[prop] = null
 
-      # Init __listeners property
-      if not obj.__listeners then obj.__listeners = {}
-
       # We have listeners for this object property?
-      if Array.isArray(obj.__listeners[prop])
-        obj.__listeners[prop].push(callback)
+      if Array.isArray(obj.__jt__.listeners[prop])
+        obj.__jt__.listeners[prop].push(callback)
         return
 
-      obj.__listeners[prop] = [callback]
+      obj.__jt__.listeners[prop] = [callback]
 
       catchSignal = (val) ->
-        if signal = val?.__signal
+        if signal = val?.__signal__
           val = getValue(signal.obj, signal.prop, true, callback)
           if val isnt undefined then callback(val)
           true
@@ -1214,9 +1218,9 @@ Register a callback to handle object property change.
           false
 
       alertDependents = ->
-        for dependent in obj.__dependents?[prop] or []
+        for dependent in obj.__jt__.dependents[prop] or []
           obj[dependent] = {
-            __signal: {
+            __signal__: {
               obj: obj,
               prop: dependent
             }
@@ -1237,7 +1241,7 @@ Register a callback to handle object property change.
               value = val
 
             # notify listeners
-            for cb in obj.__listeners[prop]
+            for cb in obj.__jt__.listeners[prop]
               # console.log('notify ' + prop + ' listener')
               cb(val)
 
@@ -1255,15 +1259,14 @@ Register a callback to handle object property change.
 Add event listener to node, manage book keeping
 
     addEventListener = (node, event, model, prop, listener) ->
-      if model.__dom_listeners?[prop]
-        for [_node, _event, _listener] in model.__dom_listeners[prop]
+      if listeners = model.__jt__.domListeners[prop]
+        for [_node, _event, _listener] in listeners
           if node is _node and _event is event and listener is _listener
             return
 
       node.addEventListener(event, listener)
-      if not model.__dom_listeners then model.__dom_listeners = {}
-      if not model.__dom_listeners[prop] then model.__dom_listeners[prop] = []
-      model.__dom_listeners[prop].push([node, event, listener])
+      model.__jt__.domListeners[prop] ?= []
+      model.__jt__.domListeners[prop].push([node, event, listener])
 
 
 
