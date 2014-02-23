@@ -631,6 +631,8 @@ Function void (AnyType val) `react`
             model
 
         react: (node, sectionType, prop, mapping, model, options) ->
+          @index = (@index or 0) + 1
+
           val = model[prop]
           opts = jtmpl.options(options)
 
@@ -1022,10 +1024,10 @@ Walk DOM and setup reactors on model and nodes.
 
             if match = regexp(rule.pattern).exec(jt)
 
-              reactor = rule.react([node].concat(match.slice(1), [model, options])...)
+              reactor = rule.react.apply(rule, [node].concat(match.slice(1), [model, options]))
               prop = rule.bindTo?(match.slice(1)...)
 
-              key = prop + rule.pattern + jt
+              key = prop + rule.pattern + jt + (rule.index or '')
 
               # This rule already applied? bind must be idempotent
               if not model?.__jt__.bound[key]
@@ -1355,7 +1357,7 @@ and setting a proxy for each mutable operation.
             for node in @__nodes
               node.innerHTML = ''
               for item, i in @
-                node.appendChild(createSectionItem(node, item, options)) for node in this.__nodes
+                node.appendChild(createSectionItem(node, item, options))
                 bindProp(item, i)
             @
 

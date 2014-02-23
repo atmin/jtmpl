@@ -1,5 +1,5 @@
 (function() {
-  var RE_ANYTHING, RE_COLLECTION_TEMPLATE, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_PIPE, RE_SPACE, RE_URL, addClass, bindArrayToNodeChildren, compileTemplate, createSectionItem, decompileTemplate, escapeHTML, escapeRE, getValue, hasClass, injectAttributes, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp, removeClass,
+  var RE_ANYTHING, RE_COLLECTION_TEMPLATE, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_PIPE, RE_SPACE, RE_URL, addClass, compileTemplate, createSectionItem, decompileTemplate, escapeHTML, escapeRE, getValue, hasClass, injectAttributes, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp, removeClass,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   jtmpl = (typeof exports !== "undefined" && exports !== null ? exports : this).jtmpl = function(target, template, model, options) {
@@ -396,6 +396,7 @@
         reaction = function(val) {
           var item, _j, _len1, _results;
           if (Array.isArray(val)) {
+            val.__nodes = model[prop].__nodes;
             jtmpl.bindArrayToNodeChildren(val, node, opts);
             node.innerHTML = !val.length ? jtmpl(decompileTemplate(node.getAttribute('data-jt-0') || '', opts), model) : '';
             _results = [];
@@ -646,7 +647,7 @@
           if (match = regexp(rule.pattern).exec(jt)) {
             reactor = rule.react.apply(rule, [node].concat(match.slice(1), [model, options]));
             prop = typeof rule.bindTo === "function" ? rule.bindTo.apply(rule, match.slice(1)) : void 0;
-            key = prop + rule.pattern + jt;
+            key = prop + rule.pattern + jt + match.index;
             if (!(model != null ? model.__jt__.bound[key] : void 0)) {
               propChange(model, prop, reactor);
             }
@@ -837,14 +838,18 @@
     });
   };
 
-  jtmpl.bindArrayToNodeChildren = bindArrayToNodeChildren = function(array, node, options) {
-    var bindProp, i, item, mutable, _i, _len;
-    if (!array.__nodes) {
+  jtmpl.bindArrayToNodeChildren = function(array, node, options) {
+    var bindProp, i, item, mutable, operation, proxy, _i, _len, _ref;
+    if (!array.__values) {
       mutable = function(method) {
         return function() {
-          var i, result;
+          var i, result, _i, _j, _len, _len1, _ref, _ref1;
           if (!this.length) {
-            node.innerHTML = '';
+            _ref = this.__nodes;
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              node = _ref[_i];
+              node.innerHTML = '';
+            }
           }
           i = this.__nodes.length;
           while (--i) {
@@ -854,113 +859,123 @@
           }
           result = method.apply(this, arguments);
           if (!this.length) {
-            node.innerHTML = jtmpl(multiReplace(node.getAttribute('data-jt-0') || '', options.compiledDelimiters, options.delimiters), {});
+            _ref1 = this.__nodes;
+            for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+              node = _ref1[_j];
+              node.innerHTML = jtmpl(multiReplace(node.getAttribute('data-jt-0') || '', options.compiledDelimiters, options.delimiters), {});
+            }
           }
           return result;
         };
       };
-      array.pop = mutable(function() {
-        var _i, _len, _ref;
-        _ref = this.__nodes;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          node = _ref[_i];
-          node.removeChild(node.children[node.children.length - 1]);
-        }
-        return [].pop.apply(this, arguments);
-      });
-      array.push = mutable(function(item) {
-        var result, _i, _len, _ref;
-        _ref = this.__nodes;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          node = _ref[_i];
-          node.appendChild(createSectionItem(node, item, options));
-        }
-        result = [].push.apply(this, arguments);
-        bindProp(item, this.length - 1);
-        return result;
-      });
-      array.reverse = mutable(function() {
-        var i, item, _i, _j, _len, _ref;
-        _ref = this.__nodes;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          node = _ref[_i];
-          node.innerHTML = '';
-          for (i = _j = this.length - 1; _j >= 0; i = _j += -1) {
-            item = this[i];
+      _ref = {
+        pop: function() {
+          var _i, _len, _ref;
+          _ref = this.__nodes;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            node = _ref[_i];
+            node.removeChild(node.children[node.children.length - 1]);
+          }
+          return [].pop.apply(this, arguments);
+        },
+        push: function(item) {
+          var result, _i, _len, _ref;
+          _ref = this.__nodes;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            node = _ref[_i];
             node.appendChild(createSectionItem(node, item, options));
-            bindProp(item, i);
           }
-        }
-        return [].reverse.apply(this, arguments);
-      });
-      array.shift = mutable(function() {
-        var i, item, result, _i, _j, _len, _len1, _ref;
-        _ref = this.__nodes;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          node = _ref[_i];
-          node.removeChild(node.children[0]);
-        }
-        result = [].shift.apply(this, arguments);
-        for (i = _j = 0, _len1 = this.length; _j < _len1; i = ++_j) {
-          item = this[i];
-          bindProp(item, i);
-        }
-        return result;
-      });
-      array.unshift = mutable(function() {
-        var i, item, result, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
-        _ref = [].slice.call(arguments).reverse();
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
-          _ref1 = this.__nodes;
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            node = _ref1[_j];
-            node.insertBefore(createSectionItem(node, item, options), node.children[0]);
+          result = [].push.apply(this, arguments);
+          bindProp(item, this.length - 1);
+          return result;
+        },
+        reverse: function() {
+          var i, item, _i, _j, _len, _ref;
+          _ref = this.__nodes;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            node = _ref[_i];
+            node.innerHTML = '';
+            for (i = _j = this.length - 1; _j >= 0; i = _j += -1) {
+              item = this[i];
+              node.appendChild(createSectionItem(node, item, options));
+              bindProp(item, i);
+            }
           }
-        }
-        result = [].unshift.apply(this, arguments);
-        for (i = _k = 0, _len2 = this.length; _k < _len2; i = ++_k) {
-          item = this[i];
-          bindProp(item, i);
-        }
-        return result;
-      });
-      array.sort = mutable(function() {
-        var i, item, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
-        [].sort.apply(this, arguments);
-        _ref = this.__nodes;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          node = _ref[_i];
-          node.innerHTML = '';
+          return [].reverse.apply(this, arguments);
+        },
+        shift: function() {
+          var i, item, result, _i, _j, _len, _len1, _ref;
+          _ref = this.__nodes;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            node = _ref[_i];
+            node.removeChild(node.children[0]);
+          }
+          result = [].shift.apply(this, arguments);
           for (i = _j = 0, _len1 = this.length; _j < _len1; i = ++_j) {
             item = this[i];
-            _ref1 = this.__nodes;
-            for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
-              node = _ref1[_k];
-              node.appendChild(createSectionItem(node, item, options));
-            }
             bindProp(item, i);
           }
-        }
-        return this;
-      });
-      array.splice = mutable(function(index, howMany) {
-        var i, item, _i, _j, _k, _len, _len1, _ref, _ref1;
-        _ref = this.__nodes;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          node = _ref[_i];
-          for (i = _j = 0; 0 <= howMany ? _j < howMany : _j > howMany; i = 0 <= howMany ? ++_j : --_j) {
-            node.removeChild(node.children[index]);
+          return result;
+        },
+        unshift: function() {
+          var i, item, result, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
+          _ref = [].slice.call(arguments).reverse();
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            item = _ref[_i];
+            _ref1 = this.__nodes;
+            for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+              node = _ref1[_j];
+              node.insertBefore(createSectionItem(node, item, options), node.children[0]);
+            }
           }
-          _ref1 = [].slice.call(arguments, 2);
-          for (_k = 0, _len1 = _ref1.length; _k < _len1; _k++) {
-            item = _ref1[_k];
-            node.insertBefore(createSectionItem(node, item, options), node.children[index]);
-            bindProp(item, index);
+          result = [].unshift.apply(this, arguments);
+          for (i = _k = 0, _len2 = this.length; _k < _len2; i = ++_k) {
+            item = this[i];
+            bindProp(item, i);
           }
+          return result;
+        },
+        sort: function() {
+          var i, item, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
+          [].sort.apply(this, arguments);
+          _ref = this.__nodes;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            node = _ref[_i];
+            node.innerHTML = '';
+            for (i = _j = 0, _len1 = this.length; _j < _len1; i = ++_j) {
+              item = this[i];
+              _ref1 = this.__nodes;
+              for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
+                node = _ref1[_k];
+                node.appendChild(createSectionItem(node, item, options));
+              }
+              bindProp(item, i);
+            }
+          }
+          return this;
+        },
+        splice: function(index, howMany) {
+          var i, item, _i, _j, _k, _len, _len1, _ref, _ref1;
+          _ref = this.__nodes;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            node = _ref[_i];
+            for (i = _j = 0; 0 <= howMany ? _j < howMany : _j > howMany; i = 0 <= howMany ? ++_j : --_j) {
+              node.removeChild(node.children[index]);
+            }
+            _ref1 = [].slice.call(arguments, 2);
+            for (_k = 0, _len1 = _ref1.length; _k < _len1; _k++) {
+              item = _ref1[_k];
+              node.insertBefore(createSectionItem(node, item, options), node.children[index]);
+              bindProp(item, index);
+            }
+          }
+          return [].splice.apply(this, arguments);
         }
-        return [].splice.apply(this, arguments);
-      });
+      };
+      for (operation in _ref) {
+        proxy = _ref[operation];
+        array[operation] = mutable(proxy);
+      }
       bindProp = function(item, i) {
         array.__values[i] = item;
         return Object.defineProperty(array, i, {
@@ -968,12 +983,12 @@
             return this.__values[i];
           },
           set: mutable(function(val) {
-            var _i, _len, _ref, _results;
+            var _i, _len, _ref1, _results;
             this.__values[i] = val;
-            _ref = this.__nodes;
+            _ref1 = this.__nodes;
             _results = [];
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              node = _ref[_i];
+            for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+              node = _ref1[_i];
               _results.push(node.replaceChild(createSectionItem(node, val, options), node.children[i]));
             }
             return _results;
