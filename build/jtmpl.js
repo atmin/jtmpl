@@ -1,5 +1,5 @@
 (function() {
-  var RE_ANYTHING, RE_COLLECTION_TEMPLATE, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_PIPE, RE_SPACE, RE_URL, addClass, addEventListener, bindArrayToNodeChildren, compileTemplate, createSectionItem, decompileTemplate, escapeHTML, escapeRE, getValue, hasClass, injectAttributes, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp, removeClass,
+  var RE_ANYTHING, RE_COLLECTION_TEMPLATE, RE_DATA_JT, RE_IDENTIFIER, RE_NODE_ID, RE_PIPE, RE_SPACE, RE_URL, addClass, bindArrayToNodeChildren, compileTemplate, createSectionItem, decompileTemplate, escapeHTML, escapeRE, getValue, hasClass, injectAttributes, injectTagBinding, isValidHTMLTag, jtmpl, lastOpenedHTMLTag, multiReplace, propChange, regexp, removeClass,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   jtmpl = (typeof exports !== "undefined" && exports !== null ? exports : this).jtmpl = function(target, template, model, options) {
@@ -200,11 +200,12 @@
             for (_i = 0, _len = val.length; _i < _len; _i++) {
               item = val[_i];
               _results.push(jtmpl(template, item, {
-                asArrayItem: true
+                asArrayItem: true,
+                rootModel: options.rootModel
               }));
             }
             return _results;
-          })()).join('')) : typeof val === 'object' ? jtmpl(template, val) : val ? jtmpl(template, model) : '', [['data-jt-1', compileTemplate(template, options)]]
+          })()).join('')) : typeof val === 'object' ? jtmpl(template, val, options) : val ? jtmpl(template, model, options) : '', [['data-jt-1', compileTemplate(template, options)]]
         ];
       },
       bindingToken: function(section) {
@@ -303,10 +304,18 @@
     }, {
       pattern: "on(" + RE_IDENTIFIER + ") = (" + RE_IDENTIFIER + ")",
       react: function(node, evnt, listener, model, options) {
-        var handler, _ref;
+        var handler, key, _base, _ref, _ref1;
         handler = (options != null ? (_ref = options.rootModel) != null ? _ref[listener] : void 0 : void 0) || model[listener];
         if (typeof handler === 'function') {
-          addEventListener(node, evnt, model, listener, handler.bind(model));
+          key = evnt + listener;
+          if (((_ref1 = model.__jt__.domListeners[key]) != null ? _ref1.indexOf(node) : void 0) > -1) {
+            return;
+          }
+          node.addEventListener(evnt, handler.bind(model));
+          if ((_base = model.__jt__.domListeners)[key] == null) {
+            _base[key] = [];
+          }
+          model.__jt__.domListeners[key].push(node);
         } else {
           throw ":( " + listener + " is not a function, cannot attach event handler";
         }
@@ -355,11 +364,11 @@
         return reactor;
       }
     }, {
-      pattern: "^(# | \\^) (" + RE_IDENTIFIER + ")$",
+      pattern: "^(# | \\^) (" + RE_IDENTIFIER + ") " + RE_PIPE + " $",
       bindTo: function(sectionType, prop) {
         return prop;
       },
-      recurseContext: function(sectionType, attr, model) {
+      recurseContext: function(sectionType, attr, mapping, model) {
         var val;
         val = model[attr];
         if (Array.isArray(val)) {
@@ -370,7 +379,7 @@
           return model;
         }
       },
-      react: function(node, sectionType, prop, model, options) {
+      react: function(node, sectionType, prop, mapping, model, options) {
         var child, i, opts, reaction, reactor, val, _i, _len, _ref;
         val = model[prop];
         opts = jtmpl.options(options);
@@ -610,12 +619,23 @@
         return _results;
       };
       hashchange();
-      return window.addEventListener('hashchange', hashchange);
+      if (!model.__jt__.domListeners['hashchange']) {
+        window.addEventListener('hashchange', hashchange);
+        return model.__jt__.domListeners['hashchange'] = true;
+      }
     }
   };
 
   jtmpl.bind = function(node, model, options) {
-    var child, data_jt, jt, match, prop, reactor, recurseContext, rule, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _results;
+    var child, data_jt, jt, key, match, prop, reactor, recurseContext, rule, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _results;
+    if (typeof model === 'object' && !model.__jt__) {
+      model.__jt__ = {
+        dependents: {},
+        listeners: {},
+        domListeners: {},
+        bound: {}
+      };
+    }
     if (data_jt = node.getAttribute('data-jt')) {
       _ref = data_jt.trim().split(' ');
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -626,20 +646,12 @@
           if (match = regexp(rule.pattern).exec(jt)) {
             reactor = rule.react.apply(rule, [node].concat(match.slice(1), [model, options]));
             prop = typeof rule.bindTo === "function" ? rule.bindTo.apply(rule, match.slice(1)) : void 0;
-            if (!(model != null ? (_ref2 = model.__boundRules) != null ? (_ref3 = _ref2[prop]) != null ? (_ref4 = _ref3[rule.pattern]) != null ? _ref4[jt] : void 0 : void 0 : void 0 : void 0)) {
+            key = prop + rule.pattern + jt;
+            if (!(model != null ? model.__jt__.bound[key] : void 0)) {
               propChange(model, prop, reactor);
             }
             if (typeof model === 'object') {
-              if (!model.__boundRules) {
-                model.__boundRules = {};
-              }
-              if (!model.__boundRules[prop]) {
-                model.__boundRules[prop] = {};
-              }
-              if (!model.__boundRules[prop][rule.pattern]) {
-                model.__boundRules[prop][rule.pattern] = {};
-              }
-              model.__boundRules[prop][rule.pattern][jt] = true;
+              model.__jt__.bound[key] = true;
             }
             recurseContext = typeof rule.recurseContext === "function" ? rule.recurseContext.apply(rule, match.slice(1).concat([model])) : void 0;
             break;
@@ -648,10 +660,10 @@
       }
     }
     if (recurseContext !== null) {
-      _ref5 = node.children;
+      _ref2 = node.children;
       _results = [];
-      for (_k = 0, _len2 = _ref5.length; _k < _len2; _k++) {
-        child = _ref5[_k];
+      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+        child = _ref2[_k];
         _results.push(jtmpl.bind(child, recurseContext || model, options));
       }
       return _results;
@@ -679,11 +691,11 @@
     };
     dependencyTracker = function(propToReturn) {
       var _base;
-      if ((_base = model.__dependents)[propToReturn] == null) {
+      if ((_base = model.__jt__.dependents)[propToReturn] == null) {
         _base[propToReturn] = [];
       }
-      if (model.__dependents[propToReturn].indexOf(prop) === -1) {
-        model.__dependents[propToReturn].push(prop);
+      if (model.__jt__.dependents[propToReturn].indexOf(prop) === -1) {
+        model.__jt__.dependents[propToReturn].push(prop);
       }
       return getter(propToReturn);
     };
@@ -692,7 +704,7 @@
     }
     val = model[prop];
     if (typeof val === 'function') {
-      return val.call(trackDependencies ? (model.__dependents != null ? model.__dependents : model.__dependents = {}, dependencyTracker) : getter, callback);
+      return val.call(trackDependencies ? dependencyTracker : getter, callback);
     } else {
       return formatter(val);
     }
@@ -765,17 +777,14 @@
     if (obj[prop] === void 0) {
       obj[prop] = null;
     }
-    if (!obj.__listeners) {
-      obj.__listeners = {};
-    }
-    if (Array.isArray(obj.__listeners[prop])) {
-      obj.__listeners[prop].push(callback);
+    if (Array.isArray(obj.__jt__.listeners[prop])) {
+      obj.__jt__.listeners[prop].push(callback);
       return;
     }
-    obj.__listeners[prop] = [callback];
+    obj.__jt__.listeners[prop] = [callback];
     catchSignal = function(val) {
       var signal;
-      if (signal = val != null ? val.__signal : void 0) {
+      if (signal = val != null ? val.__signal__ : void 0) {
         val = getValue(signal.obj, signal.prop, true, callback);
         if (val !== void 0) {
           callback(val);
@@ -786,13 +795,13 @@
       }
     };
     alertDependents = function() {
-      var dependent, _i, _len, _ref, _ref1, _results;
-      _ref1 = ((_ref = obj.__dependents) != null ? _ref[prop] : void 0) || [];
+      var dependent, _i, _len, _ref, _results;
+      _ref = obj.__jt__.dependents[prop] || [];
       _results = [];
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        dependent = _ref1[_i];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        dependent = _ref[_i];
         _results.push(obj[dependent] = {
-          __signal: {
+          __signal__: {
             obj: obj,
             prop: dependent
           }
@@ -815,7 +824,7 @@
           } else {
             value = val;
           }
-          _ref = obj.__listeners[prop];
+          _ref = obj.__jt__.listeners[prop];
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             cb = _ref[_i];
             cb(val);
@@ -826,27 +835,6 @@
       configurable: true,
       enumerable: false
     });
-  };
-
-  addEventListener = function(node, event, model, prop, listener) {
-    var _event, _i, _len, _listener, _node, _ref, _ref1, _ref2;
-    if ((_ref = model.__dom_listeners) != null ? _ref[prop] : void 0) {
-      _ref1 = model.__dom_listeners[prop];
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        _ref2 = _ref1[_i], _node = _ref2[0], _event = _ref2[1], _listener = _ref2[2];
-        if (node === _node && _event === event && listener === _listener) {
-          return;
-        }
-      }
-    }
-    node.addEventListener(event, listener);
-    if (!model.__dom_listeners) {
-      model.__dom_listeners = {};
-    }
-    if (!model.__dom_listeners[prop]) {
-      model.__dom_listeners[prop] = [];
-    }
-    return model.__dom_listeners[prop].push([node, event, listener]);
   };
 
   jtmpl.bindArrayToNodeChildren = bindArrayToNodeChildren = function(array, node, options) {

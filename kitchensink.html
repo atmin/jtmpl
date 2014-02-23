@@ -116,6 +116,11 @@
             {{#inner}}<li>{{.}}</li>{{/inner}}
             {{^inner}}<div>&lt; empty &gt;</div>{{/inner}}
           </ul>
+          <h5><code>model.collection[i].inner</code>: filtered even numbers</h5>
+          <ul>
+            {{#inner}}<li><small>{{.}}</small></li>{{/inner}}
+            {{^inner}}<div>&lt; no even numbers &gt;</div>{{/inner}}
+          </ul>
           <br>
         </li>
         {{/collection}}
@@ -123,10 +128,11 @@
         <div>&lt; empty &gt;</div>
         {{/collection}}
       </ul>
+
       <br>
       <button onclick={{push}}>push</button>
       <button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
-
+      <br>
     </script>
 
     <script id="checkboxes-template" type="text/template">
@@ -240,6 +246,11 @@
         // Formatters
         quote: function (val) {
           return '"' + val + '"';
+        },
+
+        // Mappings
+        even: function (val) {
+          return val % 2 === 0 ? val : null;
         },
 
 

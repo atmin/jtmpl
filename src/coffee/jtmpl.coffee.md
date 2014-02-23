@@ -403,15 +403,15 @@ When `prop` is boolean, value determines presense of attribute.
                 val = val.map(mapping).filter((x) -> x isnt null and x isnt undefined)
 
               # Render body for each item
-              (jtmpl(template, item, { asArrayItem: true }) for item in val).join('')
+              (jtmpl(template, item, { asArrayItem: true, rootModel: options.rootModel }) for item in val).join('')
 
             # Context
             else if typeof val is 'object'
-              jtmpl(template, val)
+              jtmpl(template, val, options)
 
             # as Boolean
             else
-              if val then jtmpl(template, model) else ''
+              if val then jtmpl(template, model, options) else ''
 
             [['data-jt-1', compileTemplate(template, options)]]
           ]
@@ -550,7 +550,15 @@ Function void (AnyType val) `react`
           # console.log('on')
           handler = options?.rootModel?[listener] or model[listener]
           if typeof handler is 'function'
-            addEventListener(node, evnt, model, listener, handler.bind(model))
+            key = evnt + listener
+            # listener already attached?
+            if model.__jt__.domListeners[key]?.indexOf(node) > -1
+              return
+
+            node.addEventListener(evnt, handler.bind(model))
+            model.__jt__.domListeners[key] ?= []
+            model.__jt__.domListeners[key].push(node)
+
           else
             throw ":( #{ listener } is not a function, cannot attach event handler"
 
@@ -608,12 +616,12 @@ Function void (AnyType val) `react`
 #### section
 
       {
-        pattern: "^(# | \\^) (#{ RE_IDENTIFIER })$"
+        pattern: "^(# | \\^) (#{ RE_IDENTIFIER }) #{ RE_PIPE } $"
 
         bindTo: (sectionType, prop) -> prop
 
         # context for recursion
-        recurseContext: (sectionType, attr, model) ->
+        recurseContext: (sectionType, attr, mapping, model) ->
           val = model[attr]
           if Array.isArray(val)
             null
@@ -622,7 +630,7 @@ Function void (AnyType val) `react`
           else
             model
 
-        react: (node, sectionType, prop, model, options) ->
+        react: (node, sectionType, prop, mapping, model, options) ->
           val = model[prop]
           opts = jtmpl.options(options)
 
@@ -636,6 +644,8 @@ Function void (AnyType val) `react`
           reaction = (val) ->
             # collection?
             if Array.isArray(val)
+              # Transfer existing listening DOM nodes
+              val.__nodes = model[prop].__nodes
               jtmpl.bindArrayToNodeChildren(val, node, opts)
 
               node.innerHTML =
@@ -979,7 +989,9 @@ Example routes:
 
         hashchange()
 
-        window.addEventListener('hashchange', hashchange)
+        if not model.__jt__.domListeners['hashchange']
+          window.addEventListener('hashchange', hashchange)
+          model.__jt__.domListeners['hashchange'] = true
 
 
 
@@ -1256,21 +1268,6 @@ Register a callback to handle object property change.
 
 
 
-Add event listener to node, manage book keeping
-
-    addEventListener = (node, event, model, prop, listener) ->
-      if listeners = model.__jt__.domListeners[prop]
-        for [_node, _event, _listener] in listeners
-          if node is _node and _event is event and listener is _listener
-            return
-
-      node.addEventListener(event, listener)
-      model.__jt__.domListeners[prop] ?= []
-      model.__jt__.domListeners[prop].push([node, event, listener])
-
-
-
-
 
 void bindArrayToNodeChildren(Array array, DOMElement node)
 
@@ -1282,70 +1279,69 @@ and setting a proxy for each mutable operation.
 `createSectionItem` is used for creating new items.
 
 
-    jtmpl.bindArrayToNodeChildren = bindArrayToNodeChildren = (array, node, options) ->
+    jtmpl.bindArrayToNodeChildren = (array, node, options) ->
 
       # array already augmented?
-      if not array.__nodes
+      if not array.__values
 
         # Mutable array operations decorator
         mutable = (method) ->
           ->
             # remove <empty> element
-            if not @length then node.innerHTML = ''
+            if not @length
+              for node in @__nodes
+                node.innerHTML = ''
+
             # it's possible for a referenced node to be destroyed. garbage collect references
             i = @__nodes.length
             while --i
               if not @__nodes[i].parentNode
                 @__nodes.splice(i, 1)
+
             # call mutable method
             result = method.apply(this, arguments)
+
             # add <empty> element
             if not this.length
-              node.innerHTML = jtmpl(
-                multiReplace(node.getAttribute('data-jt-0') or '',
-                  options.compiledDelimiters, options.delimiters),
-                {}
-              )
+              for node in @__nodes
+                node.innerHTML = jtmpl(
+                  multiReplace(node.getAttribute('data-jt-0') or '',
+                    options.compiledDelimiters, options.delimiters),
+                  {}
+                )
+
             # what method returned
             result
 
         # Proxy all mutable operations
-        array.pop = mutable(
-          -> 
+        for operation, proxy of {
+          pop: -> 
             node.removeChild(node.children[node.children.length - 1]) for node in @__nodes
             [].pop.apply(@, arguments)
-        )
 
-        array.push = mutable(
-          (item) ->
+          push: (item) ->
             node.appendChild(createSectionItem(node, item, options)) for node in @__nodes
             result = [].push.apply(@, arguments)
             bindProp(item, @length - 1)
             result
-        )
 
-        array.reverse = mutable(
-          ->
+          reverse: ->
             for node in @__nodes
               node.innerHTML = ''
               for item, i in @ by -1
                 node.appendChild(createSectionItem(node, item, options))
                 bindProp(item, i)
             [].reverse.apply(@, arguments)
-        )
 
-        array.shift = mutable(
-          ->
+          shift: ->
             for node in @__nodes
               node.removeChild(node.children[0])
             result = [].shift.apply(@, arguments)
             for item, i in @
               bindProp(item, i)
             result
-        )
 
-        array.unshift = mutable(
-          ->
+          unshift: ->
             for item in [].slice.call(arguments).reverse()
               for node in @__nodes
                 node.insertBefore(createSectionItem(node, item, options), node.children[0])
@@ -1353,10 +1349,8 @@ and setting a proxy for each mutable operation.
             for item, i in @
               bindProp(item, i)
             result
-        )
 
-        array.sort = mutable(
-          ->
+          sort: ->
             [].sort.apply(@, arguments)
             for node in @__nodes
               node.innerHTML = ''
@@ -1364,10 +1358,8 @@ and setting a proxy for each mutable operation.
                 node.appendChild(createSectionItem(node, item, options)) for node in this.__nodes
                 bindProp(item, i)
             @
-        )
 
-        array.splice = mutable(
-          (index, howMany) ->
+          splice: (index, howMany) ->
             for node in @__nodes
               for i in [0...howMany]
                 node.removeChild(node.children[index])
@@ -1375,7 +1367,9 @@ and setting a proxy for each mutable operation.
                 node.insertBefore(createSectionItem(node, item, options), node.children[index])
                 bindProp(item, index)
             [].splice.apply(@, arguments)
-        )
+        }
+          array[operation] = mutable(proxy)
+  
 
         # Bind property
         bindProp = (item, i) ->
