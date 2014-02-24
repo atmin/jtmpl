@@ -118,8 +118,8 @@
           </ul>
           <h5><code>model.collection[i].inner</code>: filtered even numbers</h5>
           <ul>
-            {{#inner}}<li><small>{{.}}</small></li>{{/inner}}
-            {{^inner}}<div>&lt; no even numbers &gt;</div>{{/inner}}
+            {{#innerEven}}<li><small>{{.}}</small></li>{{/innerEven}}
+            {{^innerEven}}<div>&lt; no even numbers &gt;</div>{{/innerEven}}
           </ul>
           <br>
         </li>
@@ -171,9 +171,21 @@
         text: 'lowercase',
 
         collection: [
-          { popDisabled: false, inner: [1, 2, 3, 4, 5] },
-          { popDisabled: false, inner: [6, 7] },
-          { popDisabled: false, inner: [8, 9, 10, 11] }
+          { 
+            popDisabled: false,
+            inner: [1, 2, 3, 4, 5],
+            innerEven: function () {
+              return this('inner').map(
+                function (x) {
+                  return x % 2 === 0 ? x : null 
+                }
+              ).filter(
+                function (x) {
+                  return x !== null;
+                }
+              );
+            }
+          }
         ],
 
         popDisabled: false,

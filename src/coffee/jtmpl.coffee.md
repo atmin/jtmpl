@@ -163,15 +163,29 @@ Construct options object by merging default and specified options
 
     jtmpl.xhr = (args) ->
       xhr = new XMLHttpRequest()
+
       callback = args.reduce(
-        (prev, curr) -> typeof curr is 'function' and curr or prev,
+        (prev, curr) -> if typeof curr is 'function' then curr else prev,
         null
       )
+
       opts = args[args.length - 1]
       if typeof opts isnt 'object' then opts = {}
       for prop in Object.getOwnPropertyNames(opts)
         xhr[prop] = opts[prop]
-      request = if typeof args[2] is 'string' then args[2] else if typeof args[2] is 'object' then JSON.stringify(args[2]) else ''
+
+      request =
+        if typeof args[2] is 'string'
+          args[2]
+        else if typeof args[2] is 'object'
+          Object.keys(args[2])
+            .map(
+              (x) -> "#{ x }=#{ encodeURIComponent(args[2][x]) }"
+            )
+            .join('&')
+        else 
+          ''
+
       xhr.onload = (event) ->
         if callback
           try
@@ -179,6 +193,7 @@ Construct options object by merging default and specified options
           catch
             resp = this.responseText
           callback.call(this, resp, event)
+
       xhr.open(args[0], args[1], opts.async or true, opts.user, opts.password)
       xhr.send(request)
 
@@ -387,20 +402,18 @@ When `prop` is boolean, value determines presense of attribute.
       {
         pattern: "{{ \\# (#{ RE_IDENTIFIER }) #{ RE_PIPE } }}$"
 
-        lastTag: (model, section) ->
+        lastTag: (model, section, mapping) ->
           if Array.isArray(model[section]) then section else null
 
         wrapper: 'defaultSection'
 
         contents: (template, model, section, mapping, options) ->
-          val = getValue(model, section)
+          mapping = options.rootModel[mapping] or model[mapping] or jtmpl.mappings[mapping]
+          val = getValue(model, section, false, null, mapping)
 
           [ 
             # Sequence?
             if Array.isArray(val)
-              mapping = options.rootModel[mapping] or model[mapping] or jtmpl.mappings[mapping]
-              if typeof mapping is 'function'
-                val = val.map(mapping).filter((x) -> x isnt null and x isnt undefined)
 
               # Render body for each item
               (jtmpl(template, item, { asArrayItem: true, rootModel: options.rootModel }) for item in val).join('')
@@ -552,12 +565,12 @@ Function void (AnyType val) `react`
           if typeof handler is 'function'
             key = evnt + listener
             # listener already attached?
-            if model.__jt__.domListeners[key]?.indexOf(node) > -1
-              return
+            for pair in model.__jt__.domListeners[key] or []
+              if pair[0] is node then return
 
             node.addEventListener(evnt, handler.bind(model))
             model.__jt__.domListeners[key] ?= []
-            model.__jt__.domListeners[key].push(node)
+            model.__jt__.domListeners[key].push([node, evnt, handler])
 
           else
             throw ":( #{ listener } is not a function, cannot attach event handler"
@@ -637,7 +650,7 @@ Function void (AnyType val) `react`
           opts = jtmpl.options(options)
 
           if Array.isArray(val) and sectionType is '#'
-            jtmpl.bindArrayToNodeChildren(val, node, options)
+            jtmpl.bindArrayToNodeChildren(model, prop, node, options)
             # bind collection items to node children
             for child, i in node.children
               if typeof val[i] is 'object'
@@ -648,7 +661,7 @@ Function void (AnyType val) `react`
             if Array.isArray(val)
               # Transfer existing listening DOM nodes
               val.__nodes = model[prop].__nodes
-              jtmpl.bindArrayToNodeChildren(val, node, opts)
+              jtmpl.bindArrayToNodeChildren(model, prop, node, opts)
 
               node.innerHTML =
                 if not val.length
@@ -667,6 +680,7 @@ Function void (AnyType val) `react`
                     val,
                     opts
                   )
+                  jtmpl.unbind(model[prop])
                   jtmpl.bind(node, model, opts)
 
               else
@@ -688,7 +702,7 @@ Function void (AnyType val) `react`
           reactor = (val) ->
             if val isnt undefined then reaction(val)
 
-          if typeof model[prop] is 'function' then reactor(getValue(model, prop, true, reaction))
+          if typeof model[prop] is 'function' then reactor(getValue(model, prop, true, reaction, mapping))
 
           reactor
       }
@@ -1027,7 +1041,7 @@ Walk DOM and setup reactors on model and nodes.
               reactor = rule.react.apply(rule, [node].concat(match.slice(1), [model, options]))
               prop = rule.bindTo?(match.slice(1)...)
 
-              key = prop + rule.pattern + jt + (rule.index or '')
+              key = prop + rule.pattern + jt
 
               # This rule already applied? bind must be idempotent
               if not model?.__jt__.bound[key]
@@ -1043,6 +1057,15 @@ Walk DOM and setup reactors on model and nodes.
       if recurseContext isnt null
         for child in node.children
           jtmpl.bind(child, recurseContext or model, options)
+
+
+
+    jtmpl.unbind = (model) ->
+      if typeof model?.__jt__?.domListeners is 'object'
+        for key, listeners of model.__jt__.domListeners
+          for listener in listeners
+            listener[0].removeEventListener(listener[1], listener[2])
+        model.__jt__.domListeners = {}
 
 
 
@@ -1094,17 +1117,20 @@ return undefined to signal this, finally call `callback` with computed value on 
 
 `model.__jt__.dependents[prop]` registers all descendents for a `prop`
 
-    getValue = (model, prop, trackDependencies, callback, formatter) ->
-      formatter = formatter or (x) -> x
+    getValue = (model, prop, trackDependencies, callback, functor) ->
+      functor = functor or (x) -> x
 
       getter = (prop) ->
         result = model[prop]
-        formatter(
-          if typeof result is 'function'
-            result.call(getter)
-          else
-            result
-        )
+        if Array.isArray(result)
+          result.map(functor).filter(isDefined)
+        else
+          functor(
+            if typeof result is 'function'
+              result.call(getter)
+            else
+              result
+          )
 
       dependencyTracker = (propToReturn) ->
         model.__jt__.dependents[propToReturn] ?= []
@@ -1112,22 +1138,21 @@ return undefined to signal this, finally call `callback` with computed value on 
           model.__jt__.dependents[propToReturn].push(prop)
         getter(propToReturn)
 
-      if prop is '.' then return formatter(model)
+      if prop is '.' then return functor(model)
 
       val = model[prop]
       if typeof val is 'function'
         val.call(
           # `this` function
-          if trackDependencies 
-            dependencyTracker
-          else
-            getter
+          if trackDependencies then dependencyTracker else getter
           ,
           callback
         )
       else
-        formatter(val)
+        functor(val)
 
+
+    isDefined = (x) -> x isnt null and x isnt undefined
 
 
 
@@ -1231,15 +1256,6 @@ Register a callback to handle object property change.
         else
           false
 
-      alertDependents = ->
-        for dependent in obj.__jt__.dependents[prop] or []
-          obj[dependent] = {
-            __signal__: {
-              obj: obj,
-              prop: dependent
-            }
-          }
-
       value = obj[prop]
 
       Object.defineProperty(obj, prop, {
@@ -1259,11 +1275,23 @@ Register a callback to handle object property change.
               # console.log('notify ' + prop + ' listener')
               cb(val)
 
-          alertDependents()
+          alertDependents(obj, prop)
         ,
         configurable: true,
         enumerable: false
       })
+
+
+
+    alertDependents = (obj, prop) ->
+      for dependent in obj.__jt__.dependents[prop] or []
+        obj[dependent] = {
+          __signal__: {
+            obj: obj,
+            prop: dependent
+          }
+        }
+      return
 
 
 
@@ -1281,7 +1309,9 @@ and setting a proxy for each mutable operation.
 `createSectionItem` is used for creating new items.
 
 
-    jtmpl.bindArrayToNodeChildren = (array, node, options) ->
+    jtmpl.bindArrayToNodeChildren = (model, prop, node, options) ->
+
+      array = model[prop]
 
       # array already augmented?
       if not array.__values
@@ -1311,6 +1341,9 @@ and setting a proxy for each mutable operation.
                     options.compiledDelimiters, options.delimiters),
                   {}
                 )
+
+            # recompute whatever
+            alertDependents(model, prop)
 
             # what method returned
             result
