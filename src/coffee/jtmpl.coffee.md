@@ -659,8 +659,6 @@ Function void (AnyType val) `react`
           reaction = (val) ->
             # collection?
             if Array.isArray(val)
-              # Transfer existing listening DOM nodes
-              val.__nodes = model[prop].__nodes
               jtmpl.bindArrayToNodeChildren(model, prop, node, opts)
 
               node.innerHTML =
@@ -1019,7 +1017,7 @@ void `bind` (DOMElement root, AnyType model)
 Walk DOM and setup reactors on model and nodes.
 
 
-    jtmpl.bind = (node, model, options) ->
+    jtmpl.bind = (node, model, options, nodeCounter) ->
 
       # Initialize bookkeeping
       if typeof model is 'object' and not model.__jt__ 
@@ -1029,6 +1027,8 @@ Walk DOM and setup reactors on model and nodes.
           domListeners: {},
           bound: {}
         }
+
+      nodeCounter = (nodeCounter or 0) + 1
 
       if data_jt = node.getAttribute('data-jt')
         # iterate bindings
@@ -1041,7 +1041,7 @@ Walk DOM and setup reactors on model and nodes.
               reactor = rule.react.apply(rule, [node].concat(match.slice(1), [model, options]))
               prop = rule.bindTo?(match.slice(1)...)
 
-              key = prop + rule.pattern + jt
+              key = prop + rule.pattern + jt + nodeCounter
 
               # This rule already applied? bind must be idempotent
               if not model?.__jt__.bound[key]
@@ -1056,7 +1056,8 @@ Walk DOM and setup reactors on model and nodes.
 
       if recurseContext isnt null
         for child in node.children
-          jtmpl.bind(child, recurseContext or model, options)
+          nodeCounter += 1
+          jtmpl.bind(child, recurseContext or model, options, nodeCounter)
 
 
 
@@ -1285,12 +1286,17 @@ Register a callback to handle object property change.
 
     alertDependents = (obj, prop) ->
       for dependent in obj.__jt__.dependents[prop] or []
-        obj[dependent] = {
-          __signal__: {
-            obj: obj,
-            prop: dependent
+        if typeof dependent is 'function'
+          # onchange subscriber
+          dependent()
+        else
+          # dependent property
+          obj[dependent] = {
+            __signal__: {
+              obj: obj,
+              prop: dependent
+            }
           }
-        }
       return
 
 

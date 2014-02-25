@@ -324,7 +324,7 @@
           if ((_base = model.__jt__.domListeners)[key] == null) {
             _base[key] = [];
           }
-          model.__jt__.domListeners[key].push([node, handler]);
+          model.__jt__.domListeners[key].push([node, evnt, handler]);
         } else {
           throw ":( " + listener + " is not a function, cannot attach event handler";
         }
@@ -406,7 +406,6 @@
         reaction = function(val) {
           var item, _j, _len1, _results;
           if (Array.isArray(val)) {
-            val.__nodes = model[prop].__nodes;
             jtmpl.bindArrayToNodeChildren(model, prop, node, opts);
             node.innerHTML = !val.length ? jtmpl(decompileTemplate(node.getAttribute('data-jt-0') || '', opts), model) : '';
             _results = [];
@@ -419,6 +418,7 @@
             if (typeof val === 'object') {
               if (Object.getOwnPropertyNames(val).length) {
                 node.innerHTML = jtmpl(decompileTemplate(node.getAttribute('data-jt-1') || '', opts), val, opts);
+                jtmpl.unbind(model[prop]);
                 return jtmpl.bind(node, model, opts);
               }
             } else {
@@ -637,7 +637,7 @@
     }
   };
 
-  jtmpl.bind = function(node, model, options) {
+  jtmpl.bind = function(node, model, options, nodeCounter) {
     var child, data_jt, jt, key, match, prop, reactor, recurseContext, rule, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _results;
     if (typeof model === 'object' && !model.__jt__) {
       model.__jt__ = {
@@ -647,6 +647,7 @@
         bound: {}
       };
     }
+    nodeCounter = (nodeCounter || 0) + 1;
     if (data_jt = node.getAttribute('data-jt')) {
       _ref = data_jt.trim().split(' ');
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -657,7 +658,7 @@
           if (match = regexp(rule.pattern).exec(jt)) {
             reactor = rule.react.apply(rule, [node].concat(match.slice(1), [model, options]));
             prop = typeof rule.bindTo === "function" ? rule.bindTo.apply(rule, match.slice(1)) : void 0;
-            key = prop + rule.pattern + jt + (rule.index || '');
+            key = prop + rule.pattern + jt + nodeCounter;
             if (!(model != null ? model.__jt__.bound[key] : void 0)) {
               propChange(model, prop, reactor);
             }
@@ -675,13 +676,27 @@
       _results = [];
       for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
         child = _ref2[_k];
-        _results.push(jtmpl.bind(child, recurseContext || model, options));
+        nodeCounter += 1;
+        _results.push(jtmpl.bind(child, recurseContext || model, options, nodeCounter));
       }
       return _results;
     }
   };
 
-  jtmpl.unbind = function(model) {};
+  jtmpl.unbind = function(model) {
+    var key, listener, listeners, _i, _len, _ref, _ref1;
+    if (typeof (model != null ? (_ref = model.__jt__) != null ? _ref.domListeners : void 0 : void 0) === 'object') {
+      _ref1 = model.__jt__.domListeners;
+      for (key in _ref1) {
+        listeners = _ref1[key];
+        for (_i = 0, _len = listeners.length; _i < _len; _i++) {
+          listener = listeners[_i];
+          listener[0].removeEventListener(listener[1], listener[2]);
+        }
+      }
+      return model.__jt__.domListeners = {};
+    }
+  };
 
   escapeRE = function(s) {
     return (s + '').replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
@@ -848,12 +863,16 @@
     _ref = obj.__jt__.dependents[prop] || [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       dependent = _ref[_i];
-      obj[dependent] = {
-        __signal__: {
-          obj: obj,
-          prop: dependent
-        }
-      };
+      if (typeof dependent === 'function') {
+        dependent();
+      } else {
+        obj[dependent] = {
+          __signal__: {
+            obj: obj,
+            prop: dependent
+          }
+        };
+      }
     }
   };
 
