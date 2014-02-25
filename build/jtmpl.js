@@ -909,10 +909,12 @@
       _ref = {
         pop: function() {
           var _i, _len, _ref;
-          _ref = this.__nodes;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            node = _ref[_i];
-            node.removeChild(node.children[node.children.length - 1]);
+          if (this.length) {
+            _ref = this.__nodes;
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              node = _ref[_i];
+              node.removeChild(node.children[node.children.length - 1]);
+            }
           }
           return [].pop.apply(this, arguments);
         },

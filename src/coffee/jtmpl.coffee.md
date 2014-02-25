@@ -1361,8 +1361,9 @@ and setting a proxy for each mutable operation.
 
         # Proxy all mutable operations
         for operation, proxy of {
-          pop: -> 
-            node.removeChild(node.children[node.children.length - 1]) for node in @__nodes
+          pop: ->
+            if @length
+              node.removeChild(node.children[node.children.length - 1]) for node in @__nodes
             [].pop.apply(@, arguments)
 
           push: (item) ->
