@@ -186,3 +186,8 @@ test 'bind', ->
 	equal jtmpl('[data-jt="#fooCheck"]')[0].innerHTML is '' and jtmpl('[data-jt="#barCheck"]')[0].innerHTML.length > 0,
 		true,
 		'model.checkboxes = { some object }'
+
+	model.tree[0].tree[0].tree[0].value = 42
+	equal jtmpl('ul li div ul li div ul li')[0].innerHTML,
+		'42',
+		'modify property in deeply nested partial'

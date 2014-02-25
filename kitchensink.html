@@ -132,6 +132,17 @@
       <button onclick={{push}}>push</button>
       <button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
       <br>
+
+      <h3>Tree via recursive partial</h3>
+      {{>"#tree-template"}}
+    </script>
+
+    <script id="tree-template" type="text/template">
+      <ul>
+        {{#tree}}
+        <li>{{value}} {{>"#tree-template"}}</li>
+        {{/tree}}
+      </ul>
     </script>
 
     <script id="checkboxes-template" type="text/template">
@@ -188,6 +199,31 @@
         ],
 
         popDisabled: false,
+
+        tree: [
+          {
+            value: 1,
+            tree: [
+              {
+                value: 2,
+                tree: [
+                  {
+                    value: 3
+                  },
+                  {
+                    value: 4
+                  }
+                ]
+              },
+              {
+                value: 5
+              }
+            ]
+          },
+          {
+            value: 6
+          }
+        ],
 
         field: '',
 
