@@ -197,7 +197,7 @@
       contents: function(template, model, section, mapping, options) {
         var item, val;
         mapping = options.rootModel[mapping] || model[mapping] || jtmpl.mappings[mapping];
-        val = getValue(model, section, false, null, mapping);
+        val = getValue(model, section, false, null, null, mapping);
         return [
           Array.isArray(val) ? ((function() {
             var _i, _len, _results;
@@ -391,7 +391,8 @@
       react: function(node, sectionType, prop, mapping, model, options) {
         var child, i, opts, reaction, reactor, val, _i, _len, _ref;
         this.index = (this.index || 0) + 1;
-        val = model[prop];
+        mapping = options.rootModel[mapping] || model[mapping] || jtmpl.mappings[mapping];
+        val = getValue(model, prop, false, null, null, mapping);
         opts = jtmpl.options(options);
         if (Array.isArray(val) && sectionType === '#') {
           jtmpl.bindArrayToNodeChildren(model, prop, node, options);
@@ -707,19 +708,15 @@
     return new RegExp((delimiters ? src.replace('{{', escapeRE(delimiters[0])).replace('}}', escapeRE(delimiters[1])) : src), 'g');
   };
 
-  getValue = function(model, prop, trackDependencies, callback, functor) {
-    var dependencyTracker, getter, val;
-    functor = functor || function(x) {
+  getValue = function(model, prop, trackDependencies, callback, formatter, mapping) {
+    var dependencyTracker, getter, result, val;
+    formatter = formatter || function(x) {
       return x;
     };
     getter = function(prop) {
       var result;
       result = model[prop];
-      if (Array.isArray(result)) {
-        return result.map(functor).filter(isDefined);
-      } else {
-        return functor(typeof result === 'function' ? result.call(getter) : result);
-      }
+      return formatter(typeof result === 'function' ? result.call(getter) : result);
     };
     dependencyTracker = function(propToReturn) {
       var _base;
@@ -732,13 +729,14 @@
       return getter(propToReturn);
     };
     if (prop === '.') {
-      return functor(model);
+      return formatter(model);
     }
     val = model[prop];
-    if (typeof val === 'function') {
-      return val.call(trackDependencies ? dependencyTracker : getter, callback);
+    result = typeof val === 'function' ? val.call(trackDependencies ? dependencyTracker : getter, callback) : formatter(val);
+    if (typeof mapping === 'function' && Array.isArray(result)) {
+      return result.map(mapping).filter(isDefined);
     } else {
-      return functor(val);
+      return result;
     }
   };
 

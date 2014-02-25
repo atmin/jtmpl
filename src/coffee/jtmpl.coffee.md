@@ -409,7 +409,7 @@ When `prop` is boolean, value determines presense of attribute.
 
         contents: (template, model, section, mapping, options) ->
           mapping = options.rootModel[mapping] or model[mapping] or jtmpl.mappings[mapping]
-          val = getValue(model, section, false, null, mapping)
+          val = getValue(model, section, false, null, null, mapping)
 
           [ 
             # Sequence?
@@ -646,7 +646,9 @@ Function void (AnyType val) `react`
         react: (node, sectionType, prop, mapping, model, options) ->
           @index = (@index or 0) + 1
 
-          val = model[prop]
+          mapping = options.rootModel[mapping] or model[mapping] or jtmpl.mappings[mapping]
+          val = getValue(model, prop, false, null, null, mapping)
+
           opts = jtmpl.options(options)
 
           if Array.isArray(val) and sectionType is '#'
@@ -1118,20 +1120,17 @@ return undefined to signal this, finally call `callback` with computed value on 
 
 `model.__jt__.dependents[prop]` registers all descendents for a `prop`
 
-    getValue = (model, prop, trackDependencies, callback, functor) ->
-      functor = functor or (x) -> x
+    getValue = (model, prop, trackDependencies, callback, formatter, mapping) ->
+      formatter = formatter or (x) -> x
 
       getter = (prop) ->
         result = model[prop]
-        if Array.isArray(result)
-          result.map(functor).filter(isDefined)
-        else
-          functor(
-            if typeof result is 'function'
-              result.call(getter)
-            else
-              result
-          )
+        formatter(
+          if typeof result is 'function'
+            result.call(getter)
+          else
+            result
+        )
 
       dependencyTracker = (propToReturn) ->
         model.__jt__.dependents[propToReturn] ?= []
@@ -1139,18 +1138,24 @@ return undefined to signal this, finally call `callback` with computed value on 
           model.__jt__.dependents[propToReturn].push(prop)
         getter(propToReturn)
 
-      if prop is '.' then return functor(model)
+      if prop is '.' then return formatter(model)
 
       val = model[prop]
-      if typeof val is 'function'
-        val.call(
-          # `this` function
-          if trackDependencies then dependencyTracker else getter
-          ,
-          callback
-        )
+      result = 
+        if typeof val is 'function'
+          val.call(
+            # `this` function
+            if trackDependencies then dependencyTracker else getter
+            ,
+            callback
+          )
+        else
+          formatter(val)
+
+      if typeof mapping is 'function' and Array.isArray(result)
+        result.map(mapping).filter(isDefined)
       else
-        functor(val)
+        result
 
 
     isDefined = (x) -> x isnt null and x isnt undefined
