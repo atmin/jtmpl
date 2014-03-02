@@ -85,7 +85,7 @@ A big `if..else if` statement as arguments pattern matcher
         jtmpl.xhr(args)
 
       # `jtmpl(template, model[, options])`?
-      else if typeof args[0] is 'string' and (typeof args[1] isnt 'string' or args.length is 2) and args[1] isnt null and args.length in [2, 3]
+      else if typeof args[0] is 'string' and (typeof args[1] isnt 'string' or args.length is 2) and args.length in [2, 3]
         template = '' + (args[0].match(RE_NODE_ID) and document.querySelector(args[0]).innerHTML or args[0])
         opts = jtmpl.options(args[2], args[1])
 
@@ -375,7 +375,7 @@ When `prop` is boolean, value determines presense of attribute.
         wrapper: 'defaultSection'
 
         lastTag: (model, section) ->
-          if Array.isArray(model[section]) then section else null
+          if Array.isArray(model?[section]) then section else null
 
         contents: (template, model, section, options) ->
           val = getValue(model, section)
@@ -403,12 +403,16 @@ When `prop` is boolean, value determines presense of attribute.
         pattern: "{{ \\# (#{ RE_IDENTIFIER }) #{ RE_PIPE } }}$"
 
         lastTag: (model, section, mapping) ->
-          if Array.isArray(model[section]) then section else null
+          if Array.isArray(model?[section]) then section else null
 
         wrapper: 'defaultSection'
 
         contents: (template, model, section, mapping, options) ->
-          mapping = options.rootModel[mapping] or model[mapping] or jtmpl.mappings[mapping]
+          mapping = if model and mapping
+            options.rootModel[mapping] or model?[mapping] or jtmpl.mappings[mapping]
+          else
+            null
+
           val = getValue(model, section, false, null, null, mapping)
 
           [ 
@@ -443,14 +447,17 @@ When `prop` is boolean, value determines presense of attribute.
         wrapper: 'defaultPartial'
 
         replaceWith: (partial, model) ->
-          [
-            (
-              if document
-                jtmpl(document.querySelector(partial)?.innerHTML or jtmpl.partials[partial.slice(1)] or '', model)
-              else
-                jtmpl(jtmpl.partials[partial.slice(1)] or '', model)
-            ), []
-          ]
+          if model
+            [
+              (
+                if document
+                  jtmpl(document.querySelector(partial)?.innerHTML or jtmpl.partials[partial.slice(1)] or '', model)
+                else
+                  jtmpl(jtmpl.partials[partial.slice(1)] or '', model)
+              ), []
+            ]
+          else
+            ['', []]
 
         bindingToken: (partial) -> ">\"#{ partial }\""
       }
@@ -479,7 +486,7 @@ When `prop` is boolean, value determines presense of attribute.
 
         wrapper: 'defaultVar'
 
-        replaceWith: (prop, formatter, model) -> [escapeHTML(getValue(model, prop, undefined, undefined, model[formatter] || jtmpl.formatters?[formatter] || null)), []]
+        replaceWith: (prop, formatter, model) -> [escapeHTML(getValue(model, prop, undefined, undefined, model?[formatter] || jtmpl.formatters?[formatter] || null)), []]
 
         bindingToken: (prop, formatter) -> prop + (if formatter then '|' + formatter else '')
       }
@@ -729,7 +736,9 @@ Function void (AnyType val) `react`
             if partial.match(RE_URL)
               jtmpl('GET', partial, ((resp) -> node.innerHTML = resp))
 
-          return
+          (val) ->
+            console.log('partial react')
+            console.log(val)
       }
 
 
@@ -1121,6 +1130,8 @@ return undefined to signal this, finally call `callback` with computed value on 
 `model.__jt__.dependents[prop]` registers all descendents for a `prop`
 
     getValue = (model, prop, trackDependencies, callback, formatter, mapping) ->
+      if model is null or model is undefined or prop is null or prop is undefined then return null
+
       formatter = formatter or (x) -> x
 
       getter = (prop) ->

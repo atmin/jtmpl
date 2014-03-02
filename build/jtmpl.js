@@ -9,7 +9,7 @@
       return [].slice.call(document.querySelectorAll(args[0]));
     } else if ((_ref = args[0]) === 'GET' || _ref === 'POST') {
       return jtmpl.xhr(args);
-    } else if (typeof args[0] === 'string' && (typeof args[1] !== 'string' || args.length === 2) && args[1] !== null && ((_ref1 = args.length) === 2 || _ref1 === 3)) {
+    } else if (typeof args[0] === 'string' && (typeof args[1] !== 'string' || args.length === 2) && ((_ref1 = args.length) === 2 || _ref1 === 3)) {
       template = '' + (args[0].match(RE_NODE_ID) && document.querySelector(args[0]).innerHTML || args[0]);
       opts = jtmpl.options(args[2], args[1]);
       _ref2 = jtmpl.preprocessingRules;
@@ -170,7 +170,7 @@
       pattern: "{{ \\^ (" + RE_IDENTIFIER + ") }}$",
       wrapper: 'defaultSection',
       lastTag: function(model, section) {
-        if (Array.isArray(model[section])) {
+        if (Array.isArray(model != null ? model[section] : void 0)) {
           return section;
         } else {
           return null;
@@ -187,7 +187,7 @@
     }, {
       pattern: "{{ \\# (" + RE_IDENTIFIER + ") " + RE_PIPE + " }}$",
       lastTag: function(model, section, mapping) {
-        if (Array.isArray(model[section])) {
+        if (Array.isArray(model != null ? model[section] : void 0)) {
           return section;
         } else {
           return null;
@@ -196,7 +196,7 @@
       wrapper: 'defaultSection',
       contents: function(template, model, section, mapping, options) {
         var item, val;
-        mapping = options.rootModel[mapping] || model[mapping] || jtmpl.mappings[mapping];
+        mapping = model && mapping ? options.rootModel[mapping] || (model != null ? model[mapping] : void 0) || jtmpl.mappings[mapping] : null;
         val = getValue(model, section, false, null, null, mapping);
         return [
           Array.isArray(val) ? ((function() {
@@ -221,7 +221,11 @@
       wrapper: 'defaultPartial',
       replaceWith: function(partial, model) {
         var _ref;
-        return [(document ? jtmpl(((_ref = document.querySelector(partial)) != null ? _ref.innerHTML : void 0) || jtmpl.partials[partial.slice(1)] || '', model) : jtmpl(jtmpl.partials[partial.slice(1)] || '', model)), []];
+        if (model) {
+          return [(document ? jtmpl(((_ref = document.querySelector(partial)) != null ? _ref.innerHTML : void 0) || jtmpl.partials[partial.slice(1)] || '', model) : jtmpl(jtmpl.partials[partial.slice(1)] || '', model)), []];
+        } else {
+          return ['', []];
+        }
       },
       bindingToken: function(partial) {
         return ">\"" + partial + "\"";
@@ -240,7 +244,7 @@
       wrapper: 'defaultVar',
       replaceWith: function(prop, formatter, model) {
         var _ref;
-        return [escapeHTML(getValue(model, prop, void 0, void 0, model[formatter] || ((_ref = jtmpl.formatters) != null ? _ref[formatter] : void 0) || null)), []];
+        return [escapeHTML(getValue(model, prop, void 0, void 0, (model != null ? model[formatter] : void 0) || ((_ref = jtmpl.formatters) != null ? _ref[formatter] : void 0) || null)), []];
       },
       bindingToken: function(prop, formatter) {
         return prop + (formatter ? '|' + formatter : '');
@@ -453,6 +457,10 @@
             }));
           }
         }
+        return function(val) {
+          console.log('partial react');
+          return console.log(val);
+        };
       }
     }, {
       pattern: "(" + RE_IDENTIFIER + ") " + RE_PIPE,
@@ -710,6 +718,9 @@
 
   getValue = function(model, prop, trackDependencies, callback, formatter, mapping) {
     var dependencyTracker, getter, result, val;
+    if (model === null || model === void 0 || prop === null || prop === void 0) {
+      return null;
+    }
     formatter = formatter || function(x) {
       return x;
     };

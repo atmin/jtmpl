@@ -159,7 +159,19 @@
     </script>
 
     <script>
-      model = {
+      var innerEven = function () {
+        return this('inner').map(
+          function (x) {
+            return x % 2 === 0 ? x : null 
+          }
+        ).filter(
+          function (x) {
+            return x !== null;
+          }
+        );
+      }
+
+      var model = {
         // Empty init function, just for illustration
         '#': function () {
           // will be called on page load and when route changes
@@ -184,17 +196,7 @@
           { 
             popDisabled: false,
             inner: [1, 2, 3, 4, 5],
-            innerEven: function () {
-              return this('inner').map(
-                function (x) {
-                  return x % 2 === 0 ? x : null 
-                }
-              ).filter(
-                function (x) {
-                  return x !== null;
-                }
-              );
-            }
+            innerEven: innerEven
           }
         ],
 
@@ -310,7 +312,8 @@
         push: function () {
           this.collection.push({
             popDisabled: true,
-            inner: []
+            inner: [],
+            innerEven: innerEven
           });
           this.popDisabled = false;
         },
