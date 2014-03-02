@@ -25,16 +25,16 @@
     }), '<div data-jt="^a" data-jt-0="#{z}#"></div>', 'object array false');
     equal(jtmpl('{{#a}}1{{/a}}', {
       a: true
-    }), '<div data-jt="#a">1</div>', 'positive condition');
+    }), '<div data-jt="#a" data-jt-1="1">1</div>', 'positive condition');
     equal(jtmpl('{{^a}}1{{/a}}', {
       a: true
-    }), '<div data-jt="^a" style="display:none">1</div>', 'negative condition');
+    }), '<div data-jt="^a" data-jt-0="1"></div>', 'negative condition');
     equal(jtmpl('{{#a}}1{{/a}}', {
       a: false
-    }), '<div data-jt="#a" style="display:none">1</div>', 'positive condition false');
+    }), '<div data-jt="#a" data-jt-1="1"></div>', 'positive condition false');
     equal(jtmpl('{{^a}}1{{/a}}', {
       a: false
-    }), '<div data-jt="^a">1</div>', 'negative condition false');
+    }), '<div data-jt="^a" data-jt-0="1">1</div>', 'negative condition false');
     equal(jtmpl('<p>{{a}}</p>', {
       a: 1
     }), '<p data-jt="a">1</p>', 'inject var tag');
@@ -113,11 +113,13 @@
       }),
       c: 'dependent-on-dependent'
     }), '<span data-jt="a">dependent-on-dependent</span>', 'computed dependent on computed variable');
-    return equal(jtmpl('{{#a}}{{.}}{{/a}}', {
+    equal(jtmpl('{{#a}}{{.}}{{/a}}', {
       a: function() {
         return [1, 2, 3];
       }
     }), '<div data-jt="#a" data-jt-1="#{.}#"><span data-jt=".">1</span><span data-jt=".">2</span><span data-jt=".">3</span></div>', 'computed collection');
+    jtmpl.partials.test = 'test partial';
+    return equal(jtmpl('{{>"#test"}}', {}), '<div data-jt="&gt;&quot;#test&quot;">test partial</div>', 'jtmpl.partials.test');
   });
 
   test('bind', function() {
@@ -165,7 +167,14 @@
     equal(collectionDOMText(), '1,2,3,4', 'collection.sort');
     model.a = model.b = model.c = 1;
     equal(jtmpl('#sum')[0].innerHTML, '3', 'computed property on change');
-    return equal(jtmpl('#sumSquared')[0].innerHTML, '9', 'dependent on computed property on change');
+    equal(jtmpl('#sumSquared')[0].innerHTML, '9', 'dependent on computed property on change');
+    model.checkboxes = {
+      fooCheck: false,
+      barCheck: true
+    };
+    equal(jtmpl('[data-jt="#fooCheck"]')[0].innerHTML === '' && jtmpl('[data-jt="#barCheck"]')[0].innerHTML.length > 0, true, 'model.checkboxes = { some object }');
+    model.tree[0].tree[0].tree[0].value = 42;
+    return equal(jtmpl('ul li div ul li div ul li')[0].innerHTML, '42', 'modify property in deeply nested partial');
   });
 
 }).call(this);
