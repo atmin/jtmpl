@@ -21,7 +21,7 @@ Mustache syntax *&nbsp;+&nbsp;* automatic data-binding *&nbsp;=&nbsp;* Live temp
 		<li>
 			<i class="icon-download-alt"></i>
 			<a href="js/jtmpl.js">jtmpl.js</a>
-			<a href="js/jtmpl.min.js">jtmpl.min.js <em>(5.3kb gzipped)</em></a>
+			<a href="js/jtmpl.min.js">jtmpl.min.js <em>(5.8kb gzipped)</em></a>
 		</li>
 	</ul>
 </nav>
