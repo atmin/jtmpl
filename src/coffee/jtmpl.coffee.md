@@ -62,7 +62,7 @@ jtmpl(String method, String url [, Object params] [, Function callback])
 
 If response is valid JSON, it's automatically parsed
 
-`jtmpl('POST', 'api/endpoint', { id: 42, answer: 42 }, function (err, resp) { ... })`
+`jtmpl('POST', 'api/endpoint', { id: 42, answer: 42 }, function (resp) { ... })`
 
 
 

@@ -2,7 +2,9 @@
 
 `jtmpl` is a DOM-aware templating engine. It renders a [Mustache](http://mustache.github.io) HTML template using a `model` object and infers bindings from template structure, so when `model` changes DOM is updated accordingly and vice versa. 
 
-There's never need to touch the DOM directly, `model` is the [single source of truth](http://en.wikipedia.org/wiki/Single_Source_of_Truth)
+There's never need to touch the DOM directly, `model` is the [single source of truth](http://en.wikipedia.org/wiki/Single_Source_of_Truth).
+
+`jtmpl` is lightweight, has no dependencies and works on modern browsers and IE9+.
 
 
 
@@ -95,17 +97,6 @@ There's never need to touch the DOM directly, `model` is the [single source of t
 
 
 
-### Specifications
-
-* no dependencies
-
-* less than 5KB minified and gzipped
-
-* Firefox, Chrome, Opera, IE 9+
-
-
-
-
 ### Downloads
 
 * browse [jtmpl.coffee (master)](https://github.com/atmin/jtmpl/blob/master/src/coffee/jtmpl.coffee), [jtmpl.coffee (dev)](https://github.com/atmin/jtmpl/blob/dev/src/coffee/jtmpl.coffee)
@@ -128,6 +119,10 @@ There's never need to touch the DOM directly, `model` is the [single source of t
     * template contents can be already prerendered by server to save the client some processing and help for SEO
     * if target is a script tag (of type="text/html" or similar), then it is replaced with a div. This makes possible directly converting a template, embedded in a clean way, into a DOM node
 
+* `jtmpl('GET or POST', url, params, callback, options)`
+
+  It can do request, too, but this is experimental for now.
+
 * _Deprecated_ `jtmpl(selector)`&mdash;returns an array, just a handy wrapper around `document.querySelectorAll`. Will remove this feature, as `jtmpl(string)` syntax will probably be used for something more consistent
 
 
@@ -142,13 +137,25 @@ There's never need to touch the DOM directly, `model` is the [single source of t
 
 * similarly, sections are automatically enclosed in a `<div>` if needed
 
-* and the same goes for section items
+* and the same goes for section items and partials
 
 * all default enclosing tags are configurable
 
 * `data-jt` attributes containing metadata for `Stage2` are injected in HTML elements
 
 * `Stage1` also emits section structures (with changed delimiters) embedded in HTML comments
+
+
+
+#### Binding specifics
+
+Like Mustache, all variables (including collections) can be functions, that act as property getters. You can also:
+
+* define asynchronous operations, commonly used to load content via XMLHttpRequest
+
+* define setters
+
+Dependency tracking is automatic&mdash;your function just has to use `this('propertyName')` to retrieve model values. There's no need to explicitly define annotations, or rely on JavaScript "introspection", which does not survive minification.
 
 
 
@@ -173,8 +180,14 @@ There's never need to touch the DOM directly, `model` is the [single source of t
 
 * `<tag> {{#section}}...{{/section}} </tag>`&mdash;Whenever `section` array changes `<tag>` children, that are affected (and only they) change. There are no restrictions on the nesting level.
 
+* `{{>"#partial-template-id"}}`&mdash;Literal partial. Use `#partial-template-id`.innerHTML as template to render current context. Partials can be recursive, so you can render tree (or more complex) structures
+
+* `{{>"//url"}}`&mdash;_(experimental)_ Literal partial. Load template from "//url" and render current context asynchronously
+
+* `{{>partial_id_or_url}}`&mdash;_(upcoming)_ Variable partial. Like the literal partial, but reacts whenever `partial_id_or_url` changes
 
 
-#### Planned features
 
-Check the [issue tracker](https://github.com/atmin/jtmpl/issues)
+#### Other features
+
+* Routes, simple and regular expression-based (upcoming HTML5 history API support)

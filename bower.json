@@ -1,22 +1,10 @@
 {
   "name": "jtmpl",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "main": "[\"build/jtmpl.min.js\", \"build/jtmpl.js\"]",
   "dependencies": {},
   "devDependencies": {
     "highlightjs": "7.3.0",
     "qunit": "1.12.0"
-  },
-  "ignore": [
-    "**/.*",
-    "node_modules",
-    "components",
-    "src",
-    "css",
-    "CNAME",
-    "Gruntfile.js",
-    "hello.html",
-    "index.html",
-    "publi.sh"
-  ]
+  }
 }
