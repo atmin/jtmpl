@@ -442,7 +442,7 @@ When `prop` is boolean, value determines presense of attribute.
 ### `{{>"#partial-id or //url"}}` partial
 
       {
-        pattern: "{{ > \"( (?: \\# #{ RE_IDENTIFIER }) | (?: #{ RE_URL }) )\" }}"
+        pattern: "{{ > \"( (?: \\# #{ RE_IDENTIFIER }) )\" }}"
 
         wrapper: 'defaultPartial'
 
@@ -1011,6 +1011,7 @@ Example routes:
             else
               if route is window.location.hash and typeof model[route] is 'function'
                 model[route].apply(model)
+          return
 
         hashchange()
 
