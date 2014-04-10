@@ -26,7 +26,7 @@ Mustache syntax *&nbsp;+&nbsp;* automatic data-binding *&nbsp;=&nbsp;* Live temp
 	</ul>
 </nav>
 
-### Current status
+### Roadmap
 
 Upcoming jtmpl 0.4.0 will be a complete rewrite. Here's what's changing:
 
@@ -45,7 +45,12 @@ The compiler is a major piece of complexity and code volume. Every browser alrea
 Switching to immutable data structures eliminates a large class of bugs, will make code simpler and possible to be better optimized by a smart JS engine. The implications for the library user are routes and event handlers should refer to current `model` only via the `this` context (`this.__root__` and `this.__parent__` will be provided) and never via referencing variable.
 
 
-#### Features
+#### Functional representation
+
+There won't be data-jt attributes anymore. A compiled template is a function, that constructs a DOM fragment and sets up data-binding and event handling, akin to the intermediate representation you get when compiling a template via traditional engine.
+
+
+#### Features target
 
 * automatic bidirectional data-binding
 
@@ -68,6 +73,26 @@ Switching to immutable data structures eliminates a large class of bugs, will ma
   - literal, asynchronous &ndash; `{{>"//url/of/template"}}`
 
   - variable &ndash; `{{>url_or_element_id}}`
+
+* eliminate `jtmpl('#target-id', '#template-id', model)` boilerplate:
+
+      <!-- target -->
+      <article data-template="#template-id" data-model="#model"></article>
+      <!-- 
+      Or you can use URLs instead of referencing by id, just like in partials.
+      Easy distributed applications.
+      -->
+
+      <script id="template-id" type="text/template">
+      	...
+      </script>
+
+      <script id="model">
+          // your model literal
+          {
+              ...
+          }
+      </script>
 
 * XHR
 
