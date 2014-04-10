@@ -36,7 +36,7 @@
     </ul>
 </nav>
 
-<h3 id="current-status">Current status</h3>
+<h3 id="roadmap">Roadmap</h3>
 <p>Upcoming jtmpl 0.4.0 will be a complete rewrite. Here&#39;s what&#39;s changing:</p>
 <h4 id="source-language">Source language</h4>
 <p>The new language of choice is <a href="sweetjs.org">Sweet.js</a>. While CoffeeScript is an excellent prototyping language and served well during early stages of idea development, JavaScript base would be more accessible. Macros to be used are es6macros and sparkler. </p>
@@ -44,7 +44,9 @@
 <p>The compiler is a major piece of complexity and code volume. Every browser already includes a HTML parser that can be leveraged. So compiler will be removed completely, Mustache tags will be parsed from the constructed (offline) DOM tree instead &ndash; a much simpler approach.</p>
 <h4 id="immutable-structures">Immutable structures</h4>
 <p>Switching to immutable data structures eliminates a large class of bugs, will make code simpler and possible to be better optimized by a smart JS engine. The implications for the library user are routes and event handlers should refer to current <code>model</code> only via the <code>this</code> context (<code>this.__root__</code> and <code>this.__parent__</code> will be provided) and never via referencing variable.</p>
-<h4 id="features">Features</h4>
+<h4 id="functional-representation">Functional representation</h4>
+<p>There won&#39;t be data-jt attributes anymore. A compiled template is a function, that constructs a DOM fragment and sets up data-binding and event handling, akin to the intermediate representation you get when compiling a template via traditional engine.</p>
+<h4 id="features-target">Features target</h4>
 <ul>
 <li><p>automatic bidirectional data-binding</p>
 </li>
@@ -69,6 +71,25 @@
 <li><p>variable &ndash; <code>{{&gt;url_or_element_id}}</code></p>
 </li>
 </ul>
+</li>
+<li><p>eliminate <code>jtmpl(&#39;#target-id&#39;, &#39;#template-id&#39;, model)</code> boilerplate:</p>
+<pre><code>&lt;!-- target --&gt;
+&lt;article data-template=&quot;#template-id&quot; data-model=&quot;#model&quot;&gt;&lt;/article&gt;
+&lt;!-- 
+Or you can use URLs instead of referencing by id, just like in partials.
+Easy distributed applications.
+--&gt;
+
+&lt;script type=&quot;text/template&quot;&gt;
+    ...
+&lt;/script&gt;
+
+&lt;script&gt;
+    // your model literal
+    {
+        ...
+    }
+&lt;/script&gt;</code></pre>
 </li>
 <li><p>XHR</p>
 </li>
