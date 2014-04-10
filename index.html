@@ -43,7 +43,7 @@
 <h4 id="eliminate-the-compiler">Eliminate the compiler</h4>
 <p>The compiler is a major piece of complexity and code volume. Every browser already includes a HTML parser that can be leveraged. So compiler will be removed completely, Mustache tags will be parsed from the constructed (offline) DOM tree instead &ndash; a much simpler approach.</p>
 <h4 id="immutable-structures">Immutable structures</h4>
-<p>Switching to immutable data structures eliminates a large class of bugs and makes code possible to be better optimized by a smart JS engine. The implications for the library user are routes and event handlers should refer to current <code>model</code> only via the <code>this</code> context (<code>this.__root__</code> and <code>this.__parent__</code> will be provided) and never via referencing variable.</p>
+<p>Switching to immutable data structures eliminates a large class of bugs, will make code simpler and possible to be better optimized by a smart JS engine. The implications for the library user are routes and event handlers should refer to current <code>model</code> only via the <code>this</code> context (<code>this.__root__</code> and <code>this.__parent__</code> will be provided) and never via referencing variable.</p>
 <h4 id="features">Features</h4>
 <ul>
 <li><p>automatic bidirectional data-binding</p>
