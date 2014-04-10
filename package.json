@@ -26,7 +26,23 @@
     "grunt-contrib-coffee": "~0.7.0",
     "grunt-contrib-sass": "~0.5.0",
     "grunt-gh-pages": "~0.9.0",
-    "grunt-closure-tools": "~0.9.0"
+    "grunt-closure-tools": "~0.9.0",
+    "fez": "~1.0.8",
+    "fez-sweet.js": "~0.6.1",
+    "sparkler": "^0.1.6",
+    "es6-macros": "0.0.2",
+    "sweet.js": "~0.4.2",
+    "broccoli": "^0.2.4",
+    "broccoli-sweetjs": "^0.1.1"
   },
-  "buildDir": "gh-pages"
+  "buildDir": "gh-pages",
+  "jshintConfig": {
+    "camelcase": true,
+    "indent": 2,
+    "undef": true,
+    "quotmark": "single",
+    "maxlen": 80,
+    "trailing": true,
+    "curly": true
+  }
 }

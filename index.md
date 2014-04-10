@@ -42,7 +42,7 @@ The compiler is a major piece of complexity and code volume. Every browser alrea
 
 #### Immutable structures
 
-Switching to immutable data structures eliminates a large class of bugs and makes code possible to be better optimized by a smart JS engine. The implications for the library user are routes and event handlers should refer to current `model` only via the `this` context (`this.__root__` and `this.__parent__` will be provided) and never via referencing variable.
+Switching to immutable data structures eliminates a large class of bugs, will make code simpler and possible to be better optimized by a smart JS engine. The implications for the library user are routes and event handlers should refer to current `model` only via the `this` context (`this.__root__` and `this.__parent__` will be provided) and never via referencing variable.
 
 
 #### Features

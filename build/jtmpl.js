@@ -217,7 +217,7 @@
         return "#" + section;
       }
     }, {
-      pattern: "{{ > \"( (?: \\# " + RE_IDENTIFIER + ") | (?: " + RE_URL + ") )\" }}",
+      pattern: "{{ > \"( (?: \\# " + RE_IDENTIFIER + ") )\" }}",
       wrapper: 'defaultPartial',
       replaceWith: function(partial, model) {
         var _ref;
