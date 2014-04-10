@@ -323,7 +323,7 @@ No need to add <code>onchange</code> handlers, syncing of DOM element values and
   }</code></pre>
 <h3 id="-partial-id-or-url-partial"><code>{{&gt;&quot;#partial-id or //url&quot;}}</code> partial</h3>
 <pre><code>  {
-    pattern: &quot;{{ &gt; \&quot;( (?: \\# #{ RE_IDENTIFIER }) | (?: #{ RE_URL }) )\&quot; }}&quot;
+    pattern: &quot;{{ &gt; \&quot;( (?: \\# #{ RE_IDENTIFIER }) )\&quot; }}&quot;
 
     wrapper: &#39;defaultPartial&#39;
 
@@ -804,6 +804,7 @@ and groups are passed as parameters to the route handler.</p>
         else
           if route is window.location.hash and typeof model[route] is &#39;function&#39;
             model[route].apply(model)
+      return
 
     hashchange()
 

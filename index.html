@@ -35,6 +35,49 @@
         </li>
     </ul>
 </nav>
+
+<h3 id="current-status">Current status</h3>
+<p>Upcoming jtmpl 0.4.0 will be a complete rewrite. Here&#39;s what&#39;s changing:</p>
+<h4 id="source-language">Source language</h4>
+<p>The new language of choice is <a href="sweetjs.org">Sweet.js</a>. While CoffeeScript is an excellent prototyping language and served well during early stages of idea development, JavaScript base would be more accessible. Macros to be used are es6macros and sparkler. </p>
+<h4 id="eliminate-the-compiler">Eliminate the compiler</h4>
+<p>The compiler is a major piece of complexity and code volume. Every browser already includes a HTML parser that can be leveraged. So compiler will be removed completely, Mustache tags will be parsed from the constructed (offline) DOM tree instead &ndash; a much simpler approach.</p>
+<h4 id="immutable-structures">Immutable structures</h4>
+<p>Switching to immutable data structures eliminates a large class of bugs and makes code possible to be better optimized by a smart JS engine. The implications for the library user are routes and event handlers should refer to current <code>model</code> only via the <code>this</code> context (<code>this.__root__</code> and <code>this.__parent__</code> will be provided) and never via referencing variable.</p>
+<h4 id="features">Features</h4>
+<ul>
+<li><p>automatic bidirectional data-binding</p>
+</li>
+<li><p>computed properties with automatic dependency management</p>
+</li>
+<li><p>asynchronous computed properties</p>
+</li>
+<li><p>set a computed property</p>
+</li>
+<li><p>mappings</p>
+</li>
+<li><p>formatters</p>
+</li>
+<li><p>routes &ndash; simple and regexp specified</p>
+</li>
+<li><p>partials</p>
+<ul>
+<li><p>literal, synchronous &ndash; <code>{{&gt;&quot;#template-by-id-to-include&quot;}}</code></p>
+</li>
+<li><p>literal, asynchronous &ndash; <code>{{&gt;&quot;//url/of/template&quot;}}</code></p>
+</li>
+<li><p>variable &ndash; <code>{{&gt;url_or_element_id}}</code></p>
+</li>
+</ul>
+</li>
+<li><p>XHR</p>
+</li>
+</ul>
+<h4 id="test-coverage">Test coverage</h4>
+<p>Include test coverage report during build process, aim for 100% test coverage.</p>
+<h4 id="performance-tests-regression-warnings">Performance tests, regression warnings</h4>
+<p>Have to think some more on this.</p>
+
           <footer>
               <span>{&rsaquo;</span> Copyright &copy; 2013-2014 Atanas Minev, <a href="LICENSE">MIT license</a>
           </footer>

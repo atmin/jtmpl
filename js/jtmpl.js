@@ -217,7 +217,7 @@
         return "#" + section;
       }
     }, {
-      pattern: "{{ > \"( (?: \\# " + RE_IDENTIFIER + ") | (?: " + RE_URL + ") )\" }}",
+      pattern: "{{ > \"( (?: \\# " + RE_IDENTIFIER + ") )\" }}",
       wrapper: 'defaultPartial',
       replaceWith: function(partial, model) {
         var _ref;
@@ -617,26 +617,20 @@
     });
     if (routes.length && window) {
       hashchange = function() {
-        var match, route, _i, _len, _results;
-        _results = [];
+        var match, route, _i, _len;
         for (_i = 0, _len = routes.length; _i < _len; _i++) {
           route = routes[_i];
           if (__indexOf.call(route, '(') >= 0) {
             match = new RegExp(route, 'g').exec(window.location.hash);
             if (match && typeof model[route] === 'function') {
-              _results.push(model[route].apply(model, match.slice(1)));
-            } else {
-              _results.push(void 0);
+              model[route].apply(model, match.slice(1));
             }
           } else {
             if (route === window.location.hash && typeof model[route] === 'function') {
-              _results.push(model[route].apply(model));
-            } else {
-              _results.push(void 0);
+              model[route].apply(model);
             }
           }
         }
-        return _results;
       };
       hashchange();
       if (!model.__jt__.domListeners['hashchange']) {
