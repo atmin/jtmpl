@@ -39,7 +39,7 @@
 <h3 id="roadmap">Roadmap</h3>
 <p>Upcoming jtmpl 0.4.0 will be a complete rewrite. Here&#39;s what&#39;s changing:</p>
 <h4 id="source-language">Source language</h4>
-<p>The new language of choice is <a href="sweetjs.org">Sweet.js</a>. While CoffeeScript is an excellent prototyping language and served well during early stages of idea development, JavaScript base would be more accessible. Macros to be used are es6macros and sparkler. </p>
+<p>New language is JavaScript, augmented with <a href="sweetjs.org">Sweet.js</a>, <a href="https://github.com/jlongster/es6-macros">es6macros</a> and <a href="https://github.com/natefaubion/sparkler">sparkler</a>. CoffeeScript is an excellent prototyping language and helped develop the idea. JavaScript base would be more accessible and can be shaped with macros to fit closely jtmpl needs. </p>
 <h4 id="eliminate-the-compiler">Eliminate the compiler</h4>
 <p>The compiler is a major piece of complexity and code volume. Every browser already includes a HTML parser that can be leveraged. So compiler will be removed completely, Mustache tags will be parsed from the constructed (offline) DOM tree instead &ndash; a much simpler approach.</p>
 <h4 id="immutable-structures">Immutable structures</h4>
@@ -48,7 +48,7 @@
 <p>There won&#39;t be data-jt attributes anymore. A compiled template is a function, that constructs a DOM fragment and sets up data-binding and event handling, akin to the intermediate representation you get when compiling a template via traditional engine.</p>
 <h4 id="features-target">Features target</h4>
 <ul>
-<li><p>automatic bidirectional data-binding</p>
+<li><p>automatic bidirectional data-binding based on context</p>
 </li>
 <li><p>computed properties with automatic dependency management</p>
 </li>
@@ -68,11 +68,11 @@
 </li>
 <li><p>literal, asynchronous &ndash; <code>{{&gt;&quot;//url/of/template&quot;}}</code></p>
 </li>
-<li><p>variable &ndash; <code>{{&gt;url_or_element_id}}</code></p>
+<li><p>variable, can be updated at runtime &ndash; <code>{{&gt;url_or_element_id}}</code></p>
 </li>
 </ul>
 </li>
-<li><p>eliminate <code>jtmpl(&#39;#target-id&#39;, &#39;#template-id&#39;, model)</code> boilerplate:</p>
+<li><p>make <code>jtmpl(&#39;#target-id&#39;, &#39;#template-id&#39;, model)</code> boilerplate optional:</p>
 <pre><code>&lt;!-- target --&gt;
 &lt;article data-template=&quot;#template-id&quot; data-model=&quot;#model&quot;&gt;&lt;/article&gt;
 &lt;!-- 
@@ -81,13 +81,12 @@ Easy distributed applications.
 --&gt;
 
 &lt;script id=&quot;template-id&quot; type=&quot;text/template&quot;&gt;
-    ...
+      Hello, {{who}}
 &lt;/script&gt;
 
-&lt;script id=&quot;model&quot;&gt;
-    // your model literal
+&lt;script id=&quot;model&quot; type=&quot;text/model&quot;&gt;
     {
-        ...
+        who: &#39;world&#39;
     }
 &lt;/script&gt;</code></pre>
 </li>
