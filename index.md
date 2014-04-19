@@ -32,7 +32,7 @@ Upcoming jtmpl 0.4.0 will be a complete rewrite. Here's what's changing:
 
 #### Source language
 
-The new language of choice is [Sweet.js](sweetjs.org). While CoffeeScript is an excellent prototyping language and served well during early stages of idea development, JavaScript base would be more accessible. Macros to be used are es6macros and sparkler. 
+New language is JavaScript, augmented with [Sweet.js](sweetjs.org), [es6macros](https://github.com/jlongster/es6-macros) and [sparkler](https://github.com/natefaubion/sparkler). CoffeeScript is an excellent prototyping language and helped develop the idea. JavaScript base would be more accessible and can be shaped with macros to fit closely jtmpl needs. 
 
 
 #### Eliminate the compiler
@@ -52,7 +52,7 @@ There won't be data-jt attributes anymore. A compiled template is a function, th
 
 #### Features target
 
-* automatic bidirectional data-binding
+* automatic bidirectional data-binding based on context
 
 * computed properties with automatic dependency management
 
@@ -72,9 +72,9 @@ There won't be data-jt attributes anymore. A compiled template is a function, th
 
   - literal, asynchronous &ndash; `{{>"//url/of/template"}}`
 
-  - variable &ndash; `{{>url_or_element_id}}`
+  - variable, can be updated at runtime &ndash; `{{>url_or_element_id}}`
 
-* eliminate `jtmpl('#target-id', '#template-id', model)` boilerplate:
+* make `jtmpl('#target-id', '#template-id', model)` boilerplate optional:
 
       <!-- target -->
       <article data-template="#template-id" data-model="#model"></article>
@@ -84,13 +84,12 @@ There won't be data-jt attributes anymore. A compiled template is a function, th
       -->
 
       <script id="template-id" type="text/template">
-      	...
+      	  Hello, {{who}}
       </script>
 
-      <script id="model">
-          // your model literal
+      <script id="model" type="text/model">
           {
-              ...
+              who: 'world'
           }
       </script>
 
