@@ -1,0 +1,13 @@
+/*
+
+# jtmpl 0.4.0
+
+&copy;Copyright Atanas Minev 2013-2014, MIT licence
+
+
+Wrap in IIFE
+
+*/
+
+     (function(root) {
+     'use strict';

@@ -4,7 +4,6 @@
   "main": "[\"build/jtmpl.min.js\", \"build/jtmpl.js\"]",
   "dependencies": {},
   "devDependencies": {
-    "highlightjs": "7.3.0",
-    "qunit": "1.12.0"
+    "highlightjs": "7.3.0"
   }
 }

@@ -1,0 +1,10 @@
+/*
+
+Export for browser or node, end IIFE
+
+*/
+
+    typeof module === 'undefined'?
+      root.jtmpl = j:
+      exports = module.exports = j;
+    })(this);

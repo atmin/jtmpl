@@ -1,80 +1,5 @@
 /*
 
-# jtmpl 0.4.0
-
-&copy;Copyright Atanas Minev 2013-2014, MIT licence
-
-
-Wrap in IIFE
-
-*/
-
-     (function(root) {
-     'use strict';
-
-
-/*
-
-## Main function
-
-Referred as `j`, exported as `jtmpl`.
-
-*/
-
-    function j() {
-      var args = [].slice.call(arguments);
-  
-      // jtmpl('HTTP_METHOD', url[, parameters[, callback[, options]]]) ?
-      if (['GET', 'POST'].indexOf(args[0]) > -1) {
-        return j.xhr(args);
-      }
-
-      // jtmpl(template, model[, options]) ?
-      else if (
-        typeof args[0] === 'string' && 
-        typeof args[1] === 'object' &&
-        ['object', 'undefined'].indexOf(typeof args[2]) > -1
-      ) {
-        return j.compile.call(null, args);
-      }
-    }
-
-
-/*
-
-## Constants
-
-*/    
-
-    var RE_IDENTIFIER = /^[\w\.\-]+$/;
-    var RE_PIPE = /^[\w\.\-]+(?:\|[\w\.\-]+)?$/;
-    var RE_NODE_ID = /^#[\w\.\-]+$/;
-    var RE_ANYTHING = '[\\s\\S]*?';
-    var RE_SPACE = '\\s*';
-
-
-/*
-
-## Compiler
-
-Returns documentFragment
-
-*/
-
-    j.compile = function (template, model, openTag) {
-      var body;
-
-      if (!template instanceof Node) {
-        body = document.createElement('body');
-        body.innerHTML = template;
-        template = body;
-      }
-
-      return template;
-    };
-
-/*
-
 ## Functional utilities, courtesy of [bilby.js](https://github.com/puffnfresh/bilby.js)
 
 */
@@ -293,15 +218,3 @@ It MUST return either:
       }
 
     ];
-
-
-/*
-
-Export for browser or node, end IIFE
-
-*/
-
-    typeof module === 'undefined'?
-      root.jtmpl = j:
-      exports = module.exports = j;
-    })(this);
