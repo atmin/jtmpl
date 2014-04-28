@@ -197,7 +197,12 @@ It MUST return either:
 
 * falsy value - no match
 
-* object - match found, return current context
+* object - match found, return 
+
+     {
+       replace: "string to replace"
+       model: set_new_context_object
+     }
 
 */
 
