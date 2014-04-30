@@ -3,14 +3,60 @@
 ## Compiler
 
 */
+
+
+/*
+
+  Return list of tokens:
+
+  [[pos0, len0], [pos1, len1], ...]
+
+  Positions and length include delimiter size.
+
+*/
     
     function tokenize(s, options) {
-      var seq = s.split(options.delimiters[0]);
+      // Regular expression to match 
+      // anything between options.delimiters
+      var re = 
+        RegExp(
+          escapeRE(options.delimiters[0]) + 
+          RE_ANYTHING +
+          escapeRE(options.delimiters[1]),
+          'g'
+        );
+      var match, result = [];
+
+      // Find all matches
+      while ( (match = re.exec(s)) ) {
+        result.push([match.index, match[0].length]);
+      }
+
+      return result;
     }
 
 
     function escapeRE(s) {
       return  (s + '').replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
+    }
+
+
+    function matchRules(tag, node, attr, model, options) {
+      var i, match;
+      var rules = j.rules;
+      var rulesLen = j.rules.length;
+
+      for (i = 0; i < rulesLen; i++) {
+        match = rules[i](tag, node, attr, model, options);
+        
+        if (match) {
+          return match;
+        }
+      }
+
+      return {
+        replace: ''
+      };
     }
 
 
@@ -62,6 +108,14 @@ Return [documentFragment, model]
         body.innerHTML = template;
       }
 
+      // Iterate child nodes, tokenize text nodes
+      [].slice.call(body.childNodes).map(
+        
+        function (node) {
+          var el, match;
+        }
+      );
+
       // Iterate child nodes
       [].slice.call(body.childNodes).map(
         
@@ -91,6 +145,7 @@ Return [documentFragment, model]
 
             el.data = model[match[1]] || '';
           }
+
 
           fragment.appendChild(el);
         }

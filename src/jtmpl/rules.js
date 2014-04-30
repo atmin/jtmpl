@@ -197,11 +197,19 @@ It MUST return either:
 
 * falsy value - no match
 
-* object - match found, return 
+* object - match found, return (all fields optional)
 
      {
-       replace: "string to replace"
+       // Replace tag in generated content, default - ''
+       replace: 'replacement'
+
+       // Transformed model, default - original model
        model: set_new_context_object
+
+       // Parse until {{/tagName}} ...
+       block: 'tagName'
+       // ... then call this function with the extracted template
+       callback: function continuation(template) ...
      }
 
 */
@@ -217,9 +225,10 @@ It MUST return either:
 
       function (tag, node, attr, model, options) {
         var match = tag.match(RE_IDENTIFIER);
-        if (match) {
-          return model;
-        }
+        
+        if (match) return {
+          replace: model[tag]
+        };
       }
 
     ];
