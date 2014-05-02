@@ -277,6 +277,7 @@ Releases the slot for `object` (if present).
         else {
           this.objs.push(obj);
           this.store.push(proto || {});
+          return this.store[this.store.length - 1];
         }
       },
 
@@ -288,6 +289,77 @@ Releases the slot for `object` (if present).
         }
       }
     };
+
+/*
+
+*/
+
+    var store = new Store();
+    var getsetFactory;
+
+    j.getsetFactory = getsetFactory = function(obj, caller) {
+      var proto = {
+        dependents: {},
+        watchers: {}
+      };
+
+      function that(prop, arg, refresh) {
+        var slot = store.get(obj, proto);
+        var i, len;
+
+        if (!slot.dependents[prop]) {
+          // Init dependents
+          slot.dependents[prop] = [];
+        }
+
+        // Getter?
+        if (arg === undefined || typeof arg === 'function') {
+
+          // Update dependency graph
+          if (slot.dependents[prop].indexOf(caller) === -1) {
+            slot.dependents[prop].push(caller);
+          }
+
+          return (typeof obj[prop] === 'function') ?
+            // Computed property. `arg` is a callback for async getters
+            obj[prop].call(that, arg) :
+            // Simple property
+            obj[prop];
+        }
+
+        else {
+
+          // Setter?
+          if (!refresh) {
+            if (typeof obj[prop] === 'function') {
+              // Computed property
+              obj[prop].call(that, arg);
+            }
+            else {
+              // Simple property. `arg` is the new value
+              obj[prop] = arg;
+            }
+          }
+
+          // Alert dependents
+          for (i = 0, len = slot.dependents[prop].length; i < len; i++) {
+            that(slot.dependents[prop][i], undefined, true);
+          }
+
+          // Alert watchers
+          if (slot.watchers[prop]) {
+            for (i = 0, len = slot.watchers[prop].length; i < len; i++) {
+              slot.watchers[prop][i].call(that, arg);
+            }
+          }
+
+        } // if getter
+
+      } // that
+
+      return that;
+    };
+
 
 /*
 

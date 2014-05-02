@@ -9,3 +9,9 @@
     var RE_NODE_ID = /^#[\w\.\-]+$/;
     var RE_ANYTHING = '[\\s\\S]*?';
     var RE_SPACE = '\\s*';
+
+
+    var bookkeepingProto = {
+      dependents: {},
+      watchers: {}
+    };

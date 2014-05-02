@@ -16,6 +16,7 @@ module.exports = function(grunt) {
           'src/jtmpl/store.js',
           'src/jtmpl/getset.js',
           'src/jtmpl/compiler.js',
+          'src/jtmpl/watch.js',
           'src/jtmpl/rules.js',
           'src/jtmpl/_iife_end'
         ],

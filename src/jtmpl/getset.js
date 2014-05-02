@@ -2,17 +2,10 @@
 
 */
 
-    var store = new Store();
-    var getsetFactory;
-
-    j.getsetFactory = getsetFactory = function(obj, caller) {
-      var proto = {
-        dependents: {},
-        watchers: {}
-      };
+    var getsetFactory = j.getsetFactory = function(obj, caller) {
 
       function that(prop, arg, refresh) {
-        var slot = store.get(obj, proto);
+        var slot = j.store.get(obj, bookkeepingProto);
         var i, len;
 
         if (!slot.dependents[prop]) {

@@ -46,3 +46,6 @@ Releases the slot for `object` (if present).
         }
       }
     };
+
+
+    j.store = new Store();    

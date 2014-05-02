@@ -37,9 +37,11 @@ It MUST return either:
       function (tag, node, attr, model, options) {
         var match = tag.match(RE_IDENTIFIER);
         
-        if (match) return {
-          replace: model[tag]
-        };
+        if (match) {
+          return {
+            replace: model[tag]
+          };
+        }
       }
 
     ];
