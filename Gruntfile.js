@@ -14,6 +14,7 @@ module.exports = function(grunt) {
           'src/jtmpl/consts.js',
           'src/jtmpl/util.js',
           'src/jtmpl/store.js',
+          'src/jtmpl/getset.js',
           'src/jtmpl/compiler.js',
           'src/jtmpl/rules.js',
           'src/jtmpl/_iife_end'
@@ -34,7 +35,7 @@ module.exports = function(grunt) {
     },
 
     jasmine : {
-      src : ['src/jtmpl/main.js', 'src/jtmpl/*.js'],
+      src : ['src/jtmpl/main.js', 'src/jtmpl/store.js', 'src/jtmpl/*.js'],
       options : {
         specs : 'spec/**/*.js',
         template : require('grunt-template-jasmine-istanbul'),
