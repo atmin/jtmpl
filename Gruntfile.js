@@ -12,7 +12,8 @@ module.exports = function(grunt) {
           'src/jtmpl/_iife_begin',
           'src/jtmpl/main.js',
           'src/jtmpl/consts.js',
-          'src/jtmpl/getset.js',
+          'src/jtmpl/util.js',
+          'src/jtmpl/store.js',
           'src/jtmpl/compiler.js',
           'src/jtmpl/rules.js',
           'src/jtmpl/_iife_end'

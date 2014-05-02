@@ -1,0 +1,22 @@
+<!doctype html>
+<html><body>
+
+  <div data-template="" data-model="#model">
+    <div>
+        First name: <input value="{{firstName}}">,
+        Last name: <input value="{{lastName}}">
+    </div>
+    Hello, {{firstName}} {{lastName}}
+  </div>
+
+  <script id="model">
+    {
+      firstName: 'John',
+      lastName: 'Doe'
+    }
+  </script>
+
+  <script src="js/jtmpl.min.js">
+  </script>
+
+</body></html>
