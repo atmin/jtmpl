@@ -1,6 +1,18 @@
 /*
 
+### Store
 
+Object-to-object map.
+
+`store = new Store()`
+
+#### get(object, proto)`
+
+Returns associated object, initializes slot for `object`
+
+#### release(object)
+
+Releases the slot for `object` (if present).
 
 */
 
