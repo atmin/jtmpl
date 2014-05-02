@@ -7,7 +7,7 @@
 
 /*
 
-  Return list of tokens:
+  Given a String and options object, return list of tokens:
 
   [[pos0, len0], [pos1, len1], ...]
 
@@ -36,6 +36,16 @@
     }
 
 
+    function tokenizer(options, flags) {
+      return RegExp(
+        escapeRE(options.delimiters[0]) + 
+        RE_ANYTHING +
+        escapeRE(options.delimiters[1]),
+        flags
+      );
+    }
+
+
     function escapeRE(s) {
       return  (s + '').replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
     }
@@ -46,6 +56,9 @@
       var rules = j.rules;
       var rulesLen = j.rules.length;
 
+      // Strip delimiters
+      tag = tag.slice(options.delimiters[0].length, -options.delimiters[1].length);
+
       for (i = 0; i < rulesLen; i++) {
         match = rules[i](tag, node, attr, model, options);
         
@@ -53,10 +66,6 @@
           return match;
         }
       }
-
-      return {
-        replace: ''
-      };
     }
 
 
@@ -87,9 +96,9 @@ Return [documentFragment, model]
 
 */
 
-    j.compile = function (template, model, openTag) {
+    j.compile = function (template, model, options, openTag) {
 
-      var body;
+      var i, ai, alen, body, node, el, t, match, rule, token;
       var fragment = document.createDocumentFragment();
 
       // Template can be a string or DOM structure
@@ -108,48 +117,52 @@ Return [documentFragment, model]
         body.innerHTML = template;
       }
 
-      // Iterate child nodes, tokenize text nodes
-      [].slice.call(body.childNodes).map(
-        
-        function (node) {
-          var el, match;
-        }
-      );
 
-      // Iterate child nodes
-      [].slice.call(body.childNodes).map(
-        
-        function (node) {
-          var el, match;
+      // Iterate child nodes.
+      // Length is not precalculated (and for is used instead of map),
+      // as it can mutate because of splitText()
+      for (i = 0; i < body.childNodes.length; i++) {
 
-          // Clone node and attributes only
-          el = node.cloneNode(false);
+        node = body.childNodes[i];
 
-          // Element node?
-          if (node.nodeType === 1) {
+        // Clone node and attributes (if element) only
+        el = node.cloneNode(false);
+        fragment.appendChild(el);
+
+        switch (el.nodeType) {
+
+          // Element node
+          case 1:
 
             // Check attributes
-            [].slice.call(el.attributes).map(
-              function (attr) {
-                console.log(attr.name + '=' + attr.value);
-              }
-            );
+            for (ai = 0, alen = el.attributes.length; ai < alen; ai++) {
+              console.log(attr.name + '=' + attr.value);
+            }
 
             // Recursively compile
-            el.appendChild(j.compile(node, model));
-          }
+            el.appendChild(j.compile(node, model, options));
+            break;
 
           // Text node
-          if (node.nodeType === 3 && 
-              (match = node.data.match(/\{\{(\w+)\}\}/))) {
+          case 3:
 
-            el.data = model[match[1]] || '';
-          }
+            t = tokenizer(options);
 
+            while ( (match = el.data.match(t)) ) {
+              token = el.splitText(match.index);
+              el = token.splitText(match[0].length);
+              rule = matchRules(token.data, token, null, model, options);
 
-          fragment.appendChild(el);
-        }
-      );
+              if (rule) {
+                token.data = rule.replace || '';
+              }
+            }
+
+            break;
+            
+        } // switch
+
+      } // for
 
       return fragment;
     };

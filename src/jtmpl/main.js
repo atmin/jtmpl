@@ -20,6 +20,6 @@ Referred as `j`, exported as `jtmpl`.
         typeof args[1] === 'object' &&
         ['object', 'undefined'].indexOf(typeof args[2]) > -1
       ) {
-        return j.compile.call(null, args);
+        return j.compile.apply(null, args);
       }
     }

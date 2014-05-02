@@ -35,7 +35,7 @@ Referred as `j`, exported as `jtmpl`.
         typeof args[1] === 'object' &&
         ['object', 'undefined'].indexOf(typeof args[2]) > -1
       ) {
-        return j.compile.call(null, args);
+        return j.compile.apply(null, args);
       }
     }
 
@@ -55,17 +55,84 @@ Referred as `j`, exported as `jtmpl`.
 
 /*
 
+
+
+*/
+
+    function getsetFactory(obj, prop) {
+      return function(val) {
+
+      };
+    }
+
+/*
+
 ## Compiler
+
+*/
+
+
+/*
+
+  Given a String and options object, return list of tokens:
+
+  [[pos0, len0], [pos1, len1], ...]
+
+  Positions and length include delimiter size.
 
 */
     
     function tokenize(s, options) {
-      var seq = s.split(options.delimiters[0]);
+      // Regular expression to match 
+      // anything between options.delimiters
+      var re = 
+        RegExp(
+          escapeRE(options.delimiters[0]) + 
+          RE_ANYTHING +
+          escapeRE(options.delimiters[1]),
+          'g'
+        );
+      var match, result = [];
+
+      // Find all matches
+      while ( (match = re.exec(s)) ) {
+        result.push([match.index, match[0].length]);
+      }
+
+      return result;
+    }
+
+
+    function tokenizer(options, flags) {
+      return RegExp(
+        escapeRE(options.delimiters[0]) + 
+        RE_ANYTHING +
+        escapeRE(options.delimiters[1]),
+        flags
+      );
     }
 
 
     function escapeRE(s) {
       return  (s + '').replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
+    }
+
+
+    function matchRules(tag, node, attr, model, options) {
+      var i, match;
+      var rules = j.rules;
+      var rulesLen = j.rules.length;
+
+      // Strip delimiters
+      tag = tag.slice(options.delimiters[0].length, -options.delimiters[1].length);
+
+      for (i = 0; i < rulesLen; i++) {
+        match = rules[i](tag, node, attr, model, options);
+        
+        if (match) {
+          return match;
+        }
+      }
     }
 
 
@@ -96,9 +163,9 @@ Return [documentFragment, model]
 
 */
 
-    j.compile = function (template, model, openTag) {
+    j.compile = function (template, model, options, openTag) {
 
-      var body;
+      var i, ai, alen, body, node, el, t, match, rule, token;
       var fragment = document.createDocumentFragment();
 
       // Template can be a string or DOM structure
@@ -117,39 +184,52 @@ Return [documentFragment, model]
         body.innerHTML = template;
       }
 
-      // Iterate child nodes
-      [].slice.call(body.childNodes).map(
-        
-        function (node) {
-          var el, match;
 
-          // Clone node and attributes only
-          el = node.cloneNode(false);
+      // Iterate child nodes.
+      // Length is not precalculated (and for is used instead of map),
+      // as it can mutate because of splitText()
+      for (i = 0; i < body.childNodes.length; i++) {
 
-          // Element node?
-          if (node.nodeType === 1) {
+        node = body.childNodes[i];
+
+        // Clone node and attributes (if element) only
+        el = node.cloneNode(false);
+        fragment.appendChild(el);
+
+        switch (el.nodeType) {
+
+          // Element node
+          case 1:
 
             // Check attributes
-            [].slice.call(el.attributes).map(
-              function (attr) {
-                console.log(attr.name + '=' + attr.value);
-              }
-            );
+            for (ai = 0, alen = el.attributes.length; ai < alen; ai++) {
+              console.log(attr.name + '=' + attr.value);
+            }
 
             // Recursively compile
-            el.appendChild(j.compile(node, model));
-          }
+            el.appendChild(j.compile(node, model, options));
+            break;
 
           // Text node
-          if (node.nodeType === 3 && 
-              (match = node.data.match(/\{\{(\w+)\}\}/))) {
+          case 3:
 
-            el.data = model[match[1]] || '';
-          }
+            t = tokenizer(options);
 
-          fragment.appendChild(el);
-        }
-      );
+            while ( (match = el.data.match(t)) ) {
+              token = el.splitText(match.index);
+              el = token.splitText(match[0].length);
+              rule = matchRules(token.data, token, null, model, options);
+
+              if (rule) {
+                token.data = rule.replace || '';
+              }
+            }
+
+            break;
+            
+        } // switch
+
+      } // for
 
       return fragment;
     };
@@ -353,11 +433,19 @@ It MUST return either:
 
 * falsy value - no match
 
-* object - match found, return 
+* object - match found, return (all fields optional)
 
      {
-       replace: "string to replace"
+       // Replace tag in generated content, default - ''
+       replace: 'replacement'
+
+       // Transformed model, default - original model
        model: set_new_context_object
+
+       // Parse until {{/tagName}} ...
+       block: 'tagName'
+       // ... then call this function with the extracted template
+       callback: function continuation(template) ...
      }
 
 */
@@ -373,9 +461,10 @@ It MUST return either:
 
       function (tag, node, attr, model, options) {
         var match = tag.match(RE_IDENTIFIER);
-        if (match) {
-          return model;
-        }
+        
+        if (match) return {
+          replace: model[tag]
+        };
       }
 
     ];
