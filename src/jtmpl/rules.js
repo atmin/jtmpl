@@ -38,6 +38,22 @@ It MUST return either:
         var match = tag.match(RE_IDENTIFIER);
         
         if (match) {
+
+          if (attr) {
+            // Attribute
+            j.watch(model, tag, function(val) {
+              return val ?
+                node.setAttribute(attr, val) :
+                node.removeAttribute(attr);
+            });
+          }
+          else {
+            // Text node
+            j.watch(model, tag, function(val) {
+              node.data = val;
+            });
+          }
+
           return {
             replace: model[tag]
           };
