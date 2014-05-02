@@ -16,15 +16,21 @@
 */
     
     function tokenize(s, options) {
+
+      // Configurable delimiters
+      var delimiters = options && options.delimiters ?
+        options.delimiters : ['{{', '}}'];
+        
       // Regular expression to match 
       // anything between options.delimiters
       var re = 
         RegExp(
-          escapeRE(options.delimiters[0]) + 
+          escapeRE(delimiters[0]) + 
           RE_ANYTHING +
-          escapeRE(options.delimiters[1]),
+          escapeRE(delimiters[1]),
           'g'
         );
+
       var match, result = [];
 
       // Find all matches
@@ -39,7 +45,7 @@
     function tokenizer(options, flags) {
       return RegExp(
         escapeRE(options.delimiters[0]) + 
-        RE_ANYTHING +
+        '(' + RE_ANYTHING + ')' +
         escapeRE(options.delimiters[1]),
         flags
       );
@@ -98,7 +104,7 @@ Return [documentFragment, model]
 
     j.compile = function (template, model, options, openTag) {
 
-      var i, ai, alen, body, node, el, t, match, rule, token;
+      var i, ai, alen, attr, body, node, el, t, match, rule, token;
       var fragment = document.createDocumentFragment();
 
       // Template can be a string or DOM structure
@@ -136,7 +142,14 @@ Return [documentFragment, model]
 
             // Check attributes
             for (ai = 0, alen = el.attributes.length; ai < alen; ai++) {
+              attr = el.attributes[ai];
               console.log(attr.name + '=' + attr.value);
+
+              t = tokenizer(options);
+
+              while ( (match = attr.value.match(t)) ) {
+                rule = matchRules(match[1], node, attr.name, model, options);
+              }
             }
 
             // Recursively compile

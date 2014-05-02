@@ -30,7 +30,31 @@ It MUST return either:
 
 /*
 
+### class="{{some-class}}"
+
+Toggles class `some-class` in sync with boolean `model['some-class']`
+
+*/
+
+      function (tag, node, attr, model, options) {
+        var match = tag.match(RE_IDENTIFIER);
+        
+        if (match) {
+
+          
+
+          return {
+            replace: model[tag]
+          };
+        }
+      },
+
+
+/*
+
 ### {{var}}
+
+Can be bound to text node data or attribute, which is not already handled
 
 */
 

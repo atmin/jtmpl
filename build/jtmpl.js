@@ -53,6 +53,12 @@ Referred as `j`, exported as `jtmpl`.
     var RE_SPACE = '\\s*';
 
 
+    var bookkeepingProto = {
+      dependents: {},
+      watchers: {}
+    };
+
+
 /*
 
 ## Functional utilities, courtesy of [bilby.js](https://github.com/puffnfresh/bilby.js)
@@ -290,21 +296,17 @@ Releases the slot for `object` (if present).
       }
     };
 
+
+    j.store = new Store();
+
 /*
 
 */
 
-    var store = new Store();
-    var getsetFactory;
-
-    j.getsetFactory = getsetFactory = function(obj, caller) {
-      var proto = {
-        dependents: {},
-        watchers: {}
-      };
+    var getsetFactory = j.getsetFactory = function(obj, caller) {
 
       function that(prop, arg, refresh) {
-        var slot = store.get(obj, proto);
+        var slot = j.store.get(obj, bookkeepingProto);
         var i, len;
 
         if (!slot.dependents[prop]) {
@@ -461,7 +463,7 @@ Return [documentFragment, model]
 
     j.compile = function (template, model, options, openTag) {
 
-      var i, ai, alen, body, node, el, t, match, rule, token;
+      var i, ai, alen, attr, body, node, el, t, match, rule, token;
       var fragment = document.createDocumentFragment();
 
       // Template can be a string or DOM structure
@@ -499,6 +501,7 @@ Return [documentFragment, model]
 
             // Check attributes
             for (ai = 0, alen = el.attributes.length; ai < alen; ai++) {
+              attr = el.attributes[ai];
               console.log(attr.name + '=' + attr.value);
             }
 
@@ -529,6 +532,34 @@ Return [documentFragment, model]
 
       return fragment;
     };
+
+/*
+
+## watch(obj, prop, callback)
+
+Notifies `callback` passing new value, when `obj[prop]` changes.
+
+*/
+
+    j.watch = function(obj, prop, callback) {
+      var watchers;
+
+      // All must be specified
+      if (!(obj && prop && callback)) return;
+
+      watchers = j.store.get(obj, bookkeepingProto).watchers;
+
+      // Init watchers
+      if (!watchers[prop]) {
+        watchers[prop] = [];
+      }
+
+      // Already registered?
+      if (watchers[prop].indexOf(callback) === -1) {
+        watchers[prop].push(callback);
+      }
+    };
+
 
 /*
 
@@ -569,9 +600,27 @@ It MUST return either:
       function (tag, node, attr, model, options) {
         var match = tag.match(RE_IDENTIFIER);
         
-        if (match) return {
-          replace: model[tag]
-        };
+        if (match) {
+
+          if (attr) {
+            // Attribute
+            j.watch(model, tag, function(val) {
+              return val ?
+                node.setAttribute(attr, val) :
+                node.removeAttribute(attr);
+            });
+          }
+          else {
+            // Text node
+            j.watch(model, tag, function(val) {
+              node.data = val;
+            });
+          }
+
+          return {
+            replace: model[tag]
+          };
+        }
       }
 
     ];
