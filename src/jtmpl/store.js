@@ -10,9 +10,13 @@ Object-to-object map.
 
 Returns associated object, initializes slot for `object`
 
+`watchers = store.get(obj, { wathers: [] }).watchers`
+
 #### release(object)
 
 Releases the slot for `object` (if present).
+
+`store.release(obj)`
 
 */
 
