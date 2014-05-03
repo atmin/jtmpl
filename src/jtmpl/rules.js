@@ -39,13 +39,11 @@ Toggles class `some-class` in sync with boolean `model['some-class']`
       function (tag, node, attr, model, options) {
         var match = tag.match(RE_IDENTIFIER);
         
-        if (match) {
+        if (attr === 'class' && match) {
 
-          
+          console.log('class is indeed {{some-class}}');
 
-          return {
-            replace: model[tag]
-          };
+          return {};
         }
       },
 

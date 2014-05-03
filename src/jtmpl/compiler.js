@@ -4,44 +4,6 @@
 
 */
 
-
-/*
-
-  Given a String and options object, return list of tokens:
-
-  [[pos0, len0], [pos1, len1], ...]
-
-  Positions and length include delimiter size.
-
-*/
-    
-    function tokenize(s, options) {
-
-      // Configurable delimiters
-      var delimiters = options && options.delimiters ?
-        options.delimiters : ['{{', '}}'];
-        
-      // Regular expression to match 
-      // anything between options.delimiters
-      var re = 
-        RegExp(
-          escapeRE(delimiters[0]) + 
-          RE_ANYTHING +
-          escapeRE(delimiters[1]),
-          'g'
-        );
-
-      var match, result = [];
-
-      // Find all matches
-      while ( (match = re.exec(s)) ) {
-        result.push([match.index, match[0].length]);
-      }
-
-      return result;
-    }
-
-
     function tokenizer(options, flags) {
       return RegExp(
         escapeRE(options.delimiters[0]) + 
@@ -74,26 +36,6 @@
       }
     }
 
-
-/*
-
-Browsers treat table elements in a special way, so table tags
-will be replaced prior constructing DOM to force standard parsing,
-then restored again after templating pass.
-
-*/
-
-    var replaceTagRules = [
-      ['<table>', '<jtmpl-table>'],
-      ['<table ', '<jtmpl-table '],
-      ['</table>', '</jtmpl-table>'],
-      ['<tr>', '<jtmpl-tr>'],
-      ['<tr ', '<jtmpl-tr '],
-      ['</tr>', '</jtmpl-tr>'],
-      ['<td>', '<jtmpl-td>'],
-      ['<td ', '<jtmpl-td '],
-      ['</td>', '</jtmpl-td>']
-    ];
 
 
 /*
@@ -145,9 +87,9 @@ Return [documentFragment, model]
               attr = el.attributes[ai];
               console.log(attr.name + '=' + attr.value);
 
-              t = tokenizer(options);
+              t = tokenizer(options, 'g');
 
-              while ( (match = attr.value.match(t)) ) {
+              while ( (match = t.exec(attr.value)) ) {
                 rule = matchRules(match[1], node, attr.name, model, options);
               }
             }
