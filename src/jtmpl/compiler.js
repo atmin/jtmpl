@@ -4,6 +4,11 @@
 
 */
 
+    function escapeRE(s) {
+      return  (s + '').replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
+    }
+
+
     function tokenizer(options, flags) {
       return RegExp(
         escapeRE(options.delimiters[0]) + 
@@ -11,11 +16,6 @@
         escapeRE(options.delimiters[1]),
         flags
       );
-    }
-
-
-    function escapeRE(s) {
-      return  (s + '').replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
     }
 
 
@@ -40,7 +40,9 @@
 
 /*
 
-Return [documentFragment, model]
+### jtmpl.compile(template, model[, options[, openTag]])
+
+Return documentFragment
 
 */
 
@@ -86,6 +88,7 @@ Return [documentFragment, model]
             for (ai = 0, alen = el.attributes.length; ai < alen; ai++) {
               attr = el.attributes[ai];
               val = attr.value;
+              // Accumulate templated output
               buffer = '';
               pos = 0;
               console.log('found attr ' + attr.name + '=' + attr.value);

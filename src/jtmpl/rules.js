@@ -14,7 +14,7 @@ It MUST return either:
        // Replace tag in generated content, default - ''
        replace: 'replacement'
 
-       // Transformed model, default - original model
+       // Set new context, default - original model
        model: set_new_context_object
 
        // Parse until {{/tagName}} ...
