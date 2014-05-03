@@ -41,9 +41,13 @@ Toggles class `some-class` in sync with boolean `model['some-class']`
         
         if (attr === 'class' && match) {
 
-          console.log('class is indeed {{some-class}}');
+          j.watch(model, tag, function(val) {
+            (!!val && j.addClass || j.removeClass)(node, tag);
+          });
 
-          return {};
+          return {
+            replace: !!model[tag] && tag || ''
+          };
         }
       },
 

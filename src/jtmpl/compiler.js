@@ -46,7 +46,7 @@ Return [documentFragment, model]
 
     j.compile = function (template, model, options, openTag) {
 
-      var i, ai, alen, attr, body, node, el, t, match, rule, token;
+      var i, ai, alen, attr, val, buffer, pos, body, node, el, t, match, rule, token;
       var fragment = document.createDocumentFragment();
 
       // Template can be a string or DOM structure
@@ -85,12 +85,26 @@ Return [documentFragment, model]
             // Check attributes
             for (ai = 0, alen = el.attributes.length; ai < alen; ai++) {
               attr = el.attributes[ai];
-              console.log(attr.name + '=' + attr.value);
+              val = attr.value;
+              buffer = '';
+              pos = 0;
+              console.log('found attr ' + attr.name + '=' + attr.value);
 
               t = tokenizer(options, 'g');
 
-              while ( (match = t.exec(attr.value)) ) {
-                rule = matchRules(match[1], node, attr.name, model, options);
+              while ( (match = t.exec(val)) ) {
+                rule = matchRules(match[0], el, attr.name, model, options);
+
+                buffer +=
+                  val.slice(pos, match.index) +
+                  (rule ? rule.replace || '' : match[0]);
+
+                pos = t.lastIndex;
+              }
+              buffer += val.slice(pos);
+
+              if (buffer != val) {
+                attr.value = buffer;
               }
             }
 
