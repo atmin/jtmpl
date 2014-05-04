@@ -9,6 +9,7 @@ Requests API
 
       var xhr = new XMLHttpRequest();
 
+      // Last function argument
       var callback = args.reduce(
         function (prev, curr) {
           return typeof curr === 'function' ? curr : prev;
@@ -21,7 +22,6 @@ Requests API
       if (typeof opts !== 'object') {
         opts = {};
       }
-
 
       for (i = 0, props = Object.getOwnPropertyNames(opts), len = props.length;
           i < len; i++) {

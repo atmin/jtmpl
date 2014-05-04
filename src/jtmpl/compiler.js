@@ -128,7 +128,21 @@ Return documentFragment
               rule = matchRules(token.data, token, null, model, options);
 
               if (rule) {
-                token.data = rule.replace || '';
+
+                // Text replacement
+                if (typeof rule.replace === 'string' || !rule.replace) {
+                  token.data = rule.replace || '';
+                }
+
+                // DOM replacement
+                if (rule.replace instanceof Node) {
+                  token.parentNode.replaceChild(rule.replace, token);
+                }
+
+                if (rule.block) {
+                  // TODO: get template
+                  // TODO: call rule.callback(template)
+                }
               }
             }
 

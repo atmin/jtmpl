@@ -54,9 +54,36 @@ Toggles class `some-class` in sync with boolean `model['some-class']`
 
 /*
 
+### {{#section}}
+
+Can be bound to text node
+
+*/
+
+      function (tag, node, attr, model, options) {
+        var match = tag.match(new RegExp('#' + RE_SRC_IDENTIFIER));
+        
+        if (match) {
+
+          console.log(match);
+
+          return {
+            replace: document.createTextNode('.'),
+            block: match[1],
+            callback: function(template) {
+
+            }
+          };
+        }
+      },
+
+
+
+/*
+
 ### {{var}}
 
-Can be bound to text node data or attribute, which is not already handled
+Can be bound to text node data or attribute
 
 */
 
