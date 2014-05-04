@@ -5,7 +5,7 @@ Requests API
 */
 
     j.xhr = function(args) {
-      var i, len, prop, props;
+      var i, len, prop, props, request;
 
       var xhr = new XMLHttpRequest();
 
@@ -23,7 +23,8 @@ Requests API
       }
 
 
-      for (i = 0, props = Object.getOwnPropertyNames(opts), len = props.length; i < len; i++) {
+      for (i = 0, props = Object.getOwnPropertyNames(opts), len = props.length;
+          i < len; i++) {
         prop = props[i];
         xhr[prop] = opts[prop];
       }
@@ -33,21 +34,22 @@ Requests API
 
           // String parameters
           args[2] :
+
           (typeof args[2] === 'object') ?
 
             // Object parameters. Serialize to URI
-            Object.keys(args[2])
-              .map(
-                function(x) {
-                  return x + '=' + encodeURIComponent(args[2][x]);
-                } 
-              )
-              .join('&') :
+            Object.keys(args[2]).map(
+              function(x) {
+                return x + '=' + encodeURIComponent(args[2][x]);
+              } 
+            ).join('&') :
 
-              // No parameters
-              '';
+            // No parameters
+            '';
 
       xhr.onload = function(event) {
+        var resp;
+
         if (callback) {
           try {
             resp = JSON.parse(this.responseText);
@@ -59,7 +61,10 @@ Requests API
         }
       };
 
-      xhr.open(args[0], args[1], opts.async || true, opts.user, opts.password);
+      xhr.open(args[0], args[1],
+        (opts.async !== undefined ? opts.async : true), 
+        opts.user, opts.password);
+
       xhr.send(request);
 
     };
