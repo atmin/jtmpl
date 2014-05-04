@@ -18,6 +18,7 @@ module.exports = function(grunt) {
           'src/jtmpl/compiler.js',
           'src/jtmpl/watch.js',
           'src/jtmpl/rules.js',
+          'src/jtmpl/xhr.js',
           'src/jtmpl/_iife_end'
         ],
         dest: '<%= pkg.buildDir %>/js/<%= pkg.name %>.js'

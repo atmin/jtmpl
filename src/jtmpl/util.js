@@ -6,20 +6,24 @@ Right-biased key-value concat of objects `a` and `b`
 
 */
 
-    function extend(a, b) {
+    j.extend = function(a, b) {
       var o = {};
       var i;
 
       for (i in a) {
-        o[i] = a[i];
+        if (a.hasOwnProperty(i)) {
+          o[i] = a[i];
+        }
       }
 
       for (i in b) {
-        o[i] = b[i];
+        if (b.hasOwnProperty(i)) {
+          o[i] = a[b];
+        }
       }
 
       return o;
-    }
+    };
 
 
 

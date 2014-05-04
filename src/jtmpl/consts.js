@@ -18,6 +18,17 @@
 
 
 /*
+  
+Default options
+
+*/
+    
+    var defaultOptions = {
+      delimiters: ['{{', '}}']
+    };
+
+
+/*
 
 Browsers treat table elements in a special way, so table tags
 will be replaced prior constructing DOM to force standard parsing,

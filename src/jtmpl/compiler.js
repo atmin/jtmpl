@@ -51,6 +51,8 @@ Return documentFragment
       var i, ai, alen, attr, val, buffer, pos, body, node, el, t, match, rule, token;
       var fragment = document.createDocumentFragment();
 
+      options = options || defaultOptions;
+
       // Template can be a string or DOM structure
       if (template instanceof Node) {
         body = template;

@@ -61,6 +61,27 @@ Referred as `j`, exported as `jtmpl`.
 
 /*
 
+Browsers treat table elements in a special way, so table tags
+will be replaced prior constructing DOM to force standard parsing,
+then restored again after templating pass.
+
+*/
+
+    var replaceTagRules = [
+      ['<table>', '<jtmpl-table>'],
+      ['<table ', '<jtmpl-table '],
+      ['</table>', '</jtmpl-table>'],
+      ['<tr>', '<jtmpl-tr>'],
+      ['<tr ', '<jtmpl-tr '],
+      ['</tr>', '</jtmpl-tr>'],
+      ['<td>', '<jtmpl-td>'],
+      ['<td ', '<jtmpl-td '],
+      ['</td>', '</jtmpl-td>']
+    ];
+
+
+/*
+
 ### extend(a, b)
 
 Right-biased key-value concat of objects `a` and `b`
@@ -233,41 +254,8 @@ Releases the slot for `object` (if present).
 
 */
 
-
-/*
-
-  Given a String and options object, return list of tokens:
-
-  [[pos0, len0], [pos1, len1], ...]
-
-  Positions and length include delimiter size.
-
-*/
-    
-    function tokenize(s, options) {
-
-      // Configurable delimiters
-      var delimiters = options && options.delimiters ?
-        options.delimiters : ['{{', '}}'];
-        
-      // Regular expression to match 
-      // anything between options.delimiters
-      var re = 
-        RegExp(
-          escapeRE(delimiters[0]) + 
-          RE_ANYTHING +
-          escapeRE(delimiters[1]),
-          'g'
-        );
-
-      var match, result = [];
-
-      // Find all matches
-      while ( (match = re.exec(s)) ) {
-        result.push([match.index, match[0].length]);
-      }
-
-      return result;
+    function escapeRE(s) {
+      return  (s + '').replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
     }
 
 
@@ -278,11 +266,6 @@ Releases the slot for `object` (if present).
         escapeRE(options.delimiters[1]),
         flags
       );
-    }
-
-
-    function escapeRE(s) {
-      return  (s + '').replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
     }
 
 
@@ -304,36 +287,18 @@ Releases the slot for `object` (if present).
     }
 
 
-/*
-
-Browsers treat table elements in a special way, so table tags
-will be replaced prior constructing DOM to force standard parsing,
-then restored again after templating pass.
-
-*/
-
-    var replaceTagRules = [
-      ['<table>', '<jtmpl-table>'],
-      ['<table ', '<jtmpl-table '],
-      ['</table>', '</jtmpl-table>'],
-      ['<tr>', '<jtmpl-tr>'],
-      ['<tr ', '<jtmpl-tr '],
-      ['</tr>', '</jtmpl-tr>'],
-      ['<td>', '<jtmpl-td>'],
-      ['<td ', '<jtmpl-td '],
-      ['</td>', '</jtmpl-td>']
-    ];
-
 
 /*
 
-Return [documentFragment, model]
+### jtmpl.compile(template, model[, options[, openTag]])
+
+Return documentFragment
 
 */
 
     j.compile = function (template, model, options, openTag) {
 
-      var i, ai, alen, attr, body, node, el, t, match, rule, token;
+      var i, ai, alen, attr, val, buffer, pos, body, node, el, t, match, rule, token;
       var fragment = document.createDocumentFragment();
 
       // Template can be a string or DOM structure
@@ -372,12 +337,27 @@ Return [documentFragment, model]
             // Check attributes
             for (ai = 0, alen = el.attributes.length; ai < alen; ai++) {
               attr = el.attributes[ai];
-              console.log(attr.name + '=' + attr.value);
+              val = attr.value;
+              // Accumulate templated output
+              buffer = '';
+              pos = 0;
+              console.log('found attr ' + attr.name + '=' + attr.value);
 
-              t = tokenizer(options);
+              t = tokenizer(options, 'g');
 
-              while ( (match = attr.value.match(t)) ) {
-                rule = matchRules(match[1], node, attr.name, model, options);
+              while ( (match = t.exec(val)) ) {
+                rule = matchRules(match[0], el, attr.name, model, options);
+
+                buffer +=
+                  val.slice(pos, match.index) +
+                  (rule ? rule.replace || '' : match[0]);
+
+                pos = t.lastIndex;
+              }
+              buffer += val.slice(pos);
+
+              if (buffer != val) {
+                attr.value = buffer;
               }
             }
 
@@ -453,7 +433,7 @@ It MUST return either:
        // Replace tag in generated content, default - ''
        replace: 'replacement'
 
-       // Transformed model, default - original model
+       // Set new context, default - original model
        model: set_new_context_object
 
        // Parse until {{/tagName}} ...
@@ -480,9 +460,13 @@ Toggles class `some-class` in sync with boolean `model['some-class']`
         
         if (attr === 'class' && match) {
 
-          console.log('class is indeed {{some-class}}');
+          j.watch(model, tag, function(val) {
+            (!!val && j.addClass || j.removeClass)(node, tag);
+          });
 
-          return {};
+          return {
+            replace: !!model[tag] && tag || ''
+          };
         }
       },
 
