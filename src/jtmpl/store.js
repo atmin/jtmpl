@@ -33,7 +33,7 @@ Releases the slot for `object` (if present).
         }
         else {
           this.objs.push(obj);
-          this.store.push(proto || {});
+          this.store.push(JSON.parse(JSON.stringify(proto || {})));
           return this.store[this.store.length - 1];
         }
       },

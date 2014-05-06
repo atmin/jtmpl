@@ -14,7 +14,9 @@
 
     var bookkeepingProto = {
       dependents: {},
-      watchers: {}
+      watchers: {},
+      childContexts: [],
+      initialized: false
     };
 
 

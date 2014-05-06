@@ -14,6 +14,7 @@ module.exports = function(grunt) {
           'src/jtmpl/consts.js',
           'src/jtmpl/util.js',
           'src/jtmpl/store.js',
+          'src/jtmpl/observable_array.js',
           'src/jtmpl/getset.js',
           'src/jtmpl/compiler.js',
           'src/jtmpl/watch.js',

@@ -47,6 +47,7 @@ Referred as `j`, exported as `jtmpl`.
 */    
 
     var RE_IDENTIFIER = /^[\w\.\-]+$/;
+    var RE_SRC_IDENTIFIER = '([\\w\\.\\-]+)';
     var RE_PIPE = /^[\w\.\-]+(?:\|[\w\.\-]+)?$/;
     var RE_NODE_ID = /^#[\w\.\-]+$/;
     var RE_ANYTHING = '[\\s\\S]*?';
@@ -56,6 +57,17 @@ Referred as `j`, exported as `jtmpl`.
     var bookkeepingProto = {
       dependents: {},
       watchers: {}
+    };
+
+
+/*
+  
+Default options
+
+*/
+    
+    var defaultOptions = {
+      delimiters: ['{{', '}}']
     };
 
 
@@ -88,20 +100,24 @@ Right-biased key-value concat of objects `a` and `b`
 
 */
 
-    function extend(a, b) {
+    j.extend = function(a, b) {
       var o = {};
       var i;
 
       for (i in a) {
-        o[i] = a[i];
+        if (a.hasOwnProperty(i)) {
+          o[i] = a[i];
+        }
       }
 
       for (i in b) {
-        o[i] = b[i];
+        if (b.hasOwnProperty(i)) {
+          o[i] = a[b];
+        }
       }
 
       return o;
-    }
+    };
 
 
 
@@ -186,13 +202,55 @@ Releases the slot for `object` (if present).
 
 /*
 
+Returns a getter/setter function, which jtmpl binds to the `this` context.
+
+Within a model handler, it's possible:
+
+
+Get property value:
+
+`this(prop)`
+
+
+Get property value asynchonously:
+
+`this(prop, function(value) {...})`
+
+
+Set propety value:
+
+`this(prop, newValue)`
+
+
+
+Access parent context (returns getter/setter):
+
+`this.parent`
+
+
+Access root context (returns getter/setter):
+
+`this.root`
+
+
+Get child context property:
+
+`this(childContext)(childProperty)`
+
+
+If current context is an Array, all standard props/methods are there:
+
+`this.length`, `this.sort`, `this.splice`, etc
+
+
+
 */
 
     var getsetFactory = j.getsetFactory = function(obj, caller) {
 
       function that(prop, arg, refresh) {
         var slot = j.store.get(obj, bookkeepingProto);
-        var i, len;
+        var i, len, result;
 
         if (!slot.dependents[prop]) {
           // Init dependents
@@ -202,16 +260,22 @@ Releases the slot for `object` (if present).
         // Getter?
         if (arg === undefined || typeof arg === 'function') {
 
-          // Update dependency graph
-          if (slot.dependents[prop].indexOf(caller) === -1) {
+          // Update dependency tree
+          if (caller && slot.dependents[prop].indexOf(caller) === -1) {
             slot.dependents[prop].push(caller);
           }
 
-          return (typeof obj[prop] === 'function') ?
+          result = (typeof obj[prop] === 'function') ?
             // Computed property. `arg` is a callback for async getters
             obj[prop].call(that, arg) :
-            // Simple property
+            // Static property (leaf in the dependency tree)
             obj[prop];
+
+          return typeof result === 'object' ?
+            // Child context, wrap it
+            getsetFactory(result) :
+            // Simple value
+            result;
         }
 
         else {
@@ -301,6 +365,8 @@ Return documentFragment
       var i, ai, alen, attr, val, buffer, pos, body, node, el, t, match, rule, token;
       var fragment = document.createDocumentFragment();
 
+      options = options || defaultOptions;
+
       // Template can be a string or DOM structure
       if (template instanceof Node) {
         body = template;
@@ -376,7 +442,21 @@ Return documentFragment
               rule = matchRules(token.data, token, null, model, options);
 
               if (rule) {
-                token.data = rule.replace || '';
+
+                // Text replacement
+                if (typeof rule.replace === 'string' || !rule.replace) {
+                  token.data = rule.replace || '';
+                }
+
+                // DOM replacement
+                if (rule.replace instanceof Node) {
+                  token.parentNode.replaceChild(rule.replace, token);
+                }
+
+                if (rule.block) {
+                  // TODO: get template
+                  // TODO: call rule.callback(template)
+                }
               }
             }
 
@@ -473,9 +553,36 @@ Toggles class `some-class` in sync with boolean `model['some-class']`
 
 /*
 
+### {{#section}}
+
+Can be bound to text node
+
+*/
+
+      function (tag, node, attr, model, options) {
+        var match = tag.match(new RegExp('#' + RE_SRC_IDENTIFIER));
+        
+        if (match) {
+
+          console.log(match);
+
+          return {
+            replace: document.createTextNode('.'),
+            block: match[1],
+            callback: function(template) {
+
+            }
+          };
+        }
+      },
+
+
+
+/*
+
 ### {{var}}
 
-Can be bound to text node data or attribute, which is not already handled
+Can be bound to text node data or attribute
 
 */
 
@@ -506,6 +613,78 @@ Can be bound to text node data or attribute, which is not already handled
       }
 
     ];
+
+
+/*
+
+Requests API
+
+*/
+
+    j.xhr = function(args) {
+      var i, len, prop, props, request;
+
+      var xhr = new XMLHttpRequest();
+
+      // Last function argument
+      var callback = args.reduce(
+        function (prev, curr) {
+          return typeof curr === 'function' ? curr : prev;
+        },
+        null
+      );
+
+      var opts = args[args.length - 1];
+
+      if (typeof opts !== 'object') {
+        opts = {};
+      }
+
+      for (i = 0, props = Object.getOwnPropertyNames(opts), len = props.length;
+          i < len; i++) {
+        prop = props[i];
+        xhr[prop] = opts[prop];
+      }
+
+      request =
+        (typeof args[2] === 'string') ?
+
+          // String parameters
+          args[2] :
+
+          (typeof args[2] === 'object') ?
+
+            // Object parameters. Serialize to URI
+            Object.keys(args[2]).map(
+              function(x) {
+                return x + '=' + encodeURIComponent(args[2][x]);
+              } 
+            ).join('&') :
+
+            // No parameters
+            '';
+
+      xhr.onload = function(event) {
+        var resp;
+
+        if (callback) {
+          try {
+            resp = JSON.parse(this.responseText);
+          }
+          catch (e) {
+            resp = this.responseText;
+          }
+          callback.call(this, resp, event);
+        }
+      };
+
+      xhr.open(args[0], args[1],
+        (opts.async !== undefined ? opts.async : true), 
+        opts.user, opts.password);
+
+      xhr.send(request);
+
+    };
 
 
 /*
