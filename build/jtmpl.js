@@ -56,7 +56,9 @@ Referred as `j`, exported as `jtmpl`.
 
     var bookkeepingProto = {
       dependents: {},
-      watchers: {}
+      watchers: {},
+      childContexts: [],
+      initialized: false
     };
 
 
@@ -148,6 +150,75 @@ Element class handling utilities.
     };
 
 
+
+
+
+/**
+ * https://github.com/component/path-to-regexp/blob/master/index.js
+
+ * Normalize the given path string,
+ * returning a regular expression.
+ *
+ * An empty array should be passed,
+ * which will contain the placeholder
+ * key names. For example "/user/:id" will
+ * then contain ["id"].
+ *
+ * @param  {String|RegExp|Array} path
+ * @param  {Array} keys
+ * @param  {Object} options
+ * @return {RegExp}
+ * @api private
+ */
+
+    function pathtoRegexp(path, keys, options) {
+      options = options || {};
+      var strict = options.strict;
+      var end = options.end !== false;
+      var flags = options.sensitive ? '' : 'i';
+      keys = keys || [];
+
+      if (path instanceof RegExp) {
+        return path;
+      }
+
+      if (Array.isArray(path)) {
+        // Map array parts into regexps and return their source. We also pass
+        // the same keys and options instance into every generation to get
+        // consistent matching groups before we join the sources together.
+        path = path.map(function (value) {
+          return pathtoRegexp(value, keys, options).source;
+        });
+
+        return new RegExp('(?:' + path.join('|') + ')', flags);
+      }
+
+      path = ('^' + path + (strict ? '' : '/?'))
+        .replace(/([\/\.\|])/g, '\\$1')
+        .replace(/(\\\/)?(\\\.)?:(\w+)(\(.*?\))?(\*)?(\?)?/g, function(match, slash, format, key, capture, star, optional) {
+          slash = slash || '';
+          format = format || '';
+          capture = capture || '([^\\/' + format + ']+?)';
+          optional = optional || '';
+
+          keys.push({ name: key, optional: !!optional });
+
+          return '' +
+            (optional ? '' : slash) +
+            '(?:' +
+            format + (optional ? slash : '') + capture +
+            (star ? '((?:[\\/' + format + '].+?)?)' : '') +
+            ')' +
+            optional;
+        })
+        .replace(/\*/g, '(.*)');
+
+      // If the path is non-ending, match until the end or a slash.
+      path += (end ? '$' : (path[path.length - 1] === '/' ? '' : '(?=\\/|$)'));
+
+      return new RegExp(path, flags);
+    }
+
 /*
 
 ### Store
@@ -183,7 +254,7 @@ Releases the slot for `object` (if present).
         }
         else {
           this.objs.push(obj);
-          this.store.push(proto || {});
+          this.store.push(JSON.parse(JSON.stringify(proto || {})));
           return this.store[this.store.length - 1];
         }
       },
@@ -199,6 +270,48 @@ Releases the slot for `object` (if present).
 
 
     j.store = new Store();
+
+/*
+
+Proxy mutable array methods
+
+*/
+
+    function ObservableArray(items, listener) {
+      var _items, _listener;
+      var method, mutableMethods = {
+        pop: function() {
+          var result = _items.pop();
+          listener([{
+            type: 'delete',
+            name: _items.length,
+            object: _items
+          }]);
+        },
+
+        push: function(item) {
+
+        }
+      };
+
+      function arr(i, val) {
+        return (val === undefined) ?
+          // Getter
+          _items[i] :
+          // Setter
+          (_items[i] = val);
+      }
+
+      for (method in mutableMethods) {
+        arr[method] = mutableMethods[method];
+      }
+
+      _items = items;
+      return arr;
+    }
+
+
+    j.ObservableArray = ObservableArray;
 
 /*
 
@@ -247,10 +360,10 @@ If current context is an Array, all standard props/methods are there:
 */
 
     var getsetFactory = j.getsetFactory = function(obj, caller) {
+      var slot = register(obj);
 
       function that(prop, arg, refresh) {
-        var slot = j.store.get(obj, bookkeepingProto);
-        var i, len, result;
+        var i, len, result, root;
 
         if (!slot.dependents[prop]) {
           // Init dependents
@@ -308,8 +421,39 @@ If current context is an Array, all standard props/methods are there:
 
       } // that
 
+      that.parent = slot.parent ? getsetFactory(slot.parent) : null;
+
+      // Find root context
+      root = that.parent;
+      while (root) {
+        that.root = root;
+        root = root.parent;
+      }
+
       return that;
     };
+
+
+
+    function register(obj) {
+      var slot = j.store.get(obj, bookkeepingProto);
+      var prop, childSlot;
+
+      // Register child contexts
+      if (!slot.initialized) {
+        slot.initialized = true;
+
+        for (prop in obj) {
+          if (obj.hasOwnProperty(prop) && typeof obj[prop] === 'object') {
+            childSlot = j.store.get(obj[prop], bookkeepingProto);
+            childSlot.parent = obj;
+            register(obj[prop]);
+          }
+        }
+      }
+
+      return slot;
+    }
 
 
 /*

@@ -37,6 +37,21 @@
     }
 
 
+    j.wrapTagsInHTMLComments = function(template, options) {
+      return template.replace(
+        tokenizer(options, 'g'),
+        function(match, match1, pos) {
+          var head = template.slice(0, pos);
+          var insideTag = !!head.match(RegExp('<' + RE_SRC_IDENTIFIER + '[^>]*?$'));
+          var insideComment = !!head.match(/<!--\s*$/);
+          return insideTag || insideComment ?
+            match :
+            '<!--' + match + '-->';
+        }
+      );
+    };
+
+
 
 /*
 
@@ -58,12 +73,7 @@ Return documentFragment
         body = template;
       }
       else {
-        // replace <table> & co with custom tags
-        replaceTagRules.map(
-          function (pair) {
-            template = template.replace(new RegExp(escapeRE(pair[0]), 'g'), pair[1]);
-          }
-        );
+        template = j.wrapTagsInHTMLComments(template, options);
 
         body = document.createElement('body');
         body.innerHTML = template;
@@ -77,7 +87,7 @@ Return documentFragment
 
         node = body.childNodes[i];
 
-        // Clone node and attributes (if element) only
+        // Shallow copy of node and attributes (if element)
         el = node.cloneNode(false);
         fragment.appendChild(el);
 
@@ -91,32 +101,45 @@ Return documentFragment
               attr = el.attributes[ai];
               val = attr.value;
               // Accumulate templated output
-              buffer = '';
-              pos = 0;
-              console.log('found attr ' + attr.name + '=' + attr.value);
+              // buffer = '';
+              // pos = 0;
+              // console.log('found attr ' + attr.name + '=' + attr.value);
 
               t = tokenizer(options, 'g');
 
               while ( (match = t.exec(val)) ) {
                 rule = matchRules(match[0], el, attr.name, model, options);
 
-                buffer +=
-                  val.slice(pos, match.index) +
-                  (rule ? rule.replace || '' : match[0]);
+                // buffer +=
+                //   val.slice(pos, match.index) +
+                //   (rule ? rule.replace || '' : match[0]);
 
-                pos = t.lastIndex;
+                // pos = t.lastIndex;
               }
-              buffer += val.slice(pos);
+              // buffer += val.slice(pos);
 
-              if (buffer != val) {
-                attr.value = buffer;
-              }
+              // if (buffer != val) {
+              //   attr.value = buffer;
+              // }
             }
 
             // Recursively compile
             el.appendChild(j.compile(node, model, options));
             break;
 
+          // Comment node
+          case 8:
+            if ( (match = el.data.match(tokenizer(options))) ) {
+              rule = matchRules(el.data, match[1], null, model, options);
+              if (rule) {
+                // DOM replacement
+                if (rule.replace instanceof Node) {
+                  el.parentNode.replaceChild(rule.replace, el);
+                }
+              }
+            }
+            break;
+/*
           // Text node
           case 3:
 
@@ -147,7 +170,10 @@ Return documentFragment
             }
 
             break;
-            
+            */
+
+
+
         } // switch
 
       } // for

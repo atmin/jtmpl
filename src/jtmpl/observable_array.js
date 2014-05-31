@@ -4,10 +4,21 @@ Proxy mutable array methods
 
 */
 
-    function ObservableArray(array, listener) {
+    function ObservableArray(items, listener) {
       var _items, _listener;
       var method, mutableMethods = {
+        pop: function() {
+          var result = _items.pop();
+          listener([{
+            type: 'delete',
+            name: _items.length,
+            object: _items
+          }]);
+        },
 
+        push: function(item) {
+
+        }
       };
 
       function arr(i, val) {
@@ -22,7 +33,7 @@ Proxy mutable array methods
         arr[method] = mutableMethods[method];
       }
 
-      items = array;
+      _items = items;
       return arr;
     }
 

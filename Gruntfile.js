@@ -134,6 +134,13 @@ module.exports = function(grunt) {
         base: 'gh-pages'
       },
       src: ['**']
+    },
+
+    plato: {
+      dest: {
+      files: {
+        '<%= pkg.buildDir %>/reports/complexity': ['src/jtmpl/*.js', 'spec/*.js']
+      }}
     }
 
   });
@@ -149,8 +156,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-clean');
   grunt.loadNpmTasks('grunt-contrib-less');
   grunt.loadNpmTasks('grunt-gh-pages');
+  grunt.loadNpmTasks('grunt-plato');
 
-  grunt.registerTask('build', ['jshint', 'jasmine', 'concat', 'uglify', 'less', 'copy', 'md2html']);
+  grunt.registerTask('build', ['jshint', 'jasmine', 'concat', 'uglify', 'less', 'copy', 'md2html', 'plato']);
   grunt.registerTask('default', ['build', 'connect', 'watch']);
   grunt.registerTask('publish', ['build', 'gh-pages']);
 };

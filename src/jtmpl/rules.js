@@ -38,16 +38,14 @@ Toggles class `some-class` in sync with boolean `model['some-class']`
 
       function (tag, node, attr, model, options) {
         var match = tag.match(RE_IDENTIFIER);
+        var react = function(val) {
+          (!!val && j.addClass || j.removeClass)(node, tag);
+        };
         
         if (attr === 'class' && match) {
-
-          j.watch(model, tag, function(val) {
-            (!!val && j.addClass || j.removeClass)(node, tag);
-          });
-
-          return {
-            replace: !!model[tag] && tag || ''
-          };
+          j.watch(model, tag, react);
+          j.removeClass(node, options.delimiters[0] + tag + options.delimiters[1]);
+          return {};
         }
       },
 
@@ -88,28 +86,35 @@ Can be bound to text node data or attribute
 */
 
       function (tag, node, attr, model, options) {
-        var match = tag.match(RE_IDENTIFIER);
+        var react, result;
         
-        if (match) {
+        if (tag.match(RE_IDENTIFIER)) {
 
           if (attr) {
             // Attribute
-            j.watch(model, tag, function(val) {
+            react = function(val) {
               return val ?
                 node.setAttribute(attr, val) :
                 node.removeAttribute(attr);
-            });
-          }
-          else {
-            // Text node
-            j.watch(model, tag, function(val) {
-              node.data = val;
-            });
+            };
+            j.watch(model, tag, react);
+            react(model[tag]);
+            return {};
           }
 
-          return {
-            replace: model[tag]
-          };
+          else {
+            // Text node
+            result = document.createTextNode(model[tag] || '');
+            
+            j.watch(model, tag, function(val) {
+              result.data = val;
+            });
+            
+            return {
+              replace: result
+            };
+          }
+
         }
       }
 
