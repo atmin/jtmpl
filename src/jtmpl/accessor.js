@@ -47,12 +47,9 @@ If current context is an Array, all standard props/methods are there:
 
 */
 
-    j.bind = function(obj, _root, _parent) {
+    j.bind = function(obj, root, parent) {
 
       if (obj.__these__) return;
-
-      var root = _root || obj;
-      var parent = _parent || null;
 
       var accessor = function(caller) {
 
@@ -67,20 +64,30 @@ If current context is an Array, all standard props/methods are there:
           // Getter?
           if (arg === undefined || typeof arg === 'function') {
 
+            // Parent context?
+            if (prop === '..') {
+              return obj.__these__.parent;
+            }
+
+            // Root context?
+            if (prop === '/') {
+              return obj.__these__.root;
+            }
+
             // Update dependency tree
-            if (caller && accessor.dependents[prop].indexOf(caller) === -1) {
+            if (caller && caller !== prop && accessor.dependents[prop].indexOf(caller) === -1) {
               accessor.dependents[prop].push(caller);
             }
 
-            result = (typeof obj[prop] === 'function') ?
+            result = (typeof accessor.values[prop] === 'function') ?
               // Computed property. `arg` is a callback for async getters
-              obj[prop].call(that, arg) :
+              accessor.values[prop].call(that, arg) :
               // Static property (leaf in the dependency tree)
-              obj[prop];
+              accessor.values[prop];
 
             return typeof result === 'object' ?
               // Child context, wrap it
-              (j.bind(result, root, parent), result.__these__(caller)) :
+              (j.bind(result, obj.__these__.root, obj), result.__these__(caller)) :
               // Simple value
               result;
           }
@@ -89,13 +96,13 @@ If current context is an Array, all standard props/methods are there:
 
             // Setter?
             if (!refresh) {
-              if (typeof obj[prop] === 'function') {
+              if (typeof accessor.values[prop] === 'function') {
                 // Computed property
-                obj[prop].call(that, arg);
+                accessor.values[prop].call(that, arg);
               }
               else {
                 // Simple property. `arg` is the new value
-                obj[prop] = arg;
+                accessor.values[prop] = arg;
               }
             }
 
@@ -115,16 +122,30 @@ If current context is an Array, all standard props/methods are there:
 
         }; // that function
 
-        that.root = null;
-
         return that;
       };
 
       accessor.dependents = {};
       accessor.watchers = {};
+      accessor.root = root || obj;
+      accessor.parent = parent || null;
+      accessor.values = {};
 
+      Object.getOwnPropertyNames(obj).map(function(prop) {
+
+        accessor.values[prop] = obj[prop];
+
+        Object.defineProperty(obj, prop, {
+          get: function() {
+            return obj.__these__()(prop); 
+          },
+          set: function(val) {
+            obj.__these__()(prop, val);
+          }
+        });
+
+      });
 
       Object.defineProperty(obj, '__these__', { value: accessor });
 
     };
-
