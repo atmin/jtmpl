@@ -75,27 +75,6 @@ Default options
 
 /*
 
-Browsers treat table elements in a special way, so table tags
-will be replaced prior constructing DOM to force standard parsing,
-then restored again after templating pass.
-
-*/
-
-    var replaceTagRules = [
-      ['<table>', '<jtmpl-table>'],
-      ['<table ', '<jtmpl-table '],
-      ['</table>', '</jtmpl-table>'],
-      ['<tr>', '<jtmpl-tr>'],
-      ['<tr ', '<jtmpl-tr '],
-      ['</tr>', '</jtmpl-tr>'],
-      ['<td>', '<jtmpl-td>'],
-      ['<td ', '<jtmpl-td '],
-      ['</td>', '</jtmpl-td>']
-    ];
-
-
-/*
-
 ### extend(a, b)
 
 Right-biased key-value concat of objects `a` and `b`
@@ -359,6 +338,82 @@ If current context is an Array, all standard props/methods are there:
 
 */
 
+    j.bind = function(obj) {
+
+      var dependents = {};
+      var watchers = {};
+
+      Object.defineProperty(obj, '__these__', {
+
+        value: function(caller) {
+
+          var that = function (prop, arg, refresh) {
+            // Init dependents
+            if (!dependents[prop]) {
+              dependents[prop] = [];
+            }
+
+            // Getter?
+            if (arg === undefined || typeof arg === 'function') {
+
+              // Update dependency tree
+              if (caller && dependents[prop].indexOf(caller) === -1) {
+                dependents[prop].push(caller);
+              }
+
+              result = (typeof obj[prop] === 'function') ?
+                // Computed property. `arg` is a callback for async getters
+                obj[prop].call(that, arg) :
+                // Static property (leaf in the dependency tree)
+                obj[prop];
+
+              return typeof result === 'object' ?
+                // Child context, wrap it
+                (j.bind(result), result.__these__(caller)) :
+                // Simple value
+                result;
+            }
+
+            else {
+
+              // Setter?
+              if (!refresh) {
+                if (typeof obj[prop] === 'function') {
+                  // Computed property
+                  obj[prop].call(that, arg);
+                }
+                else {
+                  // Simple property. `arg` is the new value
+                  obj[prop] = arg;
+                }
+              }
+
+              // Alert dependents
+              for (i = 0, len = dependents[prop].length; i < len; i++) {
+                that(dependents[prop][i], undefined, true);
+              }
+
+              // Alert watchers
+              if (watchers[prop]) {
+                for (i = 0, len = watchers[prop].length; i < len; i++) {
+                  watchers[prop][i].call(that, arg);
+                }
+              }
+
+            } // if getter
+
+          }; // that function
+
+          that.root = null;
+
+          return that;
+        }
+
+      });
+
+    };
+
+
     var getsetFactory = j.getsetFactory = function(obj, caller) {
       var slot = register(obj);
 
@@ -495,6 +550,21 @@ If current context is an Array, all standard props/methods are there:
     }
 
 
+    j.wrapTagsInHTMLComments = function(template, options) {
+      return template.replace(
+        tokenizer(options, 'g'),
+        function(match, match1, pos) {
+          var head = template.slice(0, pos);
+          var insideTag = !!head.match(RegExp('<' + RE_SRC_IDENTIFIER + '[^>]*?$'));
+          var insideComment = !!head.match(/<!--\s*$/);
+          return insideTag || insideComment ?
+            match :
+            '<!--' + match + '-->';
+        }
+      );
+    };
+
+
 
 /*
 
@@ -516,12 +586,7 @@ Return documentFragment
         body = template;
       }
       else {
-        // replace <table> & co with custom tags
-        replaceTagRules.map(
-          function (pair) {
-            template = template.replace(new RegExp(escapeRE(pair[0]), 'g'), pair[1]);
-          }
-        );
+        template = j.wrapTagsInHTMLComments(template, options);
 
         body = document.createElement('body');
         body.innerHTML = template;
@@ -535,7 +600,7 @@ Return documentFragment
 
         node = body.childNodes[i];
 
-        // Clone node and attributes (if element) only
+        // Shallow copy of node and attributes (if element)
         el = node.cloneNode(false);
         fragment.appendChild(el);
 
@@ -549,32 +614,45 @@ Return documentFragment
               attr = el.attributes[ai];
               val = attr.value;
               // Accumulate templated output
-              buffer = '';
-              pos = 0;
-              console.log('found attr ' + attr.name + '=' + attr.value);
+              // buffer = '';
+              // pos = 0;
+              // console.log('found attr ' + attr.name + '=' + attr.value);
 
               t = tokenizer(options, 'g');
 
               while ( (match = t.exec(val)) ) {
                 rule = matchRules(match[0], el, attr.name, model, options);
 
-                buffer +=
-                  val.slice(pos, match.index) +
-                  (rule ? rule.replace || '' : match[0]);
+                // buffer +=
+                //   val.slice(pos, match.index) +
+                //   (rule ? rule.replace || '' : match[0]);
 
-                pos = t.lastIndex;
+                // pos = t.lastIndex;
               }
-              buffer += val.slice(pos);
+              // buffer += val.slice(pos);
 
-              if (buffer != val) {
-                attr.value = buffer;
-              }
+              // if (buffer != val) {
+              //   attr.value = buffer;
+              // }
             }
 
             // Recursively compile
             el.appendChild(j.compile(node, model, options));
             break;
 
+          // Comment node
+          case 8:
+            if ( (match = el.data.match(tokenizer(options))) ) {
+              rule = matchRules(el.data, match[1], null, model, options);
+              if (rule) {
+                // DOM replacement
+                if (rule.replace instanceof Node) {
+                  el.parentNode.replaceChild(rule.replace, el);
+                }
+              }
+            }
+            break;
+/*
           // Text node
           case 3:
 
@@ -605,7 +683,10 @@ Return documentFragment
             }
 
             break;
-            
+            */
+
+
+
         } // switch
 
       } // for
@@ -681,16 +762,14 @@ Toggles class `some-class` in sync with boolean `model['some-class']`
 
       function (tag, node, attr, model, options) {
         var match = tag.match(RE_IDENTIFIER);
+        var react = function(val) {
+          (!!val && j.addClass || j.removeClass)(node, tag);
+        };
         
         if (attr === 'class' && match) {
-
-          j.watch(model, tag, function(val) {
-            (!!val && j.addClass || j.removeClass)(node, tag);
-          });
-
-          return {
-            replace: !!model[tag] && tag || ''
-          };
+          j.watch(model, tag, react);
+          j.removeClass(node, options.delimiters[0] + tag + options.delimiters[1]);
+          return {};
         }
       },
 
@@ -731,28 +810,35 @@ Can be bound to text node data or attribute
 */
 
       function (tag, node, attr, model, options) {
-        var match = tag.match(RE_IDENTIFIER);
+        var react, result;
         
-        if (match) {
+        if (tag.match(RE_IDENTIFIER)) {
 
           if (attr) {
             // Attribute
-            j.watch(model, tag, function(val) {
+            react = function(val) {
               return val ?
                 node.setAttribute(attr, val) :
                 node.removeAttribute(attr);
-            });
-          }
-          else {
-            // Text node
-            j.watch(model, tag, function(val) {
-              node.data = val;
-            });
+            };
+            j.watch(model, tag, react);
+            react(model[tag]);
+            return {};
           }
 
-          return {
-            replace: model[tag]
-          };
+          else {
+            // Text node
+            result = document.createTextNode(model[tag] || '');
+            
+            j.watch(model, tag, function(val) {
+              result.data = val;
+            });
+            
+            return {
+              replace: result
+            };
+          }
+
         }
       }
 

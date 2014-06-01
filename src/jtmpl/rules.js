@@ -90,6 +90,9 @@ Can be bound to text node data or attribute
         
         if (tag.match(RE_IDENTIFIER)) {
 
+
+          j.bind(model);
+
           if (attr) {
             // Attribute
             react = function(val) {
