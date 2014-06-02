@@ -37,7 +37,7 @@
     }
 
 
-    j.wrapTagsInHTMLComments = function(template, options) {
+    function wrapTagsInHTMLComments(template, options) {
       return template.replace(
         tokenizer(options, 'g'),
         function(match, match1, pos) {
@@ -49,9 +49,19 @@
             '<!--' + match + '-->';
         }
       );
-    };
+    }
 
 
+    function matchEndBlock(template, options) {
+      var match = template.match(
+        RegExp(
+          escapeRE(options.delimiters[0]) + 
+          '\\/' + RE_SRC_IDENTIFIER +
+          escapeRE(options.delimiters[1])
+        )
+      );
+      return match ? match[1] : false;
+    }
 
 /*
 
@@ -63,7 +73,7 @@ Return documentFragment
 
     j.compile = function (template, model, options, openTag) {
 
-      var i, ai, alen, attr, val, buffer, pos, body, node, el, t, match, rule, token;
+      var i, children, len, ai, alen, attr, val, buffer, pos, body, node, el, t, match, rule, token, block;
       var fragment = document.createDocumentFragment();
 
       options = options || defaultOptions;
@@ -73,7 +83,7 @@ Return documentFragment
         body = template;
       }
       else {
-        template = j.wrapTagsInHTMLComments(template, options);
+        template = wrapTagsInHTMLComments(template, options);
 
         body = document.createElement('body');
         body.innerHTML = template;
@@ -83,9 +93,9 @@ Return documentFragment
       // Iterate child nodes.
       // Length is not precalculated (and for is used instead of map),
       // as it can mutate because of splitText()
-      for (i = 0; i < body.childNodes.length; i++) {
+      for (i = 0, children = body.childNodes, len = children.length ; i < len; i++) {
 
-        node = body.childNodes[i];
+        node = children[i];
 
         // Shallow copy of node and attributes (if element)
         el = node.cloneNode(false);
@@ -100,27 +110,11 @@ Return documentFragment
             for (ai = 0, alen = el.attributes.length; ai < alen; ai++) {
               attr = el.attributes[ai];
               val = attr.value;
-              // Accumulate templated output
-              // buffer = '';
-              // pos = 0;
-              // console.log('found attr ' + attr.name + '=' + attr.value);
-
               t = tokenizer(options, 'g');
 
               while ( (match = t.exec(val)) ) {
                 rule = matchRules(match[0], el, attr.name, model, options);
-
-                // buffer +=
-                //   val.slice(pos, match.index) +
-                //   (rule ? rule.replace || '' : match[0]);
-
-                // pos = t.lastIndex;
               }
-              // buffer += val.slice(pos);
-
-              // if (buffer != val) {
-              //   attr.value = buffer;
-              // }
             }
 
             // Recursively compile
@@ -129,50 +123,42 @@ Return documentFragment
 
           // Comment node
           case 8:
+            if (matchEndBlock(el.data, options)) {
+              throw 'jtmpl: Unexpected ' + el.data;
+            }
+
             if ( (match = el.data.match(tokenizer(options))) ) {
               rule = matchRules(el.data, match[1], null, model, options);
               if (rule) {
-                // DOM replacement
+
+                // DOM replacement?
                 if (rule.replace instanceof Node) {
                   el.parentNode.replaceChild(rule.replace, el);
                 }
-              }
-            }
-            break;
-/*
-          // Text node
-          case 3:
 
-            t = tokenizer(options);
-
-            while ( (match = el.data.match(t)) ) {
-              token = el.splitText(match.index);
-              el = token.splitText(match[0].length);
-              rule = matchRules(token.data, token, null, model, options);
-
-              if (rule) {
-
-                // Text replacement
-                if (typeof rule.replace === 'string' || !rule.replace) {
-                  token.data = rule.replace || '';
-                }
-
-                // DOM replacement
-                if (rule.replace instanceof Node) {
-                  token.parentNode.replaceChild(rule.replace, token);
-                }
-
+                // Fetch block tag contents?
                 if (rule.block) {
-                  // TODO: get template
-                  // TODO: call rule.callback(template)
+
+                  block = document.createDocumentFragment();
+
+                  for ( i++; 
+                        (i < len) && 
+                          (rule.block !== matchEndBlock(children[i].data || '', options)); 
+                        i++ ) {
+
+                    block.appendChild(children[i].cloneNode(true));
+                  }
+
+                  if (i === len) {
+                    throw 'jtmpl: Unclosed ' + el.data;
+                  }
+                  else {
+                    el.parentNode.replaceChild(rule.replace(block), el);
+                  }
                 }
               }
             }
-
             break;
-            */
-
-
 
         } // switch
 

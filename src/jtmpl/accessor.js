@@ -131,6 +131,7 @@ If current context is an Array, all standard props/methods are there:
       accessor.parent = parent || null;
       accessor.values = {};
 
+      // Proxy all properties with the accessor function
       Object.getOwnPropertyNames(obj).map(function(prop) {
 
         accessor.values[prop] = obj[prop];

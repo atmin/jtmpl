@@ -19,8 +19,8 @@ It MUST return either:
 
        // Parse until {{/tagName}} ...
        block: 'tagName'
-       // ... then call this function with the extracted template
-       callback: function continuation(template) ...
+       // ... then `replace` must be a function and it will be called with the extracted template
+       
      }
 
 */
@@ -63,15 +63,13 @@ Can be bound to text node
         
         if (match) {
 
-          console.log(match);
-
           return {
-            replace: document.createTextNode('.'),
-            block: match[1],
-            callback: function(template) {
-
-            }
+            replace: function(template) {
+              return j.compile(template, model);
+            },
+            block: match[1]
           };
+
         }
       },
 
