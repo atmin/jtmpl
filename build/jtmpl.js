@@ -200,58 +200,6 @@ Element class handling utilities.
 
 /*
 
-### Store
-
-Object-to-object map.
-
-`store = new Store()`
-
-#### get(object, proto)`
-
-Returns associated object, initializes slot for `object`
-
-`watchers = store.get(obj, { wathers: [] }).watchers`
-
-#### release(object)
-
-Releases the slot for `object` (if present).
-
-`store.release(obj)`
-
-*/
-
-    function Store() {
-      this.objs = [];
-      this.store = [];
-    }
-
-    Store.prototype = {
-      get: function(obj, proto) {
-        var pos = this.objs.indexOf(obj);
-        if (pos > -1) {
-          return this.store[pos];
-        }
-        else {
-          this.objs.push(obj);
-          this.store.push(JSON.parse(JSON.stringify(proto || {})));
-          return this.store[this.store.length - 1];
-        }
-      },
-
-      release: function(obj) {
-        var pos = this.objs.indexOf(obj);
-        if (pos > -1) {
-          this.objs.splice(pos, 1);
-          this.store.splice(pos, 1);
-        }
-      }
-    };
-
-
-    j.store = new Store();
-
-/*
-
 Proxy mutable array methods
 
 */
@@ -294,9 +242,12 @@ Proxy mutable array methods
 
 /*
 
-Returns a getter/setter function, which jtmpl binds to the `this` context.
+Initializes `obj.__these__` with factory function,
+returning accessor functions for a given caller.
 
-Within a model handler, it's possible:
+Accessor function is bound to `this` context when `obj` method is called.
+
+Method can use the accessor function:
 
 
 Get property value:
@@ -315,14 +266,14 @@ Set propety value:
 
 
 
-Access parent context (returns getter/setter):
+Access parent context (returns accessor function):
 
-`this.parent`
+`this('..')`
 
 
-Access root context (returns getter/setter):
+Access root context (returns accessor function):
 
-`this.root`
+`this('/')`
 
 
 Get child context property:
@@ -338,177 +289,109 @@ If current context is an Array, all standard props/methods are there:
 
 */
 
-    j.bind = function(obj) {
+    j.bind = function(obj, root, parent) {
 
-      var dependents = {};
-      var watchers = {};
+      if (obj.__these__) return;
 
-      Object.defineProperty(obj, '__these__', {
+      var accessor = function(caller) {
 
-        value: function(caller) {
+        var that = function (prop, arg, refresh) {
+          var i, len, result;
 
-          var that = function (prop, arg, refresh) {
-            // Init dependents
-            if (!dependents[prop]) {
-              dependents[prop] = [];
+          // Init dependents
+          if (!accessor.dependents[prop]) {
+            accessor.dependents[prop] = [];
+          }
+
+          // Getter?
+          if (arg === undefined || typeof arg === 'function') {
+
+            // Parent context?
+            if (prop === '..') {
+              return obj.__these__.parent;
             }
 
-            // Getter?
-            if (arg === undefined || typeof arg === 'function') {
-
-              // Update dependency tree
-              if (caller && dependents[prop].indexOf(caller) === -1) {
-                dependents[prop].push(caller);
-              }
-
-              result = (typeof obj[prop] === 'function') ?
-                // Computed property. `arg` is a callback for async getters
-                obj[prop].call(that, arg) :
-                // Static property (leaf in the dependency tree)
-                obj[prop];
-
-              return typeof result === 'object' ?
-                // Child context, wrap it
-                (j.bind(result), result.__these__(caller)) :
-                // Simple value
-                result;
+            // Root context?
+            if (prop === '/') {
+              return obj.__these__.root;
             }
 
-            else {
+            // Update dependency tree
+            if (caller && caller !== prop && accessor.dependents[prop].indexOf(caller) === -1) {
+              accessor.dependents[prop].push(caller);
+            }
 
-              // Setter?
-              if (!refresh) {
-                if (typeof obj[prop] === 'function') {
-                  // Computed property
-                  obj[prop].call(that, arg);
-                }
-                else {
-                  // Simple property. `arg` is the new value
-                  obj[prop] = arg;
-                }
+            result = (typeof accessor.values[prop] === 'function') ?
+              // Computed property. `arg` is a callback for async getters
+              accessor.values[prop].call(that, arg) :
+              // Static property (leaf in the dependency tree)
+              accessor.values[prop];
+
+            return typeof result === 'object' ?
+              // Child context, wrap it
+              (j.bind(result, obj.__these__.root, obj), result.__these__(caller)) :
+              // Simple value
+              result;
+          }
+
+          else {
+
+            // Setter?
+            if (!refresh) {
+              if (typeof accessor.values[prop] === 'function') {
+                // Computed property
+                accessor.values[prop].call(that, arg);
               }
-
-              // Alert dependents
-              for (i = 0, len = dependents[prop].length; i < len; i++) {
-                that(dependents[prop][i], undefined, true);
+              else {
+                // Simple property. `arg` is the new value
+                accessor.values[prop] = arg;
               }
+            }
 
-              // Alert watchers
-              if (watchers[prop]) {
-                for (i = 0, len = watchers[prop].length; i < len; i++) {
-                  watchers[prop][i].call(that, arg);
-                }
+            // Alert dependents
+            for (i = 0, len = accessor.dependents[prop].length; i < len; i++) {
+              that(accessor.dependents[prop][i], undefined, true);
+            }
+
+            // Alert watchers
+            if (accessor.watchers[prop]) {
+              for (i = 0, len = accessor.watchers[prop].length; i < len; i++) {
+                accessor.watchers[prop][i].call(that, arg);
               }
+            }
 
-            } // if getter
+          } // if getter
 
-          }; // that function
+        }; // that function
 
-          that.root = null;
+        return that;
+      };
 
-          return that;
-        }
+      accessor.dependents = {};
+      accessor.watchers = {};
+      accessor.root = root || obj;
+      accessor.parent = parent || null;
+      accessor.values = {};
+
+      // Proxy all properties with the accessor function
+      Object.getOwnPropertyNames(obj).map(function(prop) {
+
+        accessor.values[prop] = obj[prop];
+
+        Object.defineProperty(obj, prop, {
+          get: function() {
+            return obj.__these__()(prop); 
+          },
+          set: function(val) {
+            obj.__these__()(prop, val);
+          }
+        });
 
       });
 
+      Object.defineProperty(obj, '__these__', { value: accessor });
+
     };
-
-
-    var getsetFactory = j.getsetFactory = function(obj, caller) {
-      var slot = register(obj);
-
-      function that(prop, arg, refresh) {
-        var i, len, result, root;
-
-        if (!slot.dependents[prop]) {
-          // Init dependents
-          slot.dependents[prop] = [];
-        }
-
-        // Getter?
-        if (arg === undefined || typeof arg === 'function') {
-
-          // Update dependency tree
-          if (caller && slot.dependents[prop].indexOf(caller) === -1) {
-            slot.dependents[prop].push(caller);
-          }
-
-          result = (typeof obj[prop] === 'function') ?
-            // Computed property. `arg` is a callback for async getters
-            obj[prop].call(that, arg) :
-            // Static property (leaf in the dependency tree)
-            obj[prop];
-
-          return typeof result === 'object' ?
-            // Child context, wrap it
-            getsetFactory(result) :
-            // Simple value
-            result;
-        }
-
-        else {
-
-          // Setter?
-          if (!refresh) {
-            if (typeof obj[prop] === 'function') {
-              // Computed property
-              obj[prop].call(that, arg);
-            }
-            else {
-              // Simple property. `arg` is the new value
-              obj[prop] = arg;
-            }
-          }
-
-          // Alert dependents
-          for (i = 0, len = slot.dependents[prop].length; i < len; i++) {
-            that(slot.dependents[prop][i], undefined, true);
-          }
-
-          // Alert watchers
-          if (slot.watchers[prop]) {
-            for (i = 0, len = slot.watchers[prop].length; i < len; i++) {
-              slot.watchers[prop][i].call(that, arg);
-            }
-          }
-
-        } // if getter
-
-      } // that
-
-      that.parent = slot.parent ? getsetFactory(slot.parent) : null;
-
-      // Find root context
-      root = that.parent;
-      while (root) {
-        that.root = root;
-        root = root.parent;
-      }
-
-      return that;
-    };
-
-
-
-    function register(obj) {
-      var slot = j.store.get(obj, bookkeepingProto);
-      var prop, childSlot;
-
-      // Register child contexts
-      if (!slot.initialized) {
-        slot.initialized = true;
-
-        for (prop in obj) {
-          if (obj.hasOwnProperty(prop) && typeof obj[prop] === 'object') {
-            childSlot = j.store.get(obj[prop], bookkeepingProto);
-            childSlot.parent = obj;
-            register(obj[prop]);
-          }
-        }
-      }
-
-      return slot;
-    }
 
 
 /*
@@ -550,7 +433,7 @@ If current context is an Array, all standard props/methods are there:
     }
 
 
-    j.wrapTagsInHTMLComments = function(template, options) {
+    function wrapTagsInHTMLComments(template, options) {
       return template.replace(
         tokenizer(options, 'g'),
         function(match, match1, pos) {
@@ -562,9 +445,19 @@ If current context is an Array, all standard props/methods are there:
             '<!--' + match + '-->';
         }
       );
-    };
+    }
 
 
+    function matchEndBlock(template, options) {
+      var match = template.match(
+        RegExp(
+          escapeRE(options.delimiters[0]) + 
+          '\\/' + RE_SRC_IDENTIFIER +
+          escapeRE(options.delimiters[1])
+        )
+      );
+      return match ? match[1] : false;
+    }
 
 /*
 
@@ -576,7 +469,7 @@ Return documentFragment
 
     j.compile = function (template, model, options, openTag) {
 
-      var i, ai, alen, attr, val, buffer, pos, body, node, el, t, match, rule, token;
+      var i, children, len, ai, alen, attr, val, buffer, pos, body, node, el, t, match, rule, token, block;
       var fragment = document.createDocumentFragment();
 
       options = options || defaultOptions;
@@ -586,7 +479,7 @@ Return documentFragment
         body = template;
       }
       else {
-        template = j.wrapTagsInHTMLComments(template, options);
+        template = wrapTagsInHTMLComments(template, options);
 
         body = document.createElement('body');
         body.innerHTML = template;
@@ -596,9 +489,9 @@ Return documentFragment
       // Iterate child nodes.
       // Length is not precalculated (and for is used instead of map),
       // as it can mutate because of splitText()
-      for (i = 0; i < body.childNodes.length; i++) {
+      for (i = 0, children = body.childNodes, len = children.length ; i < len; i++) {
 
-        node = body.childNodes[i];
+        node = children[i];
 
         // Shallow copy of node and attributes (if element)
         el = node.cloneNode(false);
@@ -613,27 +506,11 @@ Return documentFragment
             for (ai = 0, alen = el.attributes.length; ai < alen; ai++) {
               attr = el.attributes[ai];
               val = attr.value;
-              // Accumulate templated output
-              // buffer = '';
-              // pos = 0;
-              // console.log('found attr ' + attr.name + '=' + attr.value);
-
               t = tokenizer(options, 'g');
 
               while ( (match = t.exec(val)) ) {
                 rule = matchRules(match[0], el, attr.name, model, options);
-
-                // buffer +=
-                //   val.slice(pos, match.index) +
-                //   (rule ? rule.replace || '' : match[0]);
-
-                // pos = t.lastIndex;
               }
-              // buffer += val.slice(pos);
-
-              // if (buffer != val) {
-              //   attr.value = buffer;
-              // }
             }
 
             // Recursively compile
@@ -642,50 +519,42 @@ Return documentFragment
 
           // Comment node
           case 8:
+            if (matchEndBlock(el.data, options)) {
+              throw 'jtmpl: Unexpected ' + el.data;
+            }
+
             if ( (match = el.data.match(tokenizer(options))) ) {
               rule = matchRules(el.data, match[1], null, model, options);
               if (rule) {
-                // DOM replacement
+
+                // DOM replacement?
                 if (rule.replace instanceof Node) {
                   el.parentNode.replaceChild(rule.replace, el);
                 }
-              }
-            }
-            break;
-/*
-          // Text node
-          case 3:
 
-            t = tokenizer(options);
-
-            while ( (match = el.data.match(t)) ) {
-              token = el.splitText(match.index);
-              el = token.splitText(match[0].length);
-              rule = matchRules(token.data, token, null, model, options);
-
-              if (rule) {
-
-                // Text replacement
-                if (typeof rule.replace === 'string' || !rule.replace) {
-                  token.data = rule.replace || '';
-                }
-
-                // DOM replacement
-                if (rule.replace instanceof Node) {
-                  token.parentNode.replaceChild(rule.replace, token);
-                }
-
+                // Fetch block tag contents?
                 if (rule.block) {
-                  // TODO: get template
-                  // TODO: call rule.callback(template)
+
+                  block = document.createDocumentFragment();
+
+                  for ( i++; 
+                        (i < len) && 
+                          (rule.block !== matchEndBlock(children[i].data || '', options)); 
+                        i++ ) {
+
+                    block.appendChild(children[i].cloneNode(true));
+                  }
+
+                  if (i === len) {
+                    throw 'jtmpl: Unclosed ' + el.data;
+                  }
+                  else {
+                    el.parentNode.replaceChild(rule.replace(block, el.parentNode), el);
+                  }
                 }
               }
             }
-
             break;
-            */
-
-
 
         } // switch
 
@@ -708,7 +577,9 @@ Notifies `callback` passing new value, when `obj[prop]` changes.
       // All must be specified
       if (!(obj && prop && callback)) return;
 
-      watchers = j.store.get(obj, bookkeepingProto).watchers;
+      j.bind(obj);
+
+      watchers = obj.__these__.watchers;
 
       // Init watchers
       if (!watchers[prop]) {
@@ -743,8 +614,8 @@ It MUST return either:
 
        // Parse until {{/tagName}} ...
        block: 'tagName'
-       // ... then call this function with the extracted template
-       callback: function continuation(template) ...
+       // ... then `replace` must be a function and it will be called with the extracted template
+       
      }
 
 */
@@ -784,18 +655,37 @@ Can be bound to text node
 
       function (tag, node, attr, model, options) {
         var match = tag.match(new RegExp('#' + RE_SRC_IDENTIFIER));
+        var prop;
+        var template;
+        var parentNode;
+        var pos;
+        var fragment = document.createDocumentFragment();
+        var react = function(val) {
+          if (val) {
+            fragment.appendChild(j.compile(template, model));
+          }
+          else {
+            // fragment = document.createDocumentFragment();
+          }
+          return fragment;
+        };
         
         if (match) {
+          prop = match[1];
 
-          console.log(match);
+          j.watch(model, prop, react);
 
           return {
-            replace: document.createTextNode('.'),
-            block: match[1],
-            callback: function(template) {
-
-            }
+            replace: function(tmpl, parent) {
+              template = tmpl;
+              parentNode = parent;
+              pos = parentNode.childNodes.length;
+              react(model[prop]);
+              return fragment;
+            },
+            block: match[1]
           };
+
         }
       },
 

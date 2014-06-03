@@ -60,12 +60,39 @@ Can be bound to text node
 
       function (tag, node, attr, model, options) {
         var match = tag.match(new RegExp('#' + RE_SRC_IDENTIFIER));
+        var prop;
+        var template;
+        var position;
+        var anchor = document.createComment('');
+        var length = 0;
+
+        var react = function(val) {
+          var render;
+
+          // Delete old rendering
+          while (length) {
+            anchor.parentNode.removeChild(anchor.previousSibling);
+            length--;
+          }
+
+          if (val) {
+            render = j.compile(template, model);
+            length = render.childNodes.length;
+            anchor.parentNode.insertBefore(render, anchor);
+          }
+        };
         
         if (match) {
+          prop = match[1];
+
+          j.watch(model, prop, react);
 
           return {
-            replace: function(template) {
-              return j.compile(template, model);
+            replace: function(tmpl, parent) {
+              template = tmpl;
+              position = parent.childNodes.length;
+              react(model[prop]);
+              return anchor;
             },
             block: match[1]
           };
@@ -87,9 +114,6 @@ Can be bound to text node data or attribute
         var react, result;
         
         if (tag.match(RE_IDENTIFIER)) {
-
-
-          j.bind(model);
 
           if (attr) {
             // Attribute

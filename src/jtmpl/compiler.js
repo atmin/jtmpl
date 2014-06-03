@@ -52,15 +52,17 @@
     }
 
 
-    function matchEndBlock(template, options) {
+    function matchEndBlock(block, template, options) {
       var match = template.match(
         RegExp(
           escapeRE(options.delimiters[0]) + 
-          '\\/' + RE_SRC_IDENTIFIER +
+          '\\/' + RE_SRC_IDENTIFIER + '?' +
           escapeRE(options.delimiters[1])
         )
       );
-      return match ? match[1] : false;
+      return match ?
+        block === '' || match[1] === undefined || match[1] === block :
+        false;
     }
 
 /*
@@ -123,7 +125,7 @@ Return documentFragment
 
           // Comment node
           case 8:
-            if (matchEndBlock(el.data, options)) {
+            if (matchEndBlock('', el.data, options)) {
               throw 'jtmpl: Unexpected ' + el.data;
             }
 
@@ -141,10 +143,12 @@ Return documentFragment
 
                   block = document.createDocumentFragment();
 
-                  for ( i++; 
-                        (i < len) && 
-                          (rule.block !== matchEndBlock(children[i].data || '', options)); 
-                        i++ ) {
+                  for (i++;
+
+                      (i < len) && 
+                      !matchEndBlock(rule.block, children[i].data || '', options);
+
+                      i++) {
 
                     block.appendChild(children[i].cloneNode(true));
                   }
@@ -153,7 +157,7 @@ Return documentFragment
                     throw 'jtmpl: Unclosed ' + el.data;
                   }
                   else {
-                    el.parentNode.replaceChild(rule.replace(block), el);
+                    el.parentNode.replaceChild(rule.replace(block, el.parentNode), el);
                   }
                 }
               }

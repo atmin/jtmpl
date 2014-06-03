@@ -12,6 +12,8 @@ Notifies `callback` passing new value, when `obj[prop]` changes.
       // All must be specified
       if (!(obj && prop && callback)) return;
 
+      j.bind(obj);
+
       watchers = obj.__these__.watchers;
 
       // Init watchers
