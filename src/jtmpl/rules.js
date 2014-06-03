@@ -10,6 +10,7 @@ It MUST return either:
 
 * object - match found, return (all fields optional)
 
+     // TODO: result object doc is obsolete
      {
        // Replace tag in generated content, default - ''
        replace: 'replacement'
@@ -38,14 +39,17 @@ Toggles class `some-class` in sync with boolean `model['some-class']`
 
       function (tag, node, attr, model, options) {
         var match = tag.match(RE_IDENTIFIER);
-        var react = function(val) {
-          (!!val && j.addClass || j.removeClass)(node, tag);
-        };
         
         if (attr === 'class' && match) {
           j.watch(model, tag, react);
           j.removeClass(node, options.delimiters[0] + tag + options.delimiters[1]);
-          return {};
+
+          return {
+            prop: tag,
+            react: function(val) {
+              (!!val && j.addClass || j.removeClass)(node, tag);
+            }
+          };
         }
       },
 
@@ -60,40 +64,54 @@ Can be bound to text node
 
       function (tag, node, attr, model, options) {
         var match = tag.match(new RegExp('#' + RE_SRC_IDENTIFIER));
-        var prop;
         var template;
         var position;
+        var fragment = document.createDocumentFragment();
         var anchor = document.createComment('');
         var length = 0;
-
-        var react = function(val) {
-          var render;
-
-          // Delete old rendering
-          while (length) {
-            anchor.parentNode.removeChild(anchor.previousSibling);
-            length--;
-          }
-
-          if (val) {
-            render = j.compile(template, model);
-            length = render.childNodes.length;
-            anchor.parentNode.insertBefore(render, anchor);
-          }
-        };
         
         if (match) {
-          prop = match[1];
-
-          j.watch(model, prop, react);
 
           return {
+
+            prop: match[1],
+
             replace: function(tmpl, parent) {
+              fragment.appendChild(anchor);
               template = tmpl;
               position = parent.childNodes.length;
-              react(model[prop]);
               return anchor;
             },
+
+            react: function(val) {
+              var render;
+
+              // Delete old rendering
+              while (length) {
+                anchor.parentNode.removeChild(anchor.previousSibling);
+                length--;
+              }
+
+              // Array?
+              if (Array.isArray(val)) {
+
+              }
+              // Object?
+              else if (typeof val === 'object') {
+                render = j.compile(template, val);
+                length = render.childNodes.length;
+                anchor.parentNode.insertBefore(render, anchor);
+              }
+              // Cast to boolean
+              else {
+                if (!!val) {
+                  render = j.compile(template, model);
+                  length = render.childNodes.length;
+                  anchor.parentNode.insertBefore(render, anchor);
+                }
+              }
+            },
+
             block: match[1]
           };
 
@@ -117,27 +135,29 @@ Can be bound to text node data or attribute
 
           if (attr) {
             // Attribute
-            react = function(val) {
-              return val ?
-                node.setAttribute(attr, val) :
-                node.removeAttribute(attr);
+            return {
+              prop: tag,
+              react: function(val) {
+                return val ?
+                  node.setAttribute(attr, val) :
+                  node.removeAttribute(attr);
+              }
             };
-            j.watch(model, tag, react);
-            react(model[tag]);
-            return {};
+
           }
 
           else {
             // Text node
             result = document.createTextNode(model[tag] || '');
-            
-            j.watch(model, tag, function(val) {
-              result.data = val;
-            });
-            
+
             return {
-              replace: result
+              prop: tag,
+              replace: result,
+              react: function(val) {
+                result.data = val;
+              }
             };
+
           }
 
         }

@@ -110,17 +110,29 @@ Return documentFragment
 
             // Check attributes
             for (ai = 0, alen = el.attributes.length; ai < alen; ai++) {
+
               attr = el.attributes[ai];
               val = attr.value;
               t = tokenizer(options, 'g');
 
               while ( (match = t.exec(val)) ) {
+
                 rule = matchRules(match[0], el, attr.name, model, options);
+
+                if (rule && rule.react) {
+                  // Call reactor on value change
+                  j.watch(model, rule.prop, rule.react);
+                  // Initial value
+                  rule.react(model.__these__.values[rule.prop]);
+                }
+
               }
+
             }
 
             // Recursively compile
             el.appendChild(j.compile(node, model, options));
+
             break;
 
           // Comment node
@@ -130,6 +142,7 @@ Return documentFragment
             }
 
             if ( (match = el.data.match(tokenizer(options))) ) {
+
               rule = matchRules(el.data, match[1], null, model, options);
               if (rule) {
 
@@ -160,7 +173,15 @@ Return documentFragment
                     el.parentNode.replaceChild(rule.replace(block, el.parentNode), el);
                   }
                 }
+
+                if (rule.react) {
+                  // Call reactor on value change
+                  j.watch(model, rule.prop, rule.react);
+                  // Initial value
+                  rule.react(model.__these__.values[rule.prop]);
+                }
               }
+
             }
             break;
 
