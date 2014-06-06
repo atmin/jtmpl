@@ -87,7 +87,7 @@ If current context is an Array, all standard props/methods are there:
 
             return typeof result === 'object' ?
               // Child context, wrap it
-              (j.bind(result, obj.__these__.root, obj), result.__these__(caller)) :
+              (j.bind(result, obj.__these__.root, obj), result.__these__()) :
               // Simple value
               result;
           }

@@ -329,7 +329,7 @@ If current context is an Array, all standard props/methods are there:
 
             return typeof result === 'object' ?
               // Child context, wrap it
-              (j.bind(result, obj.__these__.root, obj), result.__these__(caller)) :
+              (j.bind(result, obj.__these__.root, obj), result.__these__()) :
               // Simple value
               result;
           }
@@ -448,15 +448,17 @@ If current context is an Array, all standard props/methods are there:
     }
 
 
-    function matchEndBlock(template, options) {
+    function matchEndBlock(block, template, options) {
       var match = template.match(
         RegExp(
           escapeRE(options.delimiters[0]) + 
-          '\\/' + RE_SRC_IDENTIFIER +
+          '\\/' + RE_SRC_IDENTIFIER + '?' +
           escapeRE(options.delimiters[1])
         )
       );
-      return match ? match[1] : false;
+      return match ?
+        block === '' || match[1] === undefined || match[1] === block :
+        false;
     }
 
 /*
@@ -504,26 +506,39 @@ Return documentFragment
 
             // Check attributes
             for (ai = 0, alen = el.attributes.length; ai < alen; ai++) {
+
               attr = el.attributes[ai];
               val = attr.value;
               t = tokenizer(options, 'g');
 
               while ( (match = t.exec(val)) ) {
+
                 rule = matchRules(match[0], el, attr.name, model, options);
+
+                if (rule && rule.react) {
+                  // Call reactor on value change
+                  j.watch(model, rule.prop, rule.react);
+                  // Initial value
+                  rule.react(model.__these__.values[rule.prop]);
+                }
+
               }
+
             }
 
             // Recursively compile
             el.appendChild(j.compile(node, model, options));
+
             break;
 
           // Comment node
           case 8:
-            if (matchEndBlock(el.data, options)) {
+            if (matchEndBlock('', el.data, options)) {
               throw 'jtmpl: Unexpected ' + el.data;
             }
 
             if ( (match = el.data.match(tokenizer(options))) ) {
+
               rule = matchRules(el.data, match[1], null, model, options);
               if (rule) {
 
@@ -537,10 +552,12 @@ Return documentFragment
 
                   block = document.createDocumentFragment();
 
-                  for ( i++; 
-                        (i < len) && 
-                          (rule.block !== matchEndBlock(children[i].data || '', options)); 
-                        i++ ) {
+                  for (i++;
+
+                      (i < len) && 
+                      !matchEndBlock(rule.block, children[i].data || '', options);
+
+                      i++) {
 
                     block.appendChild(children[i].cloneNode(true));
                   }
@@ -552,7 +569,15 @@ Return documentFragment
                     el.parentNode.replaceChild(rule.replace(block, el.parentNode), el);
                   }
                 }
+
+                if (rule.react) {
+                  // Call reactor on value change
+                  j.watch(model, rule.prop, rule.react);
+                  // Initial value
+                  rule.react(model.__these__.values[rule.prop]);
+                }
               }
+
             }
             break;
 
@@ -605,6 +630,7 @@ It MUST return either:
 
 * object - match found, return (all fields optional)
 
+     // TODO: result object doc is obsolete
      {
        // Replace tag in generated content, default - ''
        replace: 'replacement'
@@ -633,14 +659,17 @@ Toggles class `some-class` in sync with boolean `model['some-class']`
 
       function (tag, node, attr, model, options) {
         var match = tag.match(RE_IDENTIFIER);
-        var react = function(val) {
-          (!!val && j.addClass || j.removeClass)(node, tag);
-        };
         
         if (attr === 'class' && match) {
           j.watch(model, tag, react);
           j.removeClass(node, options.delimiters[0] + tag + options.delimiters[1]);
-          return {};
+
+          return {
+            prop: tag,
+            react: function(val) {
+              (!!val && j.addClass || j.removeClass)(node, tag);
+            }
+          };
         }
       },
 
@@ -655,34 +684,54 @@ Can be bound to text node
 
       function (tag, node, attr, model, options) {
         var match = tag.match(new RegExp('#' + RE_SRC_IDENTIFIER));
-        var prop;
         var template;
-        var parentNode;
-        var pos;
+        var position;
         var fragment = document.createDocumentFragment();
-        var react = function(val) {
-          if (val) {
-            fragment.appendChild(j.compile(template, model));
-          }
-          else {
-            // fragment = document.createDocumentFragment();
-          }
-          return fragment;
-        };
+        var anchor = document.createComment('');
+        var length = 0;
         
         if (match) {
-          prop = match[1];
-
-          j.watch(model, prop, react);
 
           return {
+
+            prop: match[1],
+
             replace: function(tmpl, parent) {
+              fragment.appendChild(anchor);
               template = tmpl;
-              parentNode = parent;
-              pos = parentNode.childNodes.length;
-              react(model[prop]);
-              return fragment;
+              position = parent.childNodes.length;
+              return anchor;
             },
+
+            react: function(val) {
+              var render;
+
+              // Delete old rendering
+              while (length) {
+                anchor.parentNode.removeChild(anchor.previousSibling);
+                length--;
+              }
+
+              // Array?
+              if (Array.isArray(val)) {
+
+              }
+              // Object?
+              else if (typeof val === 'object') {
+                render = j.compile(template, val);
+                length = render.childNodes.length;
+                anchor.parentNode.insertBefore(render, anchor);
+              }
+              // Cast to boolean
+              else {
+                if (!!val) {
+                  render = j.compile(template, model);
+                  length = render.childNodes.length;
+                  anchor.parentNode.insertBefore(render, anchor);
+                }
+              }
+            },
+
             block: match[1]
           };
 
@@ -706,27 +755,29 @@ Can be bound to text node data or attribute
 
           if (attr) {
             // Attribute
-            react = function(val) {
-              return val ?
-                node.setAttribute(attr, val) :
-                node.removeAttribute(attr);
+            return {
+              prop: tag,
+              react: function(val) {
+                return val ?
+                  node.setAttribute(attr, val) :
+                  node.removeAttribute(attr);
+              }
             };
-            j.watch(model, tag, react);
-            react(model[tag]);
-            return {};
+
           }
 
           else {
             // Text node
             result = document.createTextNode(model[tag] || '');
-            
-            j.watch(model, tag, function(val) {
-              result.data = val;
-            });
-            
+
             return {
-              replace: result
+              prop: tag,
+              replace: result,
+              react: function(val) {
+                result.data = val || '';
+              }
             };
+
           }
 
         }

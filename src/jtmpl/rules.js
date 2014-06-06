@@ -154,7 +154,7 @@ Can be bound to text node data or attribute
               prop: tag,
               replace: result,
               react: function(val) {
-                result.data = val;
+                result.data = val || '';
               }
             };
 

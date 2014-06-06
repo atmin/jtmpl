@@ -37,9 +37,10 @@ module.exports = function(grunt) {
     },
 
     jasmine : {
-      src : ['src/jtmpl/main.js', 'src/jtmpl/store.js', 'src/jtmpl/*.js'],
+      src : ['build/jtmpl.js'],
       options : {
         specs : 'spec/**/*.js',
+        // vendor: 'jtmpl',
         template : require('grunt-template-jasmine-istanbul'),
         templateOptions: {
           coverage: '<%= pkg.buildDir %>/reports/coverage.json',
