@@ -6,15 +6,23 @@ Notifies `callback` passing new value, when `obj[prop]` changes.
 
 */
 
-    j.watch = function(obj, prop, callback) {
+    j.watch = function(obj, prop, callback, key) {
       var watchers;
-
+    
       // All must be specified
       if (!(obj && prop && callback)) return;
 
+      // Already bound?
+      if (key && obj.__ && obj.__.bound[key]) return;
+
       j.bind(obj);
 
-      watchers = obj.__these__.watchers;
+      // Mark bound
+      if (key) {
+        obj.__.bound[key] = true;
+      }
+
+      watchers = obj.__.watchers;
 
       // Init watchers
       if (!watchers[prop]) {

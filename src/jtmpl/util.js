@@ -1,5 +1,29 @@
 /*
 
+### identity(a)
+
+*/
+
+  j.identity = function(a) {
+    return a;
+  };
+
+
+
+/*
+
+### isDefined(a)
+
+*/
+
+  j.isDefined = function(a) {
+    return a !== null && a !== undefined;
+  };
+
+
+
+/*
+
 ### extend(a, b)
 
 Right-biased key-value concat of objects `a` and `b`
@@ -57,23 +81,22 @@ Element class handling utilities.
 
 
 
-/**
- * https://github.com/component/path-to-regexp/blob/master/index.js
+/*
 
- * Normalize the given path string,
- * returning a regular expression.
- *
- * An empty array should be passed,
- * which will contain the placeholder
- * key names. For example "/user/:id" will
- * then contain ["id"].
- *
- * @param  {String|RegExp|Array} path
- * @param  {Array} keys
- * @param  {Object} options
- * @return {RegExp}
- * @api private
- */
+https://github.com/component/path-to-regexp/blob/master/index.js
+
+Normalize the given path string, returning a regular expression.
+
+An empty array should be passed, which will contain the placeholder
+key names. For example "/user/:id" will then contain ["id"].
+
+@param  {String|RegExp|Array} path
+@param  {Array} keys
+@param  {Object} options
+@return {RegExp}
+@api private
+
+*/
 
     function pathtoRegexp(path, keys, options) {
       options = options || {};

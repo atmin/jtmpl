@@ -31,6 +31,7 @@
         match = rules[i](tag, node, attr, model, options);
         
         if (match) {
+          match.index = i;
           return match;
         }
       }
@@ -75,7 +76,7 @@ Return documentFragment
 
     j.compile = function (template, model, options, openTag) {
 
-      var i, children, len, ai, alen, attr, val, buffer, pos, body, node, el, t, match, rule, token, block;
+      var i, children, len, ai, alen, attr, val, ruleVal, buffer, pos, body, node, el, t, match, rule, token, block;
       var fragment = document.createDocumentFragment();
 
       options = options || defaultOptions;
@@ -91,10 +92,10 @@ Return documentFragment
         body.innerHTML = template;
       }
 
+      // Initialize dunder function
+      j.bind(model);
 
       // Iterate child nodes.
-      // Length is not precalculated (and for is used instead of map),
-      // as it can mutate because of splitText()
       for (i = 0, children = body.childNodes, len = children.length ; i < len; i++) {
 
         node = children[i];
@@ -121,9 +122,12 @@ Return documentFragment
 
                 if (rule && rule.react) {
                   // Call reactor on value change
-                  j.watch(model, rule.prop, rule.react);
+                  j.watch(model, rule.prop, rule.react, rule.prop + i + '.' + ai);
                   // Initial value
-                  rule.react(model.__these__.values[rule.prop]);
+                  ruleVal = j.get(model.__.values, rule.prop, rule.react);
+                  if (ruleVal !== undefined) {
+                    rule.react(ruleVal);
+                  }
                 }
 
               }
@@ -170,15 +174,19 @@ Return documentFragment
                     throw 'jtmpl: Unclosed ' + el.data;
                   }
                   else {
+                    // Replace `el` with `rule.replace()` result
                     el.parentNode.replaceChild(rule.replace(block, el.parentNode), el);
                   }
                 }
 
                 if (rule.react) {
                   // Call reactor on value change
-                  j.watch(model, rule.prop, rule.react);
+                  j.watch(model, rule.prop, rule.react, rule.prop + i);
                   // Initial value
-                  rule.react(model.__these__.values[rule.prop]);
+                  ruleVal = j.get(model, rule.prop, true, rule.react);
+                  if (ruleVal !== undefined) {
+                    rule.react(ruleVal);
+                  }
                 }
               }
 

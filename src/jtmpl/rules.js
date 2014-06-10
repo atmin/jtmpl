@@ -41,7 +41,6 @@ Toggles class `some-class` in sync with boolean `model['some-class']`
         var match = tag.match(RE_IDENTIFIER);
         
         if (attr === 'class' && match) {
-          j.watch(model, tag, react);
           j.removeClass(node, options.delimiters[0] + tag + options.delimiters[1]);
 
           return {
@@ -129,7 +128,7 @@ Can be bound to text node data or attribute
 */
 
       function (tag, node, attr, model, options) {
-        var react, result;
+        var react, target;
         
         if (tag.match(RE_IDENTIFIER)) {
 
@@ -148,13 +147,13 @@ Can be bound to text node data or attribute
 
           else {
             // Text node
-            result = document.createTextNode(model[tag] || '');
+            target = document.createTextNode('');
 
             return {
               prop: tag,
-              replace: result,
-              react: function(val) {
-                result.data = val || '';
+              replace: target,
+              react: function() {
+                target.data = j.get(model, tag) || '';
               }
             };
 

@@ -52,7 +52,7 @@ module.exports = function(grunt) {
     jshint: {
       files: ['Gruntfile.js', 'src/jtmpl/*.js', 'spec/*.js'],
       options: {
-        // options here to override JSHint defaults
+        evil: true,
         globals: {
           document: true
         }
@@ -69,7 +69,7 @@ module.exports = function(grunt) {
     watch: {
       jshint: {
         files: ['<%= jshint.files %>'],
-        tasks: ['jshint', 'jasmine', 'concat', 'uglify']
+        tasks: ['jshint', 'concat', 'uglify', 'jasmine']
       },
       less: {
         files: ['styles/*.less'],
@@ -158,7 +158,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-gh-pages');
   grunt.loadNpmTasks('grunt-plato');
 
-  grunt.registerTask('build', ['jshint', 'jasmine', 'concat', 'uglify', 'less', 'copy', 'md2html', 'plato']);
-  grunt.registerTask('default', ['build', 'connect', 'watch']);
-  grunt.registerTask('publish', ['build', 'gh-pages']);
+  grunt.registerTask('build', ['jshint', 'concat', 'uglify', 'less', 'copy', 'md2html', 'plato']);
+  grunt.registerTask('default', ['build', 'jasmine', 'connect', 'watch']);
+  grunt.registerTask('publish', ['build', 'jasmine', 'gh-pages']);
 };
