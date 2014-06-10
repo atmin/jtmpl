@@ -124,7 +124,7 @@ Return documentFragment
                   // Call reactor on value change
                   j.watch(model, rule.prop, rule.react, rule.prop + i + '.' + ai);
                   // Initial value
-                  ruleVal = j.get(model.__.values, rule.prop, rule.react);
+                  ruleVal = model.__(rule.prop, rule.react);
                   if (ruleVal !== undefined) {
                     rule.react(ruleVal);
                   }
@@ -183,7 +183,7 @@ Return documentFragment
                   // Call reactor on value change
                   j.watch(model, rule.prop, rule.react, rule.prop + i);
                   // Initial value
-                  ruleVal = j.get(model, rule.prop, true, rule.react);
+                  ruleVal = model.__(rule.prop, rule.react);
                   if (ruleVal !== undefined) {
                     rule.react(ruleVal);
                   }

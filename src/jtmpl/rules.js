@@ -152,8 +152,8 @@ Can be bound to text node data or attribute
             return {
               prop: tag,
               replace: target,
-              react: function() {
-                target.data = j.get(model, tag) || '';
+              react: function(val) {
+                target.data = val || '';
               }
             };
 

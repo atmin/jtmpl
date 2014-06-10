@@ -21,8 +21,6 @@
       var body = document.createElement('body');
       body.appendChild(jtmpl(template, model));
 
-      var result;
-
 
       it('model.a = model.a + 1', function () {
         model.a = model.a + 1;

@@ -1,88 +1,10 @@
 /*
 
-Get obj[prop] value
+Initialize `obj.__`.
 
-*/
+Dunder function is bound to `this` context when `obj` method is called.
 
-    j.get = function(model, prop, trackDependencies, callback, formatter, mapping) {
-
-      var getter = function(prop) {
-        var result = model.__.values[prop];
-        return formatter(
-          typeof result === 'function' ?
-            result.call(getter) : 
-            result
-        );
-      };
-
-      var dependencyTracker = function(propToReturn) {
-        // Init dependents
-        if (!model.__.dependents[propToReturn]) {
-          model.__.dependents[propToReturn] = [];
-        }
-        // Update dependency tree
-        if (model.__.dependents[propToReturn].indexOf(prop) === -1) {
-          model.__.dependents[propToReturn].push(prop);
-        }
-        return getter(prop);
-      };
-
-      var val, result;
-
-      formatter = formatter || j.identity;
-
-      // {{.}}
-      if (prop === '.') {
-        return formatter(model);
-      }
-
-      val = model.__ ? model.__.values[prop] : model[prop];
-
-      result = (typeof val === 'function') ?
-        // Computed property
-        val.call(trackDependencies ? dependencyTracker : getter) :
-        // Static property (leaf in the dependency tree)
-        val;
-
-      return Array.isArray(result) ?
-        // Collection
-        typeof mapping === 'function' ?
-          // Mapping provided, map, then filter not defined values
-          result.map(mapping).filter(j.isDefined) :
-          // No mapping
-          result :
-
-        // Single value
-        formatter(result);
-
-
-      /*
-      var val = typeof accessor === 'object' ?
-        accessor[prop] :
-        accessor.values[prop];
-
-      return (typeof val === 'function') ?
-        // Computed property. Pass `callback` for async getters
-        val.call(
-          (typeof accessor === 'object') ? 
-            function(prop) { return accessor.__ ? accessor.__(prop) : accessor[prop]; } :
-            accessor(prop), 
-          callback
-        ) :
-        // Static property (leaf in the dependency tree)
-        val;
-        */
-    };
-
-
-/*
-
-Initializes `obj.__` (dunder) with factory function,
-returning accessor functions for a given caller.
-
-Accessor function is bound to `this` context when `obj` method is called.
-
-Method can use the accessor function:
+Uses of the dunder function:
 
 
 Get property value:
@@ -97,16 +19,21 @@ Get property value asynchonously:
 
 Set propety value:
 
-`this(prop, newValue)`
+`this(prop, newValueNonFunction)`
 
 
 
-Access parent context (returns accessor function):
+Access current context (returns non-function value):
+
+`this('.')`
+
+
+Access parent context (returns dunder function):
 
 `this('..')`
 
 
-Access root context (returns accessor function):
+Access root context (returns dunder function):
 
 `this('/')`
 
@@ -128,11 +55,40 @@ If current context is an Array, all standard props/methods are there:
 
       if (typeof obj !== 'object' || obj.__) return;
 
-      var dunder = function(prop, arg, refresh) {
-        var i, len, result;
+      var dunder = function(prop, arg, refresh, formatter, mapping) {
+        var i, len, result, val;
+
+        var getter = function(prop) {
+          var result = obj.__.values[prop];
+          return formatter(
+            typeof result === 'function' ?
+              result.call(getter) : 
+              result
+          );
+        };
+
+        var dependencyTracker = function(propToReturn) {
+          // Update dependency tree
+          if (obj.__.dependents[propToReturn].indexOf(prop) === -1) {
+            obj.__.dependents[propToReturn].push(prop);
+          }
+          return getter(propToReturn);
+        };
+
+        formatter = formatter || j.identity;
+
+        // Init dependents
+        if (!dunder.dependents[prop]) {
+          dunder.dependents[prop] = [];
+        }
 
         // Getter?
         if ((arg === undefined || typeof arg === 'function') && !refresh) {
+
+          // {{.}}
+          if (prop === '.') {
+            return formatter(model);
+          }
 
           // Parent context?
           if (prop === '..') {
@@ -144,7 +100,24 @@ If current context is an Array, all standard props/methods are there:
             return obj.__.root.__;
           }
 
-          return j.get(obj, prop);//, true, arg);
+          val = obj.__.values[prop];
+
+          result = (typeof val === 'function') ?
+            // Computed property
+            val.call(dependencyTracker) :
+            // Static property (leaf in the dependency tree)
+            val;
+
+          return Array.isArray(result) ?
+            // Collection
+            typeof mapping === 'function' ?
+              // Mapping provided, map, then filter not defined values
+              result.map(mapping).filter(j.isDefined) :
+              // No mapping
+              result :
+
+            // Single value
+            formatter(result);          
         }
 
         else {
@@ -161,11 +134,6 @@ If current context is an Array, all standard props/methods are there:
             }
           }
 
-          // Init dependents
-          if (!dunder.dependents[prop]) {
-            dunder.dependents[prop] = [];
-          }
-
           // Alert dependents
           for (i = 0, len = dunder.dependents[prop].length; i < len; i++) {
             obj.__(dunder.dependents[prop][i], arg, true);
@@ -174,7 +142,7 @@ If current context is an Array, all standard props/methods are there:
           // Alert watchers
           if (dunder.watchers[prop]) {
             for (i = 0, len = dunder.watchers[prop].length; i < len; i++) {
-              dunder.watchers[prop][i].call(obj.__, arg);
+              dunder.watchers[prop][i](obj.__(prop));
             }
           }
 
