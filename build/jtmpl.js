@@ -565,15 +565,44 @@ Return documentFragment
 
                 rule = matchRules(match[0], el, attr.name, model, options);
 
-                if (rule && rule.react) {
-                  // Call reactor on value change
-                  j.watch(model, rule.prop, rule.react, rule.prop + i + '.' + ai);
-                  // Initial value
-                  ruleVal = model.__(rule.prop, rule.react);
-                  if (ruleVal !== undefined) {
-                    rule.react(ruleVal);
+                if (rule) {
+
+                  if (rule.block) {
+
+                    block = '';
+                    openTag = match[0];
+                    beginPos = match.index;
+                    bodyBeginPos = match.index + match[0].length;
+
+                    // Find closing tag
+                    for (;
+                        match &&
+                        !matchEndBlock(rule.block, match[1], options);
+                        match = t.exec(val));
+
+                    if (!match) {
+                      throw 'Unclosed' + openTag;
+                    }
+                    else {
+                      // Replace full block tag body with rule contents
+                      attr.value = 
+                        attr.value.slice(0, beginPos) +
+                        rule.replace(attr.value.slice(bodyBeginPos, match.index - bodyBeginPos)) +
+                        attr.value.slice(match.index + match[0].length);
+                    }
                   }
-                }
+
+                  if (rule.react) {
+                    // Call reactor on value change
+                    j.watch(model, rule.prop, rule.react, rule.prop + i + '.' + ai);
+                    // Initial value
+                    ruleVal = model.__(rule.prop, rule.react);
+                    if (ruleVal !== undefined) {
+                      rule.react(ruleVal);
+                    }
+                  }
+
+                } 
 
               }
 
@@ -733,6 +762,31 @@ Toggles class `some-class` in sync with boolean `model['some-class']`
             react: function(val) {
               (!!val && j.addClass || j.removeClass)(node, tag);
             }
+          };
+        }
+      },
+
+
+/*
+
+### class="{{ifCondition}}some-class{{/}}"
+
+Toggles class `some-class` in sync with boolean `model['some-class']`
+
+*/
+
+      function (tag, node, attr, model, options) {
+        var match = tag.match(new RegExp('#' + RE_SRC_IDENTIFIER));
+        
+        if (attr === 'class' && match) {
+          return {
+            prop: match[1],
+
+            react: function(val) {
+              (!!val && j.addClass || j.removeClass)(node, tag);
+            },
+
+            block: match[1]
           };
         }
       },

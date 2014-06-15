@@ -76,7 +76,7 @@ Return documentFragment
 
     j.compile = function (template, model, options, openTag) {
 
-      var i, children, len, ai, alen, attr, val, ruleVal, buffer, pos, body, node, el, t, match, rule, token, block;
+      var i, children, len, ai, alen, attr, val, ruleVal, buffer, pos, beginPos, bodyBeginPos, body, node, el, t, match, rule, token, block;
       var fragment = document.createDocumentFragment();
 
       options = options || defaultOptions;
@@ -120,15 +120,43 @@ Return documentFragment
 
                 rule = matchRules(match[0], el, attr.name, model, options);
 
-                if (rule && rule.react) {
-                  // Call reactor on value change
-                  j.watch(model, rule.prop, rule.react, rule.prop + i + '.' + ai);
-                  // Initial value
-                  ruleVal = model.__(rule.prop, rule.react);
-                  if (ruleVal !== undefined) {
-                    rule.react(ruleVal);
+                if (rule) {
+
+                  if (rule.block) {
+
+                    block = match[0];
+                    beginPos = match.index;
+                    bodyBeginPos = match.index + match[0].length;
+
+                    // Find closing tag
+                    for (;
+                        match &&
+                        !matchEndBlock(rule.block, match[0], options);
+                        match = t.exec(val));
+
+                    if (!match) {
+                      throw 'Unclosed' + block;
+                    }
+                    else {
+                      // Replace full block tag body with rule contents
+                      attr.value = 
+                        attr.value.slice(0, beginPos) +
+                        rule.replace(attr.value.slice(bodyBeginPos, match.index)) +
+                        attr.value.slice(match.index + match[0].length);
+                    }
                   }
-                }
+
+                  if (rule.react) {
+                    // Call reactor on value change
+                    j.watch(model, rule.prop, rule.react, rule.prop + i + '.' + ai);
+                    // Initial value
+                    ruleVal = model.__(rule.prop, rule.react);
+                    if (ruleVal !== undefined) {
+                      rule.react(ruleVal);
+                    }
+                  }
+
+                } 
 
               }
 

@@ -55,6 +55,37 @@ Toggles class `some-class` in sync with boolean `model['some-class']`
 
 /*
 
+### class="{{#ifCondition}}some-class{{/}}"
+
+Toggles class `some-class` in sync with boolean `model['some-class']`
+
+*/
+
+      function (tag, node, attr, model, options) {
+        var match = tag.match(new RegExp('#' + RE_SRC_IDENTIFIER));
+        var klass;
+        
+        if (attr === 'class' && match) {
+          return {
+            prop: match[1],
+
+            replace: function(tmpl) {
+              klass = tmpl;
+              return '';
+            },
+
+            react: function(val) {
+              (!!val && j.addClass || j.removeClass)(node, klass);
+            },
+
+            block: match[1]
+          };
+        }
+      },
+
+
+/*
+
 ### {{#section}}
 
 Can be bound to text node
