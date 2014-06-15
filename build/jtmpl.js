@@ -521,7 +521,7 @@ Return documentFragment
 
     j.compile = function (template, model, options, openTag) {
 
-      var i, children, len, ai, alen, attr, val, ruleVal, buffer, pos, body, node, el, t, match, rule, token, block;
+      var i, children, len, ai, alen, attr, val, ruleVal, buffer, pos, beginPos, bodyBeginPos, body, node, el, t, match, rule, token, block;
       var fragment = document.createDocumentFragment();
 
       options = options || defaultOptions;
@@ -569,25 +569,24 @@ Return documentFragment
 
                   if (rule.block) {
 
-                    block = '';
-                    openTag = match[0];
+                    block = match[0];
                     beginPos = match.index;
                     bodyBeginPos = match.index + match[0].length;
 
                     // Find closing tag
                     for (;
                         match &&
-                        !matchEndBlock(rule.block, match[1], options);
+                        !matchEndBlock(rule.block, match[0], options);
                         match = t.exec(val));
 
                     if (!match) {
-                      throw 'Unclosed' + openTag;
+                      throw 'Unclosed' + block;
                     }
                     else {
                       // Replace full block tag body with rule contents
                       attr.value = 
                         attr.value.slice(0, beginPos) +
-                        rule.replace(attr.value.slice(bodyBeginPos, match.index - bodyBeginPos)) +
+                        rule.replace(attr.value.slice(bodyBeginPos, match.index)) +
                         attr.value.slice(match.index + match[0].length);
                     }
                   }
@@ -724,18 +723,16 @@ It MUST return either:
 
 * object - match found, return (all fields optional)
 
-     // TODO: result object doc is obsolete
      {
-       // Replace tag in generated content, default - ''
-       replace: 'replacement'
-
        // Set new context, default - original model
        model: set_new_context_object
 
        // Parse until {{/tagName}} ...
        block: 'tagName'
-       // ... then `replace` must be a function and it will be called with the extracted template
+       // ... then call `replace`
        
+       // Return replace block tag contents
+       replace: function(tmpl, parent) { ... }
      }
 
 */
@@ -769,21 +766,27 @@ Toggles class `some-class` in sync with boolean `model['some-class']`
 
 /*
 
-### class="{{ifCondition}}some-class{{/}}"
+### class="{{#ifCondition}}some-class{{/}}"
 
-Toggles class `some-class` in sync with boolean `model['some-class']`
+Toggles class `some-class` in sync with boolean `model.ifCondition`
 
 */
 
       function (tag, node, attr, model, options) {
         var match = tag.match(new RegExp('#' + RE_SRC_IDENTIFIER));
+        var klass;
         
         if (attr === 'class' && match) {
           return {
             prop: match[1],
 
+            replace: function(tmpl) {
+              klass = tmpl;
+              return '';
+            },
+
             react: function(val) {
-              (!!val && j.addClass || j.removeClass)(node, tag);
+              (!!val && j.addClass || j.removeClass)(node, klass);
             },
 
             block: match[1]

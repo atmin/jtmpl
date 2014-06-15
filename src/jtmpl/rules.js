@@ -10,18 +10,16 @@ It MUST return either:
 
 * object - match found, return (all fields optional)
 
-     // TODO: result object doc is obsolete
      {
-       // Replace tag in generated content, default - ''
-       replace: 'replacement'
-
        // Set new context, default - original model
        model: set_new_context_object
 
        // Parse until {{/tagName}} ...
        block: 'tagName'
-       // ... then `replace` must be a function and it will be called with the extracted template
+       // ... then call `replace`
        
+       // Return replace block tag contents
+       replace: function(tmpl, parent) { ... }
      }
 
 */
@@ -57,7 +55,7 @@ Toggles class `some-class` in sync with boolean `model['some-class']`
 
 ### class="{{#ifCondition}}some-class{{/}}"
 
-Toggles class `some-class` in sync with boolean `model['some-class']`
+Toggles class `some-class` in sync with boolean `model.ifCondition`
 
 */
 
