@@ -13,9 +13,8 @@ module.exports = function(grunt) {
           'src/jtmpl/main.js',
           'src/jtmpl/consts.js',
           'src/jtmpl/util.js',
-          'src/jtmpl/observable_array.js',
-          'src/jtmpl/accessor.js',
-          'src/jtmpl/compiler.js',
+          'src/jtmpl/compile.js',
+          'src/jtmpl/bind.js',
           'src/jtmpl/watch.js',
           'src/jtmpl/rules.js',
           'src/jtmpl/xhr.js',
@@ -40,7 +39,6 @@ module.exports = function(grunt) {
       src : ['build/jtmpl.js'],
       options : {
         specs : 'spec/**/*.js',
-        // vendor: 'jtmpl',
         template : require('grunt-template-jasmine-istanbul'),
         templateOptions: {
           coverage: '<%= pkg.buildDir %>/reports/coverage.json',
@@ -144,20 +142,24 @@ module.exports = function(grunt) {
       }      
     }
 
-  });
+  }); // grunt.initConfig
 
-  grunt.loadNpmTasks('grunt-contrib-uglify');
-  grunt.loadNpmTasks('grunt-contrib-jshint');
-  grunt.loadNpmTasks('grunt-contrib-jasmine');
-  grunt.loadNpmTasks('grunt-contrib-watch');
-  grunt.loadNpmTasks('grunt-contrib-concat');
-  grunt.loadNpmTasks('grunt-contrib-connect');
-  grunt.loadNpmTasks('grunt-contrib-copy');
-  grunt.loadNpmTasks('grunt-md2html');
-  grunt.loadNpmTasks('grunt-contrib-clean');
-  grunt.loadNpmTasks('grunt-contrib-less');
-  grunt.loadNpmTasks('grunt-gh-pages');
-  grunt.loadNpmTasks('grunt-plato');
+  [
+    'grunt-contrib-uglify',
+    'grunt-contrib-jshint',
+    'grunt-contrib-jasmine',
+    'grunt-contrib-watch',
+    'grunt-contrib-concat',
+    'grunt-contrib-connect',
+    'grunt-contrib-copy',
+    'grunt-md2html',
+    'grunt-contrib-clean',
+    'grunt-contrib-less',
+    'grunt-gh-pages',
+    'grunt-plato'
+  ].map(function(task) {
+    grunt.loadNpmTasks(task);
+  });
 
   grunt.registerTask('build', ['jshint', 'concat', 'uglify', 'less', 'copy', 'md2html', 'plato', 'jasmine']);
   grunt.registerTask('default', ['build', 'connect', 'watch']);

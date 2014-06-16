@@ -89,4 +89,24 @@
 
 
 
+      it('{{#context}}{{a}}{{/}}', function() {
+        var model = {context: {a: 42}};
+        var template = '{{#context}}{{a}}{{/}}';
+
+        var body = document.createElement('body');
+        body.appendChild(jtmpl(template, model));
+
+        expect(
+          body.childNodes[0].data
+        ).toBe('42');
+
+        model.context = {a: 1};
+
+        expect(
+          body.childNodes[0].data
+        ).toBe('1');
+      });
+
+
+
     });

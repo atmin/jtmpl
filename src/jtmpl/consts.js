@@ -12,14 +12,6 @@
     var RE_SPACE = '\\s*';
 
 
-    var bookkeepingProto = {
-      dependents: {},
-      watchers: {},
-      childContexts: [],
-      initialized: false
-    };
-
-
 /*
   
 Default options

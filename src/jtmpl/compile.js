@@ -146,9 +146,9 @@ Return documentFragment
                     }
                   }
 
-                  if (rule.react) {
+                  if (rule.react && typeof model === 'object' && model.__) {
                     // Call reactor on value change
-                    j.watch(model, rule.prop, rule.react, rule.prop + i + '.' + ai);
+                    j.watch(model, rule.prop, rule.react, rule.arrayReact || null, rule.prop + i + '.' + ai);
                     // Initial value
                     ruleVal = model.__(rule.prop, rule.react);
                     if (ruleVal !== undefined) {
@@ -207,9 +207,9 @@ Return documentFragment
                   }
                 }
 
-                if (rule.react) {
+                if (rule.react && typeof model === 'object' && model.__) {
                   // Call reactor on value change
-                  j.watch(model, rule.prop, rule.react, rule.prop + i);
+                  j.watch(model, rule.prop, rule.react, rule.arrayReact || null, rule.prop + i);
                   // Initial value
                   ruleVal = model.__(rule.prop, rule.react);
                   if (ruleVal !== undefined) {

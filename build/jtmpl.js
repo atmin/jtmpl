@@ -54,14 +54,6 @@ Referred as `j`, exported as `jtmpl`.
     var RE_SPACE = '\\s*';
 
 
-    var bookkeepingProto = {
-      dependents: {},
-      watchers: {},
-      childContexts: [],
-      initialized: false
-    };
-
-
 /*
   
 Default options
@@ -223,228 +215,6 @@ key names. For example "/user/:id" will then contain ["id"].
 
 /*
 
-Proxy mutable array methods
-
-*/
-
-    function ObservableArray(items, listener) {
-      var _items, _listener;
-      var method, mutableMethods = {
-        pop: function() {
-          var result = _items.pop();
-          listener([{
-            type: 'delete',
-            name: _items.length,
-            object: _items
-          }]);
-        },
-
-        push: function(item) {
-
-        }
-      };
-
-      function arr(i, val) {
-        return (val === undefined) ?
-          // Getter
-          _items[i] :
-          // Setter
-          (_items[i] = val);
-      }
-
-      for (method in mutableMethods) {
-        arr[method] = mutableMethods[method];
-      }
-
-      _items = items;
-      return arr;
-    }
-
-
-    j.ObservableArray = ObservableArray;
-
-/*
-
-Initialize `obj.__`.
-
-Dunder function is bound to `this` context when `obj` method is called.
-
-Uses of the dunder function:
-
-
-Get property value:
-
-`this(prop)`
-
-
-Get property value asynchonously:
-
-`this(prop, function(value) {...})`
-
-
-Set propety value:
-
-`this(prop, newValueNonFunction)`
-
-
-
-Access current context (returns non-function value):
-
-`this('.')`
-
-
-Access parent context (returns dunder function):
-
-`this('..')`
-
-
-Access root context (returns dunder function):
-
-`this('/')`
-
-
-Get child context property:
-
-`this('childContext')('childProperty')`
-
-
-If current context is an Array, all standard props/methods are there:
-
-`this.length`, `this.sort`, `this.splice`, etc
-
-
-
-*/
-
-    j.bind = function(obj, root, parent) {
-
-      if (typeof obj !== 'object' || obj.__) return;
-
-      var dunder = function(prop, arg, refresh, formatter, mapping) {
-        var i, len, result, val;
-
-        var getter = function(prop) {
-          var result = obj.__.values[prop];
-          return formatter(
-            typeof result === 'function' ?
-              result.call(getter) : 
-              result
-          );
-        };
-
-        var dependencyTracker = function(propToReturn) {
-          // Update dependency tree
-          if (obj.__.dependents[propToReturn].indexOf(prop) === -1) {
-            obj.__.dependents[propToReturn].push(prop);
-          }
-          return getter(propToReturn);
-        };
-
-        formatter = formatter || j.identity;
-
-        // Init dependents
-        if (!dunder.dependents[prop]) {
-          dunder.dependents[prop] = [];
-        }
-
-        // Getter?
-        if ((arg === undefined || typeof arg === 'function') && !refresh) {
-
-          // {{.}}
-          if (prop === '.') {
-            return formatter(model);
-          }
-
-          // Parent context?
-          if (prop === '..') {
-            return obj.__.parent.__;
-          }
-
-          // Root context?
-          if (prop === '/') {
-            return obj.__.root.__;
-          }
-
-          val = obj.__.values[prop];
-
-          result = (typeof val === 'function') ?
-            // Computed property
-            val.call(dependencyTracker) :
-            // Static property (leaf in the dependency tree)
-            val;
-
-          return Array.isArray(result) ?
-            // Collection
-            typeof mapping === 'function' ?
-              // Mapping provided, map, then filter not defined values
-              result.map(mapping).filter(j.isDefined) :
-              // No mapping
-              result :
-
-            // Single value
-            formatter(result);          
-        }
-
-        else {
-
-          // Setter?
-          if (!refresh) {
-            if (typeof dunder.values[prop] === 'function') {
-              // Computed property
-              dunder.values[prop].call(obj.__, arg);
-            }
-            else {
-              // Simple property. `arg` is the new value
-              dunder.values[prop] = arg;
-            }
-          }
-
-          // Alert dependents
-          for (i = 0, len = dunder.dependents[prop].length; i < len; i++) {
-            obj.__(dunder.dependents[prop][i], arg, true);
-          }
-
-          // Alert watchers
-          if (dunder.watchers[prop]) {
-            for (i = 0, len = dunder.watchers[prop].length; i < len; i++) {
-              dunder.watchers[prop][i](obj.__(prop));
-            }
-          }
-
-        } // if getter
-      };
-
-      dunder.dependents = {};
-      dunder.watchers = {};
-      dunder.root = root || obj;
-      dunder.parent = parent || null;
-      dunder.values = {};
-      dunder.bound = {};
-
-      // Proxy all properties with the dunder function
-      Object.getOwnPropertyNames(obj).map(function(prop) {
-
-        dunder.values[prop] = obj[prop];
-
-        Object.defineProperty(obj, prop, {
-          get: function() {
-            // return j.get(obj, prop);
-            return obj.__(prop); 
-          },
-          set: function(val) {
-            obj.__(prop, val);
-          }
-        });
-
-      });
-
-      Object.defineProperty(obj, '__', { value: dunder });
-
-    };
-
-
-/*
-
 ## Compiler
 
 */
@@ -591,9 +361,9 @@ Return documentFragment
                     }
                   }
 
-                  if (rule.react) {
+                  if (rule.react && typeof model === 'object' && model.__) {
                     // Call reactor on value change
-                    j.watch(model, rule.prop, rule.react, rule.prop + i + '.' + ai);
+                    j.watch(model, rule.prop, rule.react, rule.arrayReact || null, rule.prop + i + '.' + ai);
                     // Initial value
                     ruleVal = model.__(rule.prop, rule.react);
                     if (ruleVal !== undefined) {
@@ -654,7 +424,7 @@ Return documentFragment
 
                 if (rule.react) {
                   // Call reactor on value change
-                  j.watch(model, rule.prop, rule.react, rule.prop + i);
+                  j.watch(model, rule.prop, rule.react, rule.arrayReact || null, rule.prop + i);
                   // Initial value
                   ruleVal = model.__(rule.prop, rule.react);
                   if (ruleVal !== undefined) {
@@ -675,17 +445,231 @@ Return documentFragment
 
 /*
 
+Initialize `obj.__`.
+
+Dunder function is bound to `this` context when `obj` method is called.
+
+Uses of the dunder function:
+
+
+Get property value:
+
+`this(prop)`
+
+
+Get property value asynchonously:
+
+`this(prop, function(value) {...})`
+
+
+Set propety value:
+
+`this(prop, newValueNonFunction)`
+
+
+
+Access current context (returns non-function value):
+
+`this('.')`
+
+
+Access parent context (returns dunder function):
+
+`this('..')`
+
+
+Access root context (returns dunder function):
+
+`this('/')`
+
+
+Get child context property:
+
+`this('childContext')('childProperty')`
+
+
+If current context is an Array, all standard props/methods are there:
+
+`this.length`, `this.sort`, `this.splice`, etc
+
+
+
+*/
+
+    j.bind = function(obj, root, parent) {
+
+      var method, mutableMethods, values;
+
+      // Guard
+      if (typeof obj !== 'object' || obj.__) return;
+
+      // The dunder function, `obj.__`
+      var dunder = function(prop, arg, refresh, formatter, mapping) {
+
+        var i, len, result, val;
+
+        var getter = function(prop) {
+          var result = obj.__.values[prop];
+          return formatter(
+            typeof result === 'function' ?
+              result.call(getter) : 
+              result
+          );
+        };
+
+        var dependencyTracker = function(propToReturn) {
+          // Update dependency tree
+          if (obj.__.dependents[propToReturn].indexOf(prop) === -1) {
+            obj.__.dependents[propToReturn].push(prop);
+          }
+          return getter(propToReturn);
+        };
+
+        formatter = formatter || j.identity;
+
+        // Init dependents
+        if (!dunder.dependents[prop]) {
+          dunder.dependents[prop] = [];
+        }
+
+        // Getter?
+        if ((arg === undefined || typeof arg === 'function') && !refresh) {
+
+          // {{.}}
+          if (prop === '.') {
+            return formatter(model);
+          }
+
+          // Parent context?
+          if (prop === '..') {
+            return obj.__.parent.__;
+          }
+
+          // Root context?
+          if (prop === '/') {
+            return obj.__.root.__;
+          }
+
+          val = obj.__.values[prop];
+
+          result = (typeof val === 'function') ?
+            // Computed property
+            val.call(dependencyTracker) :
+            // Static property (leaf in the dependency tree)
+            val;
+
+          return Array.isArray(result) ?
+            // Collection
+            typeof mapping === 'function' ?
+              // Mapping provided, map, then filter not defined values
+              result.map(mapping).filter(j.isDefined) :
+              // No mapping
+              result :
+
+            // Single value
+            formatter(result);          
+        }
+
+        else {
+
+          // Setter?
+          if (!refresh) {
+            if (typeof dunder.values[prop] === 'function') {
+              // Computed property
+              dunder.values[prop].call(obj.__, arg);
+            }
+            else {
+              // Simple property. `arg` is the new value
+              dunder.values[prop] = arg;
+            }
+          }
+
+          // Alert dependents
+          for (i = 0, len = dunder.dependents[prop].length; i < len; i++) {
+            obj.__(dunder.dependents[prop][i], arg, true);
+          }
+
+          // Alert watchers
+          if (dunder.watchers[prop]) {
+            for (i = 0, len = dunder.watchers[prop].length; i < len; i++) {
+              dunder.watchers[prop][i](obj.__(prop));
+            }
+          }
+
+        } // if getter
+      }; // dunder
+
+      dunder.dependents = {};
+      dunder.watchers = {};
+      dunder.arrayWatchers = {};
+      dunder.root = root || obj;
+      dunder.parent = parent || null;
+      dunder.values = typeof obj === 'object' ? {} : [];
+      dunder.bound = {};
+
+      // Proxy all properties with the dunder function
+      Object.getOwnPropertyNames(obj).map(function(prop) {
+
+        dunder.values[prop] = obj[prop];
+
+        Object.defineProperty(obj, prop, {
+          get: function() {
+            // return j.get(obj, prop);
+            return obj.__(prop); 
+          },
+          set: function(val) {
+            obj.__(prop, val);
+          }
+        });
+
+      });
+
+      if (Array.isArray(obj)) {
+
+        // Proxy mutable array methods
+
+        values = obj.__.values;
+
+        mutableMethods = {
+
+          pop: function() {
+            var result = values.pop();
+            listener([{
+              type: 'delete',
+              name: values.length,
+              object: values
+            }]);
+          },
+
+          push: function(item) {
+
+          }
+        };
+
+        for (method in mutableMethods) {
+          dunder[method] = obj[method] = mutableMethods[method];
+        }
+      }
+
+      Object.defineProperty(obj, '__', { value: dunder });
+
+    };
+
+
+/*
+
 ## watch(obj, prop, callback)
 
 Notifies `callback` passing new value, when `obj[prop]` changes.
 
 */
 
-    j.watch = function(obj, prop, callback, key) {
-      var watchers;
+    j.watch = function(obj, prop, callback, arrayCallback, key) {
+      var watchers, arrayWatchers;
     
-      // All must be specified
-      if (!(obj && prop && callback)) return;
+      // Must be specified
+      if (!(obj && prop && callback) ||
+          typeof obj !== 'object') return;
 
       // Already bound?
       if (key && obj.__ && obj.__.bound[key]) return;
@@ -707,6 +691,21 @@ Notifies `callback` passing new value, when `obj[prop]` changes.
       // Already registered?
       if (watchers[prop].indexOf(callback) === -1) {
         watchers[prop].push(callback);
+      }
+
+      //
+      if (arrayCallback) {
+        arrayWatchers = obj.__.arrayWatchers;
+
+        // Init watchers
+        if (!arrayWatchers[prop]) {
+          arrayWatchers[prop] = [];
+        }
+
+        // Already registered?
+        if (arrayWatchers[prop].indexOf(arrayCallback) === -1) {
+          arrayWatchers[prop].push(arrayCallback);
+        }
       }
     };
 
@@ -825,7 +824,7 @@ Can be bound to text node
             },
 
             react: function(val) {
-              var render;
+              var i, len, render;
 
               // Delete old rendering
               while (length) {
@@ -835,14 +834,21 @@ Can be bound to text node
 
               // Array?
               if (Array.isArray(val)) {
-
+                render = document.createDocumentFragment();
+                for (i = 0, len = val.length; i < len; i++) {
+                  render.appendChild(j.compile(template, val[i]));
+                }
+                length = render.childNodes.length;
+                anchor.parentNode.insertBefore(render, anchor);
               }
+
               // Object?
               else if (typeof val === 'object') {
                 render = j.compile(template, val);
                 length = render.childNodes.length;
                 anchor.parentNode.insertBefore(render, anchor);
               }
+              
               // Cast to boolean
               else {
                 if (!!val) {
@@ -853,7 +859,12 @@ Can be bound to text node
               }
             },
 
-            block: match[1]
+            block: match[1],
+
+            arrayReact: function(changes) {
+              console.log(changes);
+            }
+            
           };
 
         }

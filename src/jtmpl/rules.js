@@ -112,7 +112,7 @@ Can be bound to text node
             },
 
             react: function(val) {
-              var render;
+              var i, len, render;
 
               // Delete old rendering
               while (length) {
@@ -122,14 +122,22 @@ Can be bound to text node
 
               // Array?
               if (Array.isArray(val)) {
-
+                render = document.createDocumentFragment();
+                j.bind(val);
+                for (i = 0, len = val.length; i < len; i++) {
+                  render.appendChild(j.compile(template, val[i]));
+                }
+                length = render.childNodes.length;
+                anchor.parentNode.insertBefore(render, anchor);
               }
+
               // Object?
               else if (typeof val === 'object') {
                 render = j.compile(template, val);
                 length = render.childNodes.length;
                 anchor.parentNode.insertBefore(render, anchor);
               }
+              
               // Cast to boolean
               else {
                 if (!!val) {
@@ -140,7 +148,12 @@ Can be bound to text node
               }
             },
 
-            block: match[1]
+            block: match[1],
+
+            arrayReact: function(changes) {
+              console.log(changes);
+            }
+
           };
 
         }

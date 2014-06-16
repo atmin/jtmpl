@@ -6,11 +6,12 @@ Notifies `callback` passing new value, when `obj[prop]` changes.
 
 */
 
-    j.watch = function(obj, prop, callback, key) {
-      var watchers;
+    j.watch = function(obj, prop, callback, arrayCallback, key) {
+      var watchers, arrayWatchers;
     
-      // All must be specified
-      if (!(obj && prop && callback)) return;
+      // Must be specified
+      if (!(obj && prop && callback) ||
+          typeof obj !== 'object') return;
 
       // Already bound?
       if (key && obj.__ && obj.__.bound[key]) return;
@@ -32,5 +33,16 @@ Notifies `callback` passing new value, when `obj[prop]` changes.
       // Already registered?
       if (watchers[prop].indexOf(callback) === -1) {
         watchers[prop].push(callback);
+      }
+
+      //
+      if (arrayCallback) {
+        j.bind(obj[prop]);
+        arrayWatchers = obj[prop].__.arrayWatchers;
+
+        // Already registered?
+        if (arrayWatchers.indexOf(arrayCallback) === -1) {
+          arrayWatchers.push(arrayCallback);
+        }
       }
     };

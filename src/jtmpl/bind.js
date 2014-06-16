@@ -53,9 +53,14 @@ If current context is an Array, all standard props/methods are there:
 
     j.bind = function(obj, root, parent) {
 
+      var notify, method, mutableMethods, values;
+
+      // Guard
       if (typeof obj !== 'object' || obj.__) return;
 
+      // The dunder function, `obj.__`
       var dunder = function(prop, arg, refresh, formatter, mapping) {
+
         var i, len, result, val;
 
         var getter = function(prop) {
@@ -147,17 +152,23 @@ If current context is an Array, all standard props/methods are there:
           }
 
         } // if getter
-      };
+      }; // dunder
 
       dunder.dependents = {};
       dunder.watchers = {};
+      dunder.arrayWatchers = [];
       dunder.root = root || obj;
       dunder.parent = parent || null;
-      dunder.values = {};
+      dunder.values = Array.isArray(obj) ? [] : {};
       dunder.bound = {};
 
       // Proxy all properties with the dunder function
       Object.getOwnPropertyNames(obj).map(function(prop) {
+
+        // Do not redefine Array.length
+        if (prop === 'length' && Array.isArray(obj)) {
+          return;
+        }
 
         dunder.values[prop] = obj[prop];
 
@@ -173,6 +184,43 @@ If current context is an Array, all standard props/methods are there:
 
       });
 
+      // Attach dunder function
       Object.defineProperty(obj, '__', { value: dunder });
+
+      if (Array.isArray(obj)) {
+
+        // Proxy mutable array methods
+
+        // Notify subscribers, `changes` are like in Object.observe
+        notify = function(changes) {
+          for (var i = 0, len = obj.__.arrayWatchers.length; i < len; i++) {
+            obj.__.arrayWatchers[i](changes);
+          }
+        };
+
+        values = obj.__.values;
+
+        mutableMethods = {
+
+          pop: function() {
+            var result = values.pop();
+            notify([{
+              type: 'delete',
+              name: values.length,
+              object: values
+            }]);
+            return result;
+          },
+
+          push: function(item) {
+
+          }
+        };
+
+        for (method in mutableMethods) {
+          dunder[method] = mutableMethods[method];
+          obj[method] = mutableMethods[method];
+        }
+      }
 
     };

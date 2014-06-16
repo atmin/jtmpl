@@ -6,7 +6,7 @@
 
     describe('Variable {{variable}}', function () {
 
-      var template = '{{a}}{{#b}}{{c}}{{/b}}{{d}}';
+      var template = '{{a}}{{#b}}{{c}}{{/b}}{{d}}{{e}}';
 
       var model = {
           a: 1,
@@ -15,6 +15,9 @@
           },
           d: function() {
             return this('a') * 100;
+          },
+          e: function() {
+            return this('d') + this('b').c + this('a');
           }
       };
 
@@ -24,13 +27,13 @@
 
       it('model.a = model.a + 1', function () {
         model.a = model.a + 1;
-        expect(body.innerHTML).toBe('224<!---->200');
+        expect(body.innerHTML).toBe('224<!---->200226');
       });
 
 
       it('model.b = { c: 42 }', function () {
         model.b = { c: 42 };
-        expect(body.innerHTML).toBe('242<!---->200');
+        expect(body.innerHTML).toBe('242<!---->200244');
       });
 
     });
