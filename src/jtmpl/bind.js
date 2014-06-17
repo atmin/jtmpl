@@ -90,11 +90,6 @@ If current context is an Array, all standard props/methods are there:
         // Getter?
         if ((arg === undefined || typeof arg === 'function') && !refresh) {
 
-          // {{.}}
-          if (prop === '.') {
-            return formatter(model);
-          }
-
           // Parent context?
           if (prop === '..') {
             return obj.__.parent.__;
@@ -162,8 +157,7 @@ If current context is an Array, all standard props/methods are there:
       dunder.values = Array.isArray(obj) ? [] : {};
       dunder.bound = {};
 
-      // Proxy all properties with the dunder function
-      Object.getOwnPropertyNames(obj).map(function(prop) {
+      var bindProp = function(prop) {
 
         // Do not redefine Array.length
         if (prop === 'length' && Array.isArray(obj)) {
@@ -174,7 +168,6 @@ If current context is an Array, all standard props/methods are there:
 
         Object.defineProperty(obj, prop, {
           get: function() {
-            // return j.get(obj, prop);
             return obj.__(prop); 
           },
           set: function(val) {
@@ -182,38 +175,78 @@ If current context is an Array, all standard props/methods are there:
           }
         });
 
-      });
+      };
+
+      // Proxy all properties with the dunder function
+      Object.getOwnPropertyNames(obj).map(bindProp);
 
       // Attach dunder function
       Object.defineProperty(obj, '__', { value: dunder });
 
+      // More treatment for arrays?
       if (Array.isArray(obj)) {
 
         // Proxy mutable array methods
 
-        // Notify subscribers, `changes` are like in Object.observe
-        notify = function(changes) {
+        values = obj.__.values;
+
+        // Notify subscribers
+        // @param type: 'insert', 'delete' or 'update'
+        // @param index: which element changed
+        notify = function(type, index, count) {
           for (var i = 0, len = obj.__.arrayWatchers.length; i < len; i++) {
-            obj.__.arrayWatchers[i](changes);
+            obj.__.arrayWatchers[i](type, index, count);
           }
         };
 
-        values = obj.__.values;
 
         mutableMethods = {
 
           pop: function() {
-            var result = values.pop();
-            notify([{
-              type: 'delete',
-              name: values.length,
-              object: values
-            }]);
+            var result = [].pop.apply(this);
+            notify('del', this.length, 1);
             return result;
           },
 
-          push: function(item) {
+          push: function() {
+            var result = [].push.apply(this, arguments);
+            notify('ins', this.length - 1, 1);
+            return result;
+          },
 
+          reverse: function() {
+            var result = [].reverse.apply(this);
+            notify('upd', 0, this.length);
+            return result;
+          },
+
+          shift: function() {
+            var result = [].shift.apply(this);
+            notify('del', 0, 1);
+            return result;
+          },
+
+          unshift: function() {
+            var result = [].unshift.apply(this, arguments);
+            notify('ins', 0, arguments.length);
+            return result;
+          },
+
+          sort: function() {
+            var result = [].sort.apply(this, arguments);
+            notify('upd', 0, this.length);
+            return result;
+          },
+
+          splice: function() {
+            var result = [].splice.apply(this, arguments);
+            if (arguments[1]) {
+              notify('del', arguments[0], arguments[1]);
+            }
+            if (arguments.length > 2) {
+              notify('ins', arguments[0], arguments.length - 2);
+            }
+            return result;
           }
         };
 

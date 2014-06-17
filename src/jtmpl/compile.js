@@ -92,6 +92,11 @@ Return documentFragment
         body.innerHTML = template;
       }
 
+      // Box model?
+      if (typeof model !== 'object') {
+        model = { '.': model };
+      }
+
       // Initialize dunder function
       j.bind(model);
 

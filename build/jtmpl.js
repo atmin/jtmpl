@@ -307,6 +307,11 @@ Return documentFragment
         body.innerHTML = template;
       }
 
+      // Box model?
+      if (typeof model !== 'object') {
+        model = { '.': model };
+      }
+
       // Initialize dunder function
       j.bind(model);
 
@@ -422,7 +427,7 @@ Return documentFragment
                   }
                 }
 
-                if (rule.react) {
+                if (rule.react && typeof model === 'object' && model.__) {
                   // Call reactor on value change
                   j.watch(model, rule.prop, rule.react, rule.arrayReact || null, rule.prop + i);
                   // Initial value
@@ -498,7 +503,7 @@ If current context is an Array, all standard props/methods are there:
 
     j.bind = function(obj, root, parent) {
 
-      var method, mutableMethods, values;
+      var notify, method, mutableMethods, values;
 
       // Guard
       if (typeof obj !== 'object' || obj.__) return;
@@ -534,11 +539,6 @@ If current context is an Array, all standard props/methods are there:
 
         // Getter?
         if ((arg === undefined || typeof arg === 'function') && !refresh) {
-
-          // {{.}}
-          if (prop === '.') {
-            return formatter(model);
-          }
 
           // Parent context?
           if (prop === '..') {
@@ -601,20 +601,23 @@ If current context is an Array, all standard props/methods are there:
 
       dunder.dependents = {};
       dunder.watchers = {};
-      dunder.arrayWatchers = {};
+      dunder.arrayWatchers = [];
       dunder.root = root || obj;
       dunder.parent = parent || null;
-      dunder.values = typeof obj === 'object' ? {} : [];
+      dunder.values = Array.isArray(obj) ? [] : {};
       dunder.bound = {};
 
-      // Proxy all properties with the dunder function
-      Object.getOwnPropertyNames(obj).map(function(prop) {
+      var bindProp = function(prop) {
+
+        // Do not redefine Array.length
+        if (prop === 'length' && Array.isArray(obj)) {
+          return;
+        }
 
         dunder.values[prop] = obj[prop];
 
         Object.defineProperty(obj, prop, {
           get: function() {
-            // return j.get(obj, prop);
             return obj.__(prop); 
           },
           set: function(val) {
@@ -622,36 +625,86 @@ If current context is an Array, all standard props/methods are there:
           }
         });
 
-      });
+      };
 
+      // Proxy all properties with the dunder function
+      Object.getOwnPropertyNames(obj).map(bindProp);
+
+      // Attach dunder function
+      Object.defineProperty(obj, '__', { value: dunder });
+
+      // More treatment for arrays?
       if (Array.isArray(obj)) {
 
         // Proxy mutable array methods
 
         values = obj.__.values;
 
+        // Notify subscribers
+        // @param type: 'insert', 'delete' or 'update'
+        // @param index: which element changed
+        notify = function(type, index, count) {
+          for (var i = 0, len = obj.__.arrayWatchers.length; i < len; i++) {
+            obj.__.arrayWatchers[i](type, index, count);
+          }
+        };
+
+
         mutableMethods = {
 
           pop: function() {
-            var result = values.pop();
-            listener([{
-              type: 'delete',
-              name: values.length,
-              object: values
-            }]);
+            var result = [].pop.apply(this);
+            notify('del', this.length, 1);
+            return result;
           },
 
-          push: function(item) {
+          push: function() {
+            var result = [].push.apply(this, arguments);
+            notify('ins', this.length - 1, 1);
+            return result;
+          },
 
+          reverse: function() {
+            var result = [].reverse.apply(this);
+            notify('upd', 0, this.length);
+            return result;
+          },
+
+          shift: function() {
+            var result = [].shift.apply(this);
+            notify('del', 0, 1);
+            return result;
+          },
+
+          unshift: function() {
+            var result = [].unshift.apply(this, arguments);
+            notify('ins', 0, arguments.length);
+            return result;
+          },
+
+          sort: function() {
+            var result = [].sort.apply(this, arguments);
+            notify('upd', 0, this.length);
+            return result;
+          },
+
+          splice: function() {
+            var result = [].splice.apply(this, arguments);
+            if (arguments[1]) {
+              notify('del', arguments[0], arguments[1]);
+            }
+            if (arguments.length > 2) {
+              notify('ins', arguments[0], arguments.length - 2);
+            }
+            return result;
           }
         };
 
         for (method in mutableMethods) {
-          dunder[method] = obj[method] = mutableMethods[method];
+          dunder[method] = mutableMethods[method];
+          obj[method] = mutableMethods[method];
         }
       }
-
-      Object.defineProperty(obj, '__', { value: dunder });
 
     };
 
@@ -694,17 +747,13 @@ Notifies `callback` passing new value, when `obj[prop]` changes.
       }
 
       //
-      if (arrayCallback) {
-        arrayWatchers = obj.__.arrayWatchers;
-
-        // Init watchers
-        if (!arrayWatchers[prop]) {
-          arrayWatchers[prop] = [];
-        }
+      if (arrayCallback && Array.isArray(obj[prop])) {
+        j.bind(obj[prop]);
+        arrayWatchers = obj[prop].__.arrayWatchers;
 
         // Already registered?
-        if (arrayWatchers[prop].indexOf(arrayCallback) === -1) {
-          arrayWatchers[prop].push(arrayCallback);
+        if (arrayWatchers.indexOf(arrayCallback) === -1) {
+          arrayWatchers.push(arrayCallback);
         }
       }
     };
@@ -835,6 +884,7 @@ Can be bound to text node
               // Array?
               if (Array.isArray(val)) {
                 render = document.createDocumentFragment();
+                // j.bind(val);
                 for (i = 0, len = val.length; i < len; i++) {
                   render.appendChild(j.compile(template, val[i]));
                 }
@@ -861,10 +911,10 @@ Can be bound to text node
 
             block: match[1],
 
-            arrayReact: function(changes) {
-              console.log(changes);
+            arrayReact: function(type, index, count) {
+              console.log(arguments);
             }
-            
+
           };
 
         }

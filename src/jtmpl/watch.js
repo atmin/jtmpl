@@ -36,7 +36,7 @@ Notifies `callback` passing new value, when `obj[prop]` changes.
       }
 
       //
-      if (arrayCallback) {
+      if (arrayCallback && Array.isArray(obj[prop])) {
         j.bind(obj[prop]);
         arrayWatchers = obj[prop].__.arrayWatchers;
 

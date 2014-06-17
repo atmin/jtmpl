@@ -93,7 +93,6 @@ Can be bound to text node
       function (tag, node, attr, model, options) {
         var match = tag.match(new RegExp('#' + RE_SRC_IDENTIFIER));
         var template;
-        var position;
         var fragment = document.createDocumentFragment();
         var anchor = document.createComment('');
         var length = 0;
@@ -107,7 +106,6 @@ Can be bound to text node
             replace: function(tmpl, parent) {
               fragment.appendChild(anchor);
               template = tmpl;
-              position = parent.childNodes.length;
               return anchor;
             },
 
@@ -123,8 +121,9 @@ Can be bound to text node
               // Array?
               if (Array.isArray(val)) {
                 render = document.createDocumentFragment();
-                j.bind(val);
+                // j.bind(val);
                 for (i = 0, len = val.length; i < len; i++) {
+                  j.watch(val, i); //TODO
                   render.appendChild(j.compile(template, val[i]));
                 }
                 length = render.childNodes.length;
@@ -150,8 +149,45 @@ Can be bound to text node
 
             block: match[1],
 
-            arrayReact: function(changes) {
-              console.log(changes);
+            arrayReact: function(type, index, count) {
+              var parent = anchor.parentNode;
+              var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
+              var pos = anchorIndex - length + index * template.childNodes.length;
+              var size = count * template.childNodes.length;
+              var i, fragment;
+
+              switch (type) {
+
+                case 'ins':
+                  
+                  for (i = 0, fragment = document.createDocumentFragment();
+                      i < count; i++) {
+                    fragment.appendChild(j.compile(template, model[match[1]][index + i]));
+                  }
+                    
+                  parent.insertBefore(fragment, parent.childNodes[pos]);
+                  length = length + size;
+                  
+                  break;
+
+                case 'del':
+                  
+                  length = length - size;
+
+                  while (size--) {
+                    parent.removeChild(parent.childNodes[pos]);
+                  }
+
+                  break;
+
+                case 'upd':
+
+                  for (i = index; i < index + count; i++) {
+                    model[match[1]].__(i, null, true);
+                  }
+
+                  break;
+              }
             }
 
           };
