@@ -10,7 +10,7 @@ Notifies `callback` passing new value, when `obj[prop]` changes.
       var watchers, arrayWatchers;
     
       // Must be specified
-      if (!(obj && prop && callback) ||
+      if (!(obj && prop !== undefined && callback) ||
           typeof obj !== 'object') return;
 
       // Already bound?

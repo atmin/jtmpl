@@ -216,7 +216,8 @@ If current context is an Array, all standard props/methods are there:
 
           reverse: function() {
             var result = [].reverse.apply(this);
-            notify('upd', 0, this.length);
+            notify('del', 0, this.length);
+            notify('ins', 0, this.length);
             return result;
           },
 
@@ -234,7 +235,8 @@ If current context is an Array, all standard props/methods are there:
 
           sort: function() {
             var result = [].sort.apply(this, arguments);
-            notify('upd', 0, this.length);
+            notify('del', 0, this.length);
+            notify('ins', 0, this.length);
             return result;
           },
 
