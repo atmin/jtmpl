@@ -666,7 +666,8 @@ If current context is an Array, all standard props/methods are there:
 
           reverse: function() {
             var result = [].reverse.apply(this);
-            notify('upd', 0, this.length);
+            notify('del', 0, this.length);
+            notify('ins', 0, this.length);
             return result;
           },
 
@@ -684,7 +685,8 @@ If current context is an Array, all standard props/methods are there:
 
           sort: function() {
             var result = [].sort.apply(this, arguments);
-            notify('upd', 0, this.length);
+            notify('del', 0, this.length);
+            notify('ins', 0, this.length);
             return result;
           },
 
@@ -721,7 +723,7 @@ Notifies `callback` passing new value, when `obj[prop]` changes.
       var watchers, arrayWatchers;
     
       // Must be specified
-      if (!(obj && prop && callback) ||
+      if (!(obj && prop !== undefined && callback) ||
           typeof obj !== 'object') return;
 
       // Already bound?
@@ -853,12 +855,51 @@ Can be bound to text node
 
       function (tag, node, attr, model, options) {
         var match = tag.match(new RegExp('#' + RE_SRC_IDENTIFIER));
+        var prop = match && match[1];
         var template;
-        var position;
         var fragment = document.createDocumentFragment();
         var anchor = document.createComment('');
         var length = 0;
-        
+        var arrayReact = function(type, index, count) {
+          var parent = anchor.parentNode;
+          var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
+          var pos = anchorIndex - length + index * template.childNodes.length;
+          var size = count * template.childNodes.length;
+          var i, fragment;
+
+          switch (type) {
+
+            case 'ins':
+              
+              for (i = 0, fragment = document.createDocumentFragment();
+                  i < count; i++) {
+                fragment.appendChild(j.compile(template, model[prop][index + i]));
+              }
+                
+              parent.insertBefore(fragment, parent.childNodes[pos]);
+              length = length + size;
+              
+              break;
+
+            case 'del':
+              
+              length = length - size;
+
+              while (size--) {
+                parent.removeChild(parent.childNodes[pos]);
+              }
+
+              break;
+          }
+        };
+
+        var react = function(i) {
+          return function() {
+            arrayReact('del', i, 1);
+            arrayReact('ins', i, 1);
+          };
+        };
+
         if (match) {
 
           return {
@@ -868,7 +909,6 @@ Can be bound to text node
             replace: function(tmpl, parent) {
               fragment.appendChild(anchor);
               template = tmpl;
-              position = parent.childNodes.length;
               return anchor;
             },
 
@@ -884,8 +924,8 @@ Can be bound to text node
               // Array?
               if (Array.isArray(val)) {
                 render = document.createDocumentFragment();
-                // j.bind(val);
                 for (i = 0, len = val.length; i < len; i++) {
+                  j.watch(model[prop], i, react(i), null, i);
                   render.appendChild(j.compile(template, val[i]));
                 }
                 length = render.childNodes.length;
@@ -911,10 +951,7 @@ Can be bound to text node
 
             block: match[1],
 
-            arrayReact: function(type, index, count) {
-              console.log(arguments);
-            }
-
+            arrayReact: arrayReact
           };
 
         }

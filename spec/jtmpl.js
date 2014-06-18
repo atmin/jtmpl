@@ -109,4 +109,24 @@
 
 
 
+      it('{{#a}}{{.}}{{/}}', function() {
+        var model = {a: [1, 2, 3, 4]};
+        var template = '{{#a}}{{.}}{{/}}';
+
+        var body = document.createElement('body');
+        body.appendChild(jtmpl(template, model));
+
+        expect(
+          body.innerHTML
+        ).toBe('1234<!---->');
+
+        model.a = [3, 2, 1];
+
+        expect(
+          body.innerHTML
+        ).toBe('321<!---->');
+      });
+
+
+
     });
