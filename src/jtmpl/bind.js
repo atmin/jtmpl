@@ -130,6 +130,20 @@ If current context is an Array, all standard props/methods are there:
             }
             else {
               // Simple property. `arg` is the new value
+
+              // Object assignment?
+              // if (
+              //   typeof dunder.values[prop] === 'object' &&
+              //   typeof arg === 'object' &&
+              //   typeof dunder.values[prop].__ === 'function'
+              // ) {
+              //   // Attach dunder function to new value
+              //   arg.__ = dunder.values[prop].__;
+              // }
+              if (typeof arg === 'object') {
+                j.bind(arg);
+              }
+
               dunder.values[prop] = arg;
             }
           }
@@ -185,10 +199,7 @@ If current context is an Array, all standard props/methods are there:
 
       // More treatment for arrays?
       if (Array.isArray(obj)) {
-
         // Proxy mutable array methods
-
-        values = obj.__.values;
 
         // Notify subscribers
         // @param type: 'insert', 'delete' or 'update'
@@ -241,7 +252,12 @@ If current context is an Array, all standard props/methods are there:
           },
 
           splice: function() {
+            var length = this.length;
             var result = [].splice.apply(this, arguments);
+            while (length < this.length) {
+              bindProp(length);
+              length++;
+            }
             if (arguments[1]) {
               notify('del', arguments[0], arguments[1]);
             }

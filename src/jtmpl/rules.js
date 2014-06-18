@@ -97,6 +97,7 @@ Can be bound to text node
         var fragment = document.createDocumentFragment();
         var anchor = document.createComment('');
         var length = 0;
+
         var arrayReact = function(type, index, count) {
           var parent = anchor.parentNode;
           var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
@@ -130,11 +131,58 @@ Can be bound to text node
           }
         };
 
-        var react = function(i) {
+        var update = function(i) {
           return function() {
-            arrayReact('del', i, 1);
             arrayReact('ins', i, 1);
+            arrayReact('del', i, 1);
           };
+        };
+
+        var react = function(val) {
+          var i, len, render;
+          var arrayWatchers;
+
+          if (typeof model[prop] === 'object' && model[prop].__) {
+            // Capture dunder
+            arrayWatchers = model[prop].__.arrayWatchers;
+          }
+
+          // Delete old rendering
+          while (length) {
+            anchor.parentNode.removeChild(anchor.previousSibling);
+            length--;
+          }
+
+          // Array?
+          if (Array.isArray(val)) {
+            render = document.createDocumentFragment();
+            for (i = 0, len = val.length; i < len; i++) {
+              j.watch(model[prop], i, update(i), null, i);
+              render.appendChild(j.compile(template, val[i]));
+            }
+            j.watch(model, prop, function() {
+              // Restore arrayWatchers
+              model[prop].__.arrayWatchers = arrayWatchers;
+            });
+            length = render.childNodes.length;
+            anchor.parentNode.insertBefore(render, anchor);
+          }
+
+          // Object?
+          else if (typeof val === 'object') {
+            render = j.compile(template, val);
+            length = render.childNodes.length;
+            anchor.parentNode.insertBefore(render, anchor);
+          }
+          
+          // Cast to boolean
+          else {
+            if (!!val) {
+              render = j.compile(template, model);
+              length = render.childNodes.length;
+              anchor.parentNode.insertBefore(render, anchor);
+            }
+          }
         };
 
         if (match) {
@@ -149,42 +197,7 @@ Can be bound to text node
               return anchor;
             },
 
-            react: function(val) {
-              var i, len, render;
-
-              // Delete old rendering
-              while (length) {
-                anchor.parentNode.removeChild(anchor.previousSibling);
-                length--;
-              }
-
-              // Array?
-              if (Array.isArray(val)) {
-                render = document.createDocumentFragment();
-                for (i = 0, len = val.length; i < len; i++) {
-                  j.watch(model[prop], i, react(i), null, i);
-                  render.appendChild(j.compile(template, val[i]));
-                }
-                length = render.childNodes.length;
-                anchor.parentNode.insertBefore(render, anchor);
-              }
-
-              // Object?
-              else if (typeof val === 'object') {
-                render = j.compile(template, val);
-                length = render.childNodes.length;
-                anchor.parentNode.insertBefore(render, anchor);
-              }
-              
-              // Cast to boolean
-              else {
-                if (!!val) {
-                  render = j.compile(template, model);
-                  length = render.childNodes.length;
-                  anchor.parentNode.insertBefore(render, anchor);
-                }
-              }
-            },
+            react: react,
 
             block: match[1],
 

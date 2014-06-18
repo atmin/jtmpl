@@ -24,18 +24,44 @@ Referred as `j`, exported as `jtmpl`.
     function j() {
       var args = [].slice.call(arguments);
   
-      // jtmpl('HTTP_METHOD', url[, parameters[, callback[, options]]]) ?
+      // jtmpl('HTTP_METHOD', url[, parameters[, callback[, options]]])?
       if (['GET', 'POST'].indexOf(args[0]) > -1) {
-        return j.xhr(args);
+        return j.xhr.apply(null, args);
       }
 
-      // jtmpl(template, model[, options]) ?
+      // jtmpl(template, model[, options])?
       else if (
         typeof args[0] === 'string' && 
         typeof args[1] === 'object' &&
         ['object', 'undefined'].indexOf(typeof args[2]) > -1
       ) {
         return j.compile.apply(null, args);
+      }
+
+      // jtmpl(target, model[, options])?
+      // else if (
+      //   args[0] instanceof Node &&
+      //   typeof args[1] === 'object'
+      // ) {
+      //   console.log('jtmpl(target, model[, options])');
+      // }
+
+      // jtmpl(target, template, model[, options])?
+      else if (
+        ( args[0] instanceof Node || 
+          (typeof args[0] === 'string')
+        ) &&
+
+        ( args[1] instanceof Node || 
+          args[1] instanceof DocumentFragment ||
+          (typeof args[1] === 'string')
+        ) &&
+
+        typeof args[2] === 'object'
+
+      ) {
+
+        console.log('jtmpl(target, template, model[, options])');
       }
     }
 
@@ -580,6 +606,20 @@ If current context is an Array, all standard props/methods are there:
             }
             else {
               // Simple property. `arg` is the new value
+
+              // Object assignment?
+              // if (
+              //   typeof dunder.values[prop] === 'object' &&
+              //   typeof arg === 'object' &&
+              //   typeof dunder.values[prop].__ === 'function'
+              // ) {
+              //   // Attach dunder function to new value
+              //   arg.__ = dunder.values[prop].__;
+              // }
+              if (typeof arg === 'object') {
+                j.bind(arg);
+              }
+
               dunder.values[prop] = arg;
             }
           }
@@ -635,10 +675,7 @@ If current context is an Array, all standard props/methods are there:
 
       // More treatment for arrays?
       if (Array.isArray(obj)) {
-
         // Proxy mutable array methods
-
-        values = obj.__.values;
 
         // Notify subscribers
         // @param type: 'insert', 'delete' or 'update'
@@ -691,7 +728,12 @@ If current context is an Array, all standard props/methods are there:
           },
 
           splice: function() {
+            var length = this.length;
             var result = [].splice.apply(this, arguments);
+            while (length < this.length) {
+              bindProp(length);
+              length++;
+            }
             if (arguments[1]) {
               notify('del', arguments[0], arguments[1]);
             }
@@ -860,6 +902,7 @@ Can be bound to text node
         var fragment = document.createDocumentFragment();
         var anchor = document.createComment('');
         var length = 0;
+
         var arrayReact = function(type, index, count) {
           var parent = anchor.parentNode;
           var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
@@ -893,11 +936,58 @@ Can be bound to text node
           }
         };
 
-        var react = function(i) {
+        var update = function(i) {
           return function() {
-            arrayReact('del', i, 1);
             arrayReact('ins', i, 1);
+            arrayReact('del', i, 1);
           };
+        };
+
+        var react = function(val) {
+          var i, len, render;
+          var arrayWatchers;
+
+          if (typeof model[prop] === 'object' && model[prop].__) {
+            // Capture dunder
+            arrayWatchers = model[prop].__.arrayWatchers;
+          }
+
+          // Delete old rendering
+          while (length) {
+            anchor.parentNode.removeChild(anchor.previousSibling);
+            length--;
+          }
+
+          // Array?
+          if (Array.isArray(val)) {
+            render = document.createDocumentFragment();
+            for (i = 0, len = val.length; i < len; i++) {
+              j.watch(model[prop], i, update(i), null, i);
+              render.appendChild(j.compile(template, val[i]));
+            }
+            j.watch(model, prop, function() {
+              // Restore arrayWatchers
+              model[prop].__.arrayWatchers = arrayWatchers;
+            });
+            length = render.childNodes.length;
+            anchor.parentNode.insertBefore(render, anchor);
+          }
+
+          // Object?
+          else if (typeof val === 'object') {
+            render = j.compile(template, val);
+            length = render.childNodes.length;
+            anchor.parentNode.insertBefore(render, anchor);
+          }
+          
+          // Cast to boolean
+          else {
+            if (!!val) {
+              render = j.compile(template, model);
+              length = render.childNodes.length;
+              anchor.parentNode.insertBefore(render, anchor);
+            }
+          }
         };
 
         if (match) {
@@ -912,42 +1002,7 @@ Can be bound to text node
               return anchor;
             },
 
-            react: function(val) {
-              var i, len, render;
-
-              // Delete old rendering
-              while (length) {
-                anchor.parentNode.removeChild(anchor.previousSibling);
-                length--;
-              }
-
-              // Array?
-              if (Array.isArray(val)) {
-                render = document.createDocumentFragment();
-                for (i = 0, len = val.length; i < len; i++) {
-                  j.watch(model[prop], i, react(i), null, i);
-                  render.appendChild(j.compile(template, val[i]));
-                }
-                length = render.childNodes.length;
-                anchor.parentNode.insertBefore(render, anchor);
-              }
-
-              // Object?
-              else if (typeof val === 'object') {
-                render = j.compile(template, val);
-                length = render.childNodes.length;
-                anchor.parentNode.insertBefore(render, anchor);
-              }
-              
-              // Cast to boolean
-              else {
-                if (!!val) {
-                  render = j.compile(template, model);
-                  length = render.childNodes.length;
-                  anchor.parentNode.insertBefore(render, anchor);
-                }
-              }
-            },
+            react: react,
 
             block: match[1],
 

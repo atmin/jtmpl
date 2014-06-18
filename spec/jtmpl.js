@@ -121,10 +121,51 @@
         ).toBe('1234<!---->');
 
         model.a = [3, 2, 1];
-
         expect(
           body.innerHTML
         ).toBe('321<!---->');
+
+        model.a.pop();
+        expect(
+          body.innerHTML
+        ).toBe('32<!---->');
+
+        model.a.push(42); 
+        expect(
+          body.innerHTML
+        ).toBe('3242<!---->');
+
+        // Sort seems buggy in PhantomJS
+        // model.a.sort();
+        // expect(
+        //   body.innerHTML
+        // ).toBe('2342<!---->');
+
+        model.a.reverse();
+        expect(
+          body.innerHTML
+        ).toBe('4223<!---->');
+
+        model.a.shift();
+        expect(
+          body.innerHTML
+        ).toBe('23<!---->');
+
+        model.a.unshift(1);
+        expect(
+          body.innerHTML
+        ).toBe('123<!---->');
+
+        model.a.splice(0, 1);
+        expect(
+          body.innerHTML
+        ).toBe('23<!---->');
+
+        model.a.splice(0, 0, 1);
+        expect(
+          body.innerHTML
+        ).toBe('123<!---->');
+
       });
 
 
