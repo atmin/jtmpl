@@ -99,6 +99,8 @@ Can be bound to text node
         var length = 0;
 
         var arrayReact = function(type, index, count) {
+          console.log('arrayReact ' + type + ', ' + index + ', ' + count);
+          var obj = model;
           var parent = anchor.parentNode;
           var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
           var pos = anchorIndex - length + index * template.childNodes.length;
@@ -111,7 +113,7 @@ Can be bound to text node
               
               for (i = 0, fragment = document.createDocumentFragment();
                   i < count; i++) {
-                fragment.appendChild(j.compile(template, model[prop][index + i]));
+                fragment.appendChild(j.compile(template, obj[prop][index + i]));
               }
                 
               parent.insertBefore(fragment, parent.childNodes[pos]);
@@ -133,8 +135,17 @@ Can be bound to text node
 
         var update = function(i) {
           return function() {
-            arrayReact('ins', i, 1);
-            arrayReact('del', i, 1);
+            // arrayReact('del', i, 1);
+            // arrayReact('ins', i, 1);
+            // model[prop].__(i, null, true);
+            var parent = anchor.parentNode;
+            var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
+            var pos = anchorIndex - length + i * template.childNodes.length;
+
+            parent.replaceChild(
+              j.compile(template, model[prop][i]),
+              parent.childNodes[pos]
+            );
           };
         };
 

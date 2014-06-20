@@ -253,17 +253,28 @@ If current context is an Array, all standard props/methods are there:
 
           splice: function() {
             var length = this.length;
-            var result = [].splice.apply(this, arguments);
+            var result;
+
+            if (arguments[1]) {
+              notify('del', arguments[0], arguments[1]);
+            }
+            
+            if (arguments.length > 2) {
+              notify('ins', arguments[0], arguments.length - 2);
+            }
+
+            result = [].splice.apply(this, arguments);
+            
             while (length < this.length) {
               bindProp(length);
               length++;
             }
-            if (arguments[1]) {
-              notify('del', arguments[0], arguments[1]);
+
+            while (length > this.length) {
+              delete this[length];
+              length--;
             }
-            if (arguments.length > 2) {
-              notify('ins', arguments[0], arguments.length - 2);
-            }
+
             return result;
           }
         };
