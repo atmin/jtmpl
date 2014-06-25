@@ -117,7 +117,7 @@ If current context is an Array, all standard props/methods are there:
               result :
 
             // Single value
-            formatter(result);          
+            formatter(result);
         }
 
         else {
@@ -178,6 +178,11 @@ If current context is an Array, all standard props/methods are there:
           return;
         }
 
+        // Do not proxy functions
+        if (typeof obj[prop] === 'function') {
+          return;
+        }
+
         dunder.values[prop] = obj[prop];
 
         Object.defineProperty(obj, prop, {
@@ -191,7 +196,7 @@ If current context is an Array, all standard props/methods are there:
 
       };
 
-      // Proxy all properties with the dunder function
+      // Proxy all non-function properties with the dunder function
       Object.getOwnPropertyNames(obj).map(bindProp);
 
       // Attach dunder function

@@ -114,7 +114,10 @@ On page ready, process jtmpl targets
         //   return loadModel(document.querySelector(src).innerHTML);
         // }
 
-        jtmpl(t, t.getAttribute('data-template'), t.getAttribute('data-model'));
+        jtmpl(t, 
+          document.querySelector(t.getAttribute('data-template')).innerHTML, 
+          j.loadModel(document.querySelector(t.getAttribute('data-model')).innerHTML)
+        );
       }
     });
 
@@ -526,6 +529,8 @@ Return documentFragment
       return fragment;
     };
 
+
+
 /*
 
 Initialize `obj.__`.
@@ -645,7 +650,7 @@ If current context is an Array, all standard props/methods are there:
               result :
 
             // Single value
-            formatter(result);          
+            formatter(result);
         }
 
         else {
@@ -781,21 +786,28 @@ If current context is an Array, all standard props/methods are there:
 
           splice: function() {
             var length = this.length;
-            var result = [].splice.apply(this, arguments);
+            var result;
+
+            if (arguments[1]) {
+              notify('del', arguments[0], arguments[1]);
+            }
+            
+            if (arguments.length > 2) {
+              notify('ins', arguments[0], arguments.length - 2);
+            }
+
+            result = [].splice.apply(this, arguments);
+            
             while (length < this.length) {
               bindProp(length);
               length++;
             }
+
             while (length > this.length) {
-              delete model[length];
+              delete this[length];
               length--;
             }
-            if (arguments[1]) {
-              notify('del', arguments[0], arguments[1]);
-            }
-            if (arguments.length > 2) {
-              notify('ins', arguments[0], arguments.length - 2);
-            }
+
             return result;
           }
         };
@@ -865,7 +877,13 @@ Notifies `callback` passing new value, when `obj[prop]` changes.
 
 Each rule is a function, args passed (tag, node, attr, model, options)
 
-It MUST return either:
+tag: text between delimiters, {{tag}}
+node: DOM node, where tag is found
+attr: node attribute or null, if node contents
+model: bound model
+options: configuration options
+
+It must return either:
 
 * falsy value - no match
 
@@ -875,17 +893,41 @@ It MUST return either:
        // Set new context, default - original model
        model: set_new_context_object
 
-       // Parse until {{/tagName}} ...
-       block: 'tagName'
-       // ... then call `replace`
-       
        // Return replace block tag contents
        replace: function(tmpl, parent) { ... }
+
+       // React on model[prop] change
+       react: function(val) { ... }
+
+       // React on insertion/deletion
+       arrayReact: function(type, index, count) { ... }
      }
 
 */
 
     j.rules = [
+
+
+/*
+
+### onevent="{{handler}}"
+
+Attach event listener for the 'event' event, remove the attribute
+
+*/
+
+      function (tag, node, attr, model, options) {
+        var tagmatch = tag.match(RE_IDENTIFIER);
+        var attrmatch = attr && attr.match(new RegExp('on' + RE_SRC_IDENTIFIER));
+
+        if (tagmatch && attrmatch) {
+          // Remove 'onevent' attribute
+          node.setAttribute(attr, null);
+          // TODO: use event delegation
+          node.addEventListener(attrmatch[1], model[tag]);
+        }
+      },
+
 
 
 /*
@@ -960,6 +1002,8 @@ Can be bound to text node
         var length = 0;
 
         var arrayReact = function(type, index, count) {
+          // console.log('arrayReact ' + type + ', ' + index + ', ' + count);
+          var obj = model;
           var parent = anchor.parentNode;
           var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
           var pos = anchorIndex - length + index * template.childNodes.length;
@@ -972,7 +1016,7 @@ Can be bound to text node
               
               for (i = 0, fragment = document.createDocumentFragment();
                   i < count; i++) {
-                fragment.appendChild(j.compile(template, model[prop][index + i]));
+                fragment.appendChild(j.compile(template, obj[prop][index + i]));
               }
                 
               parent.insertBefore(fragment, parent.childNodes[pos]);
@@ -994,8 +1038,17 @@ Can be bound to text node
 
         var update = function(i) {
           return function() {
-            arrayReact('ins', i, 1);
-            arrayReact('del', i + 1, 1);
+            // arrayReact('del', i, 1);
+            // arrayReact('ins', i, 1);
+            // model[prop].__(i, null, true);
+            var parent = anchor.parentNode;
+            var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
+            var pos = anchorIndex - length + i * template.childNodes.length;
+
+            parent.replaceChild(
+              j.compile(template, model[prop][i]),
+              parent.childNodes[pos]
+            );
           };
         };
 
@@ -1004,7 +1057,7 @@ Can be bound to text node
           var arrayWatchers;
 
           if (typeof model[prop] === 'object' && model[prop].__) {
-            // Capture dunder
+            // Capture arrayWatchers
             arrayWatchers = model[prop].__.arrayWatchers;
           }
 

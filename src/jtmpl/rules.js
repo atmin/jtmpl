@@ -4,7 +4,13 @@
 
 Each rule is a function, args passed (tag, node, attr, model, options)
 
-It MUST return either:
+tag: text between delimiters, {{tag}}
+node: DOM node, where tag is found
+attr: node attribute or null, if node contents
+model: bound model
+options: configuration options
+
+It must return either:
 
 * falsy value - no match
 
@@ -14,17 +20,41 @@ It MUST return either:
        // Set new context, default - original model
        model: set_new_context_object
 
-       // Parse until {{/tagName}} ...
-       block: 'tagName'
-       // ... then call `replace`
-       
        // Return replace block tag contents
        replace: function(tmpl, parent) { ... }
+
+       // React on model[prop] change
+       react: function(val) { ... }
+
+       // React on insertion/deletion
+       arrayReact: function(type, index, count) { ... }
      }
 
 */
 
     j.rules = [
+
+
+/*
+
+### onevent="{{handler}}"
+
+Attach event listener for the 'event' event, remove the attribute
+
+*/
+
+      function (tag, node, attr, model, options) {
+        var tagmatch = tag.match(RE_IDENTIFIER);
+        var attrmatch = attr && attr.match(new RegExp('on' + RE_SRC_IDENTIFIER));
+
+        if (tagmatch && attrmatch) {
+          // Remove 'onevent' attribute
+          node.setAttribute(attr, null);
+          // TODO: use event delegation
+          node.addEventListener(attrmatch[1], model[tag]);
+        }
+      },
+
 
 
 /*
@@ -99,7 +129,7 @@ Can be bound to text node
         var length = 0;
 
         var arrayReact = function(type, index, count) {
-          console.log('arrayReact ' + type + ', ' + index + ', ' + count);
+          // console.log('arrayReact ' + type + ', ' + index + ', ' + count);
           var obj = model;
           var parent = anchor.parentNode;
           var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
@@ -154,7 +184,7 @@ Can be bound to text node
           var arrayWatchers;
 
           if (typeof model[prop] === 'object' && model[prop].__) {
-            // Capture dunder
+            // Capture arrayWatchers
             arrayWatchers = model[prop].__.arrayWatchers;
           }
 

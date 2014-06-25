@@ -99,6 +99,9 @@ On page ready, process jtmpl targets
         //   return loadModel(document.querySelector(src).innerHTML);
         // }
 
-        jtmpl(t, t.getAttribute('data-template'), t.getAttribute('data-model'));
+        jtmpl(t, 
+          document.querySelector(t.getAttribute('data-template')).innerHTML, 
+          j.loadModel(document.querySelector(t.getAttribute('data-model')).innerHTML)
+        );
       }
     });
