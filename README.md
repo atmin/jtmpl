@@ -25,6 +25,7 @@ There's never need to touch the DOM directly, `model` is the [single source of t
 
 
 
+
 ### How
 
 1. Compile template using a `model` object into a valid HTML string (with added metadata)
@@ -32,6 +33,11 @@ There's never need to touch the DOM directly, `model` is the [single source of t
     `Stage1` can be processed server-side or browser-side
 
 2. Using `Stage1` output generate DOM and bind elements properties to `model` properties 
+
+_This is no longer valid for the currently developed branch.
+It uses browser's HTML parser and binds directly to the resulting nodes
+without requiring a compilation step. It's simpler, faster (that's speculation)
+and more robust_
 
 
 

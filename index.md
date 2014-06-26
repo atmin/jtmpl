@@ -26,6 +26,11 @@ Mustache syntax *&nbsp;+&nbsp;* automatic data-binding *&nbsp;=&nbsp;* Live temp
 	</ul>
 </nav>
 
+### News
+
+2014-06-25 &middot; functional reactive object wrapper has been decoupled 
+into a new project, [freak](https://github.com/atmin/freak)
+
 ### Roadmap
 
 Upcoming jtmpl 0.4.0 will be a complete rewrite. Here's what's changing:
