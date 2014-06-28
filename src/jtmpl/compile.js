@@ -68,13 +68,13 @@
 
 /*
 
-### jtmpl.compile(template, model[, options[, openTag]])
+### jtmpl.compile(template, model[, options])
 
 Return documentFragment
 
 */
 
-    j.compile = function (template, model, options, openTag) {
+    j.compile = function (template, model, options) {
 
       var i, children, len, ai, alen, attr, val, ruleVal, buffer, pos, beginPos, bodyBeginPos, body, node, el, t, match, rule, token, block;
       var fragment = document.createDocumentFragment();

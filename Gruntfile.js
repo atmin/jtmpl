@@ -157,9 +157,7 @@ module.exports = function(grunt) {
     'grunt-contrib-less',
     'grunt-gh-pages',
     'grunt-plato'
-  ].map(function(task) {
-    grunt.loadNpmTasks(task);
-  });
+  ].map(grunt.loadNpmTasks);
 
   grunt.registerTask('build', ['jshint', 'concat', 'uglify', 'less', 'copy', 'md2html', 'plato', 'jasmine']);
   grunt.registerTask('default', ['build', 'connect', 'watch']);
