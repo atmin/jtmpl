@@ -4,8 +4,9 @@ Requests API
 
 */
 
-    j.xhr = function(args) {
+    module.exports = function() {
       var i, len, prop, props, request;
+      var args = [].slice.call(arguments);
 
       var xhr = new XMLHttpRequest();
 
@@ -68,20 +69,3 @@ Requests API
       xhr.send(request);
 
     };
-
-
-
-
-
-
-
-    j.loadModel = function(body) {
-      var result;
-      return (body.match(/^\s*{.*}\s*$/)) ?
-        // Literal
-        eval('result=' + body) :
-        // CommonJS module
-        new Function('module', 'exports', body + ';return module.exports;')({}, {});
-    };
-
-    // evalCJS=function(b){return new Function('module','exports',b+';return module.exports')({})}

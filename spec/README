@@ -1,8 +1,0 @@
-# Specification
-
-
-Each `js` file is both:
-
-* valid Markdown, test suite description for humans
-
-* valid JavaScript, Jasmine-based automated tests

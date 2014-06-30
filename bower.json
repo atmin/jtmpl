@@ -1,9 +1,0 @@
-{
-  "name": "jtmpl",
-  "version": "0.3.1",
-  "main": "[\"build/jtmpl.min.js\", \"build/jtmpl.js\"]",
-  "dependencies": {},
-  "devDependencies": {
-    "highlightjs": "7.3.0"
-  }
-}

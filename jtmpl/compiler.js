@@ -4,82 +4,101 @@
 
 */
 
-    function escapeRE(s) {
-      return  (s + '').replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
-    }
-
-
-    function tokenizer(options, flags) {
-      return RegExp(
-        escapeRE(options.delimiters[0]) + 
-        '(' + RE_ANYTHING + ')' +
-        escapeRE(options.delimiters[1]),
-        flags
-      );
-    }
-
-
-    function matchRules(tag, node, attr, model, options) {
-      var i, match;
-      var rules = j.rules;
-      var rulesLen = j.rules.length;
-
-      // Strip delimiters
-      tag = tag.slice(options.delimiters[0].length, -options.delimiters[1].length);
-
-      for (i = 0; i < rulesLen; i++) {
-        match = rules[i](tag, node, attr, model, options);
-        
-        if (match) {
-          match.index = i;
-          return match;
-        }
-      }
-    }
-
-
-    function wrapTagsInHTMLComments(template, options) {
-      return template.replace(
-        tokenizer(options, 'g'),
-        function(match, match1, pos) {
-          var head = template.slice(0, pos);
-          var insideTag = !!head.match(RegExp('<' + RE_SRC_IDENTIFIER + '[^>]*?$'));
-          var insideComment = !!head.match(/<!--\s*$/);
-          return insideTag || insideComment ?
-            match :
-            '<!--' + match + '-->';
-        }
-      );
-    }
-
-
-    function matchEndBlock(block, template, options) {
-      var match = template.match(
-        RegExp(
-          escapeRE(options.delimiters[0]) + 
-          '\\/' + RE_SRC_IDENTIFIER + '?' +
-          escapeRE(options.delimiters[1])
-        )
-      );
-      return match ?
-        block === '' || match[1] === undefined || match[1] === block :
-        false;
-    }
 
 /*
 
-### jtmpl.compile(template, model[, options])
+### compile(template, model[, options])
 
 Return documentFragment
 
 */
 
-    j.compile = function (template, model, options) {
+    module.exports = function compile(template, model, options) {
+
+      // Utility functions
+
+      function escapeRE(s) {
+        return  (s + '').replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
+      }
+
+
+      function tokenizer(options, flags) {
+        return RegExp(
+          escapeRE(options.delimiters[0]) + 
+          '(' + RE_ANYTHING + ')' +
+          escapeRE(options.delimiters[1]),
+          flags
+        );
+      }
+
+
+      function matchRules(tag, node, attr, model, options) {
+        var i, match;
+        var rules = require('./rules');
+        var rulesLen = rules.length;
+
+        // Strip delimiters
+        tag = tag.slice(options.delimiters[0].length, -options.delimiters[1].length);
+
+        for (i = 0; i < rulesLen; i++) {
+          match = rules[i](tag, node, attr, model, options);
+          
+          if (match) {
+            match.index = i;
+            return match;
+          }
+        }
+      }
+
+
+      function wrapTagsInHTMLComments(template, options) {
+        return template.replace(
+          tokenizer(options, 'g'),
+          function(match, match1, pos) {
+            var head = template.slice(0, pos);
+            var insideTag = !!head.match(RegExp('<' + RE_SRC_IDENTIFIER + '[^>]*?$'));
+            var insideComment = !!head.match(/<!--\s*$/);
+            return insideTag || insideComment ?
+              match :
+              '<!--' + match + '-->';
+          }
+        );
+      }
+
+
+      function matchEndBlock(block, template, options) {
+        var match = template.match(
+          RegExp(
+            escapeRE(options.delimiters[0]) + 
+            '\\/' + RE_SRC_IDENTIFIER + '?' +
+            escapeRE(options.delimiters[1])
+          )
+        );
+        return match ?
+          block === '' || match[1] === undefined || match[1] === block :
+          false;
+      }
+
+
+      // Variables
 
       var i, children, len, ai, alen, attr, val, ruleVal, buffer, pos, beginPos, bodyBeginPos, body, node, el, t, match, rule, token, block;
       var fragment = document.createDocumentFragment();
+      var freak = require('freak');
 
-      options = options || defaultOptions;
+      // Init
+      
+      options = options || require('./default-options');
+
+      model = 
+        typeof model === 'function' ?
+          // Freak instance
+          model :
+          typeof model === 'object' ?
+            // Wrap object
+            freak(model) :
+            // Simple value
+            freak({'.': model});
 
       // Template can be a string or DOM structure
       if (template instanceof Node) {
@@ -91,14 +110,6 @@ Return documentFragment
         body = document.createElement('body');
         body.innerHTML = template;
       }
-
-      // Box model?
-      if (typeof model !== 'object') {
-        model = { '.': model };
-      }
-
-      // Initialize dunder function
-      j.bind(model);
 
       // Iterate child nodes.
       for (i = 0, children = body.childNodes, len = children.length ; i < len; i++) {
@@ -151,16 +162,6 @@ Return documentFragment
                     }
                   }
 
-                  if (rule.react && typeof model === 'object' && model.__) {
-                    // Call reactor on value change
-                    j.watch(model, rule.prop, rule.react, rule.arrayReact || null, rule.prop + i + '.' + ai);
-                    // Initial value
-                    ruleVal = model.__(rule.prop, rule.react);
-                    if (ruleVal !== undefined) {
-                      rule.react(ruleVal);
-                    }
-                  }
-
                 } 
 
               }
@@ -168,7 +169,7 @@ Return documentFragment
             }
 
             // Recursively compile
-            el.appendChild(j.compile(node, model, options));
+            el.appendChild(compile(node, model, options));
 
             break;
 
@@ -212,15 +213,6 @@ Return documentFragment
                   }
                 }
 
-                if (rule.react && typeof model === 'object' && model.__) {
-                  // Call reactor on value change
-                  j.watch(model, rule.prop, rule.react, rule.arrayReact || null, rule.prop + i);
-                  // Initial value
-                  ruleVal = model.__(rule.prop, rule.react);
-                  if (ruleVal !== undefined) {
-                    rule.react(ruleVal);
-                  }
-                }
               }
 
             }

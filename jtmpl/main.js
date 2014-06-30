@@ -2,11 +2,9 @@
 
 ## Main function
 
-Referred as `j`, exported as `jtmpl`.
-
 */
 
-    function j() {
+    module.exports = function jtmpl() {
       var args = [].slice.call(arguments);
       var target, t, template, model;
   
@@ -101,7 +99,8 @@ On page ready, process jtmpl targets
 
         jtmpl(t, 
           document.querySelector(t.getAttribute('data-template')).innerHTML, 
-          j.loadModel(document.querySelector(t.getAttribute('data-model')).innerHTML)
+          require('./eval-object')
+            (document.querySelector(t.getAttribute('data-model')).innerHTML)
         );
       }
     });
