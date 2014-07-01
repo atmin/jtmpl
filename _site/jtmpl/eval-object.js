@@ -4,7 +4,6 @@ Evaluate object from literal or CommonJS module
 
 */
 
-	/* jshint evil:true */
     module.exports = function() {
       var result, module = { exports: {} };
       return (body.match(/^\s*{.*}\s*$/)) ?
@@ -12,4 +11,4 @@ Evaluate object from literal or CommonJS module
         eval('result=' + body) :
         // CommonJS module
         new Function('module', 'exports', body + ';return module.exports;')(module, module.exports);
-    };
+    }

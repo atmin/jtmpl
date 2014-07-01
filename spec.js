@@ -1,9 +1,7 @@
-## Specification
+/*
 
-```js
+Specification
 
-var jtmpl = require('build/jtmpl');
+*/
 
-
-
-```
+    console.log('1');

@@ -77,7 +77,7 @@
         // Assign compiled template
         target.appendChild(j.compile(template, model, args[3]));
       }
-    };
+    }
 
 
 

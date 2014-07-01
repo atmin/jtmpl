@@ -1,0 +1,25 @@
+# Dependencies
+markdown:         redcarpet
+highlighter:      pygments
+
+# Permalinks
+permalink:        pretty
+
+# Setup
+title:            atmin
+tagline:          ''
+description:      ''
+url:              http://atmin.me
+baseurl:          /
+
+author:
+  name:           'Atanas Minev'
+  url:            https://twitter.com/atmin_
+
+paginate:         5
+
+# Custom vars
+version:          2.1.0
+
+github:
+  repo:           https://github.com/atmin/atmin.me
