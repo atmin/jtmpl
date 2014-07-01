@@ -6,20 +6,20 @@ highlighter:      pygments
 permalink:        pretty
 
 # Setup
-title:            atmin
-tagline:          ''
+title:            jtmpl
+tagline:          'Succint front-end applications'
 description:      ''
-url:              http://atmin.me
+url:              http://jtmpl.com
 baseurl:          /
 
 author:
   name:           'Atanas Minev'
-  url:            https://twitter.com/atmin_
+  url:            http://atmin.me
 
 paginate:         5
 
 # Custom vars
-version:          2.1.0
+version:          1.0.0
 
 github:
-  repo:           https://github.com/atmin/atmin.me
+  repo:           https://github.com/atmin/jtmpl

@@ -7,7 +7,7 @@ Toggles class `some-class` in sync with boolean `model.ifCondition`
 */
 
     module.exports = function(tag, node, attr, model, options) {
-      var match = tag.match(new RegExp('#' + RE_SRC_IDENTIFIER));
+      var match = tag.match(new RegExp('#' + require('../consts').RE_SRC_IDENTIFIER));
       var prop = match && match[1];
       var klass;
 

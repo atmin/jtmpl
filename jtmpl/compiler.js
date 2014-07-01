@@ -15,6 +15,8 @@ Return documentFragment
 
     module.exports = function compile(template, model, options) {
 
+      var consts = require('./consts');
+
       // Utility functions
 
       function escapeRE(s) {
@@ -25,7 +27,7 @@ Return documentFragment
       function tokenizer(options, flags) {
         return RegExp(
           escapeRE(options.delimiters[0]) + 
-          '(' + RE_ANYTHING + ')' +
+          '(' + consts.RE_ANYTHING + ')' +
           escapeRE(options.delimiters[1]),
           flags
         );
@@ -56,7 +58,7 @@ Return documentFragment
           tokenizer(options, 'g'),
           function(match, match1, pos) {
             var head = template.slice(0, pos);
-            var insideTag = !!head.match(RegExp('<' + RE_SRC_IDENTIFIER + '[^>]*?$'));
+            var insideTag = !!head.match(RegExp('<' + consts.RE_SRC_IDENTIFIER + '[^>]*?$'));
             var insideComment = !!head.match(/<!--\s*$/);
             return insideTag || insideComment ?
               match :
@@ -70,7 +72,7 @@ Return documentFragment
         var match = template.match(
           RegExp(
             escapeRE(options.delimiters[0]) + 
-            '\\/' + RE_SRC_IDENTIFIER + '?' +
+            '\\/' + consts.RE_SRC_IDENTIFIER + '?' +
             escapeRE(options.delimiters[1])
           )
         );

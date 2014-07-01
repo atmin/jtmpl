@@ -37,6 +37,8 @@ Can be bound to text node data or attribute
         model(tag, model(tag));
 
         // Match found
-        return {};
+        return {
+          replace: target
+        };
       }
     }

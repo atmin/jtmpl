@@ -29,11 +29,11 @@ It must return either:
 */
 
     module.exports = [
-      require('rules/onevent'),
-      require('rules/class-block'),
-      require('rules/class-var'),
-      require('rules/block'),
-      require('rules/var')
+      require('./rules/onevent'),
+      require('./rules/class-block'),
+      require('./rules/class-var'),
+      require('./rules/block'),
+      require('./rules/var')
     ];
 
 

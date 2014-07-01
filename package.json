@@ -14,6 +14,7 @@
   "devDependencies": {
     "browserify": "^4.2.0",
     "element-class": "^0.1.1",
+    "freak": "0.0.3",
     "istanbul": "^0.2.13",
     "jsdom": "^0.11.0",
     "jshint": "^2.5.1",
@@ -23,7 +24,7 @@
   },
   "scripts": {
     "jshint": "jshint jtmpl/*.js",
-    "browserify": "browserify jtmpl/main.js > build/jtmpl.js",
+    "browserify": "browserify --standalone jtmpl jtmpl/main.js > build/jtmpl.js",
     "watchify": "watchify jtmpl/main.js -o build/jtmpl.js -dv",
     "uglify": "uglifyjs build/jtmpl.js -c -m --screw-ie8 -o build/jtmpl.min.js",
     "start": "npm run watchify & simple-server public 8000",

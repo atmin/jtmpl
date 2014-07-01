@@ -4,22 +4,22 @@
 
 */
 
-    module.exports = function jtmpl() {
+    function jtmpl() {
       var args = [].slice.call(arguments);
       var target, t, template, model;
   
       // jtmpl('HTTP_METHOD', url[, parameters[, callback[, options]]])?
       if (['GET', 'POST'].indexOf(args[0]) > -1) {
-        return j.xhr.apply(null, args);
+        return require('./xhr').apply(null, args);
       }
 
       // jtmpl(template, model[, options])?
       else if (
         typeof args[0] === 'string' && 
-        typeof args[1] === 'object' &&
+        ['object', 'function'].indexOf(typeof args[1]) > -1 &&
         ['object', 'undefined'].indexOf(typeof args[2]) > -1
       ) {
-        return j.compile.apply(null, args);
+        return require('./compiler').apply(null, args);
       }
 
       // jtmpl(target, model[, options])?
@@ -61,7 +61,7 @@
           typeof args[2] === 'object' ?
             args[2] :
             args[2].match(RE_NODE_ID) ?
-              j.loadModel(document.querySelector(model).innerHTML) :
+              require('./eval-object')(document.querySelector(model).innerHTML) :
               undefined;
 
         if (target.nodeName === 'SCRIPT') {
@@ -75,9 +75,9 @@
         target.innerHTML = '';
 
         // Assign compiled template
-        target.appendChild(j.compile(template, model, args[3]));
+        target.appendChild(require('./compiler')(template, model, args[3]));
       }
-    };
+    }
 
 
 
@@ -104,3 +104,22 @@ On page ready, process jtmpl targets
         );
       }
     });
+
+
+/*
+
+Expose freak
+
+*/
+
+    jtmpl.freak = require('freak');
+
+
+
+
+/*
+
+Export
+
+*/
+    module.exports = jtmpl;

@@ -7,7 +7,7 @@ Toggles class `some-class` in sync with boolean `model['some-class']`
 */
 
     module.exports = function(tag, node, attr, model, options) {
-      var match = tag.match(RE_IDENTIFIER);
+      var match = tag.match(require('../consts').RE_IDENTIFIER);
       var ec = require('element-class')(node);
 
       function change() {
