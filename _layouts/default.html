@@ -9,11 +9,13 @@
   <link rel="stylesheet" href="css/normalize.css">
   <link rel="stylesheet" href="css/syntax.css">
   <link rel="stylesheet" href="css/solo.css">
+  <link rel="stylesheet" href="css/jtmpl.css">
 {% include head.html %}
 </head>
 <body>
   <div class="container">
-    <h1><a href="./">{{ site.h1_tag_text }}</a></h1>
+    <h1><span>{<span>&rsaquo;</span></span> <a href="./">jtmpl</a> <sup>1.0.0</sup></h1>
+    <h6>Succint front-end applications framework</h6>
     {{ content }}
   </div>
 {% include scripts.html %}

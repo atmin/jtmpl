@@ -1,0 +1,52 @@
+body {
+  color: #586E75;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: #586E75;
+}
+h1 {
+  font-family: Monaco, Consolas, "Lucida Console", monospace;
+}
+h1 a,
+h1 a:visited {
+  color: #586e75;
+}
+h1 sup {
+  color: #dddddd;
+}
+h1 span {
+  color: #eeeeee;
+  font-weight: normal;
+}
+h1 span span {
+  font-size: 130%;
+  position: relative;
+  top: 0.05em;
+  left: -0.2em;
+}
+h1 sup {
+  font-size: 40%;
+  position: relative;
+  top: -0.7em;
+}
+h6 {
+  font-size: 80%;
+  color: #aaaaaa;
+}
+summary {
+	margin: 1em 0;
+	cursor: pointer;
+}
+summary:focus {
+	outline: 1px dotted #bbbbbb;
+}
+details div {
+  width: 600px;
+  height: 400px;
+  border: 1px solid #999999;
+  transition: height 1s ease;
+}
+details[open] div {
+  /*height: 0px;*/
+  /*transition: height 1s ease;*/
+}

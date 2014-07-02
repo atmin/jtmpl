@@ -705,7 +705,7 @@ Can be bound to text node data or attribute
 
         // Match found
         return {
-          replace: target || ''
+          replace: target
         };
       }
     }

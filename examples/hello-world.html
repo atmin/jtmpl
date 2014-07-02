@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+
+
+<div id="target" data-template="#template" data-model="#model"></div>
+
+
+
+<script id="template" type="text/template">
+  <label>Greet goes to <input value="{{who}}"></label><br>
+
+  <h3>Hello, {{who}}</h3>
+</script>
+
+
+
+<script id="model" type="text/model">
+  {
+    who: 'world'
+  }
+</script>
+
+
+
+<script src="build/jtmpl.js"></script>
