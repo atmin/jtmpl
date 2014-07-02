@@ -6,6 +6,7 @@
 
     function jtmpl() {
       var args = [].slice.call(arguments);
+      var consts = require('./consts');
       var target, t, template, model;
   
       // jtmpl('HTTP_METHOD', url[, parameters[, callback[, options]]])?
@@ -53,15 +54,15 @@
           args[0] :
           document.querySelector(args[0]);
 
-        template = args[1].match(RE_NODE_ID) ?
+        template = args[1].match(consts.RE_NODE_ID) ?
           document.querySelector(args[1]).innerHTML :
           args[1];
 
         model = 
           typeof args[2] === 'object' ?
             args[2] :
-            args[2].match(RE_NODE_ID) ?
-              require('./eval-object')(document.querySelector(model).innerHTML) :
+            args[2].match(consts.RE_NODE_ID) ?
+              require('./eval-object')(document.querySelector(args[2]).innerHTML) :
               undefined;
 
         if (target.nodeName === 'SCRIPT') {
@@ -91,9 +92,9 @@ On page ready, process jtmpl targets
       var targets = document.querySelectorAll('[data-template]');
       var t, m;
 
-      for (var i = 0, len = targets[len]; i < len; i++) {
+      for (var i = 0, len = targets.length; i < len; i++) {
         t = targets[i];
-        // if (src.match(RE_NODE_ID)) {
+        // if (src.match(consts.RE_NODE_ID)) {
         //   return loadModel(document.querySelector(src).innerHTML);
         // }
 

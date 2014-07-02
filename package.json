@@ -15,8 +15,6 @@
     "browserify": "^4.2.0",
     "element-class": "^0.1.1",
     "freak": "0.0.3",
-    "istanbul": "^0.2.13",
-    "jsdom": "^0.11.0",
     "jshint": "^2.5.1",
     "simple-server": "^1.0.1",
     "uglify-js": "^2.4.14",
@@ -29,6 +27,6 @@
     "uglify": "uglifyjs build/jtmpl.js -c -m --screw-ie8 -o build/jtmpl.min.js",
     "start": "npm run watchify & simple-server public 8000",
     "build": "npm run jshint && npm run browserify && npm run uglify",
-    "test": "npm run build && istanbul cover spec.js"
+    "test": "npm run build && phantomjs spec.js"
   }
 }

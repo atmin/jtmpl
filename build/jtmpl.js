@@ -268,9 +268,9 @@ Evaluate object from literal or CommonJS module
 */
 
 	/* jshint evil:true */
-    module.exports = function() {
+    module.exports = function(body) {
       var result, module = { exports: {} };
-      return (body.match(/^\s*{.*}\s*$/)) ?
+      return (body.match(/^\s*{[\S\s]*}\s*$/)) ?
         // Literal
         eval('result=' + body) :
         // CommonJS module
@@ -286,6 +286,7 @@ Evaluate object from literal or CommonJS module
 
     function jtmpl() {
       var args = [].slice.call(arguments);
+      var consts = _dereq_('./consts');
       var target, t, template, model;
   
       // jtmpl('HTTP_METHOD', url[, parameters[, callback[, options]]])?
@@ -333,15 +334,15 @@ Evaluate object from literal or CommonJS module
           args[0] :
           document.querySelector(args[0]);
 
-        template = args[1].match(RE_NODE_ID) ?
+        template = args[1].match(consts.RE_NODE_ID) ?
           document.querySelector(args[1]).innerHTML :
           args[1];
 
         model = 
           typeof args[2] === 'object' ?
             args[2] :
-            args[2].match(RE_NODE_ID) ?
-              _dereq_('./eval-object')(document.querySelector(model).innerHTML) :
+            args[2].match(consts.RE_NODE_ID) ?
+              _dereq_('./eval-object')(document.querySelector(args[2]).innerHTML) :
               undefined;
 
         if (target.nodeName === 'SCRIPT') {
@@ -371,9 +372,9 @@ On page ready, process jtmpl targets
       var targets = document.querySelectorAll('[data-template]');
       var t, m;
 
-      for (var i = 0, len = targets[len]; i < len; i++) {
+      for (var i = 0, len = targets.length; i < len; i++) {
         t = targets[i];
-        // if (src.match(RE_NODE_ID)) {
+        // if (src.match(consts.RE_NODE_ID)) {
         //   return loadModel(document.querySelector(src).innerHTML);
         // }
 
@@ -403,7 +404,7 @@ Export
 
 */
     module.exports = jtmpl;
-},{"./compiler":1,"./eval-object":4,"./xhr":12,"freak":14}],6:[function(_dereq_,module,exports){
+},{"./compiler":1,"./consts":2,"./eval-object":4,"./xhr":12,"freak":14}],6:[function(_dereq_,module,exports){
 /*
 
 ## Rules
@@ -704,7 +705,7 @@ Can be bound to text node data or attribute
 
         // Match found
         return {
-          replace: target
+          replace: target || ''
         };
       }
     }
