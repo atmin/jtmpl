@@ -16,6 +16,7 @@
     "element-class": "^0.1.1",
     "freak": "0.0.3",
     "jshint": "^2.5.1",
+    "npm-watch": "0.0.0",
     "simple-server": "^1.0.1",
     "uglify-js": "^2.4.14",
     "watchify": "^0.10.2"
@@ -23,10 +24,15 @@
   "scripts": {
     "jshint": "jshint jtmpl/*.js",
     "browserify": "browserify --standalone jtmpl jtmpl/main.js > build/jtmpl.js",
-    "watchify": "watchify jtmpl/main.js -o build/jtmpl.js -dv",
+    "watch": "npm-watch",
     "uglify": "uglifyjs build/jtmpl.js -c -m --screw-ie8 -o build/jtmpl.min.js",
-    "start": "npm run watchify & simple-server public 8000",
+    "start": "npm-watch",
     "build": "npm run jshint && npm run browserify && npm run uglify",
     "test": "npm run build && phantomjs spec.js"
+  },
+  "watch": {
+    "test": "spec.js",
+    "test": "jtmpl/*.js",
+    "test": "jtmpl/rules/*.js"
   }
 }
