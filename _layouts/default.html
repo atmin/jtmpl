@@ -6,16 +6,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ site.title_tag_text }}</title>
   <link href='//fonts.googleapis.com/css?family=Roboto:400,400italic,700' rel='stylesheet' type='text/css'>
-  <link rel="stylesheet" href="css/normalize.css">
-  <link rel="stylesheet" href="css/syntax.css">
-  <link rel="stylesheet" href="css/solo.css">
-  <link rel="stylesheet" href="css/jtmpl.css">
+  <link rel="stylesheet" href="/css/normalize.css">
+  <link rel="stylesheet" href="/css/syntax.css">
+  <link rel="stylesheet" href="/css/solo.css">
+  <link rel="stylesheet" href="/css/jtmpl.css">
 {% include head.html %}
 </head>
 <body>
   <div class="container">
-    <h1><span>{<span>&rsaquo;</span></span> <a href="./">jtmpl</a> <sup>1.0.0</sup></h1>
+    <h1><span>{<span>&rsaquo;</span></span> <a href="/">jtmpl</a> <sup>1.0.0</sup></h1>
     <h6>Succint front-end applications framework</h6>
+    <br>
     {{ content }}
   </div>
 {% include scripts.html %}

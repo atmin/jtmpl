@@ -1,11 +1,12 @@
 body {
   color: #586E75;
 }
-h1, h2, h3, h4, h5, h6 {
-  color: #586E75;
-}
 h1 {
+  color: #586E75;
   font-family: Monaco, Consolas, "Lucida Console", monospace;
+}
+h2 {
+  color: #666666;
 }
 h1 a,
 h1 a:visited {
@@ -29,24 +30,21 @@ h1 sup {
   position: relative;
   top: -0.7em;
 }
-h6 {
+h3, h4, h5, h6, select {
   font-size: 80%;
-  color: #aaaaaa;
+  color: #999999;
 }
-summary {
-	margin: 1em 0;
-	cursor: pointer;
+pre code {
+  padding: 0;
 }
-summary:focus {
-	outline: 1px dotted #bbbbbb;
-}
-details div {
-  width: 600px;
-  height: 400px;
-  border: 1px solid #999999;
-  transition: height 1s ease;
-}
-details[open] div {
-  /*height: 0px;*/
-  /*transition: height 1s ease;*/
+
+
+/* https://github.com/chrisnager/ungrid */
+@media (min-width: 30em) {
+  .row { width:100%; display:table; table-layout:fixed; }
+  .col { display:table-cell; }
+  /* col spacing
+  .col { border-left:0.5rem solid #fff; }
+  .col:first-child { border:none; }
+  */
 }

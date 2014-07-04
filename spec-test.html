@@ -1,11 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
-  <link rel="stylesheet" type="text/css" href="css/styles.css">
   <style>
-    body {line-height: 24px;}
+/*    body {line-height: 24px;}
     h2, h3 {margin-top: 64px}
-    .bound-class {
+*/    .bound-class {
       color:red;
       -webkit-transition:color 0.5s ease-in;  
       -moz-transition:color 0.5s ease-in;  
@@ -13,335 +12,327 @@
       transition:color 0.5s ease-in;
     }
   </style>
-  <script src="js/jtmpl.js"></script>
 </head>
 
 <body>
-  <div class="wrapper">
-    <h1><span>{<span>&rsaquo;</span></span> <a href="/">jtmpl</a></h1>
-    <h2>KitchenSync</h2>
+  <h1><span>{<span>&rsaquo;</span></span> <a href="/">jtmpl</a></h1>
+  <h2>Test</h2>
+
+
+  <div data-template="#template" data-model="#model"></div>
+
+
+  <template id="template">
+
+    <h3>Toggle text</h3>
+    <a href="#" onclick='{{toggle}}'>Toggle <code>model.text</code></a>
     <p>
-      Feel free to modify <code>model</code> from JS console and observe changes.
+      {{text}}
     </p>
-    <script id="kitchensink" type="text/jtmpl">
+    <h3>Data binding</h3>
+    <p>
+      <label for="field">Enter something</label> <input id="field" value={{field}}>
+    </p>
+    {{#field}} <p><code>model.field</code> = {{field|quote}}</p> {{/field}}
+    {{^field}} <p><code>model.field</code> is empty</p> {{/field}}
 
-      <h3>Toggle text</h3>
-      <a href="#" onclick='{{toggle}}'>Toggle <code>model.text</code></a>
-      <p>
-        {{text}}
-      </p>
-      <h3>Data binding</h3>
-      <p>
-        <label for="field">Enter something</label> <input id="field" value={{field}}>
-      </p>
-      {{#field}} <p><code>model.field</code> = {{field|quote}}</p> {{/field}}
-      {{^field}} <p><code>model.field</code> is empty</p> {{/field}}
+    <h3>Data binding, toggle class</h3>
+    <p>
+      <label>
+          <input type="checkbox" checked="{{bound-class}}">
+          <code>model['bound-class']</code>
+      </label>
+    </p>
+    <p class="{{bound-class}}">Lorem ipsum ...</p>
 
-      <h3>Data binding, toggle class</h3>
-      <p>
-        <label>
-            <input type="checkbox" checked="{{bound-class}}">
-            <code>model['bound-class']</code>
-        </label>
-      </p>
-      <p class="{{bound-class}}">Lorem ipsum ...</p>
+    <h3>Checkboxes toggling "if" sections</h3>
+    <h5>Checkboxes template is included here as partial, btw</h5>
+    {{#checkboxes}}
+      {{>"#checkboxes-template"}}
+    {{/checkboxes}}
 
-      <h3>Checkboxes toggling "if" sections</h3>
-      <h5>Checkboxes template is included here as partial, btw</h5>
-      {{#checkboxes}}
-        {{>"#checkboxes-template"}}
-      {{/checkboxes}}
-
-      <h3>Select and radiogroup</h3>
-      <h5><code>model.options</code></h5>
-      <p>
-        <select>
-          {{#options}}
-          <option selected={{checked}}>{{text}}</option>
-          {{/options}}
-        </select>
-      </p>
-      <h5><code>model.options</code> again</h5>
-      <p>
+    <h3>Select and radiogroup</h3>
+    <h5><code>model.options</code></h5>
+    <p>
+      <select>
         {{#options}}
-        <label><input type="radio" name="radio-group" checked={{checked}}>{{text}}</label>
+        <option selected={{checked}}>{{text}}</option>
         {{/options}}
-      </p>
+      </select>
+    </p>
+    <h5><code>model.options</code> again</h5>
+    <p>
+      {{#options}}
+      <label><input type="radio" name="radio-group" checked={{checked}}>{{text}}</label>
+      {{/options}}
+    </p>
 
-      <h3><code>model.innerHTML</code></h3>
-      <div><!-- {{{innerHTML}}} --></div>
-      <!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
+    <h3><code>model.innerHTML</code></h3>
+    <div><!-- {{{innerHTML}}} --></div>
+    <!-- `jtmpl` accepts tags in HTML comments and automatically strips them -->
 
-      <h3>Computed properties</h3>
-      <p>
-        a=<input size="2" value="{{a}}">,
-        b=<input size="2" value="{{b}}">,
-        c=<input size="2" value="{{c}}">
-      </p>
-      <p>
-        <code>model.sum</code> = -> a+b+c = <strong><code id="sum">{{sum}}</code></strong>
-      </p>
-      <p>
-        <code>model.sumSquared</code> = -> sum^2 = <strong><code id="sumSquared">{{sumSquared}}</code></strong>
-      </p>
-      <p>
-        <code>model.delayedNegatedSum</code> = -> -sum after 2s = <strong><code>{{delayedNegatedSum}}</code></strong>
-      </p>
+    <h3>Computed properties</h3>
+    <p>
+      a=<input size="2" value="{{a}}">,
+      b=<input size="2" value="{{b}}">,
+      c=<input size="2" value="{{c}}">
+    </p>
+    <p>
+      <code>model.sum</code> = -> a+b+c = <strong><code id="sum">{{sum}}</code></strong>
+    </p>
+    <p>
+      <code>model.sumSquared</code> = -> sum^2 = <strong><code id="sumSquared">{{sumSquared}}</code></strong>
+    </p>
+    <p>
+      <code>model.delayedNegatedSum</code> = -> -sum after 2s = <strong><code>{{delayedNegatedSum}}</code></strong>
+    </p>
 
-      <h3>Set computed properties</h3>
-      <p>
-        <code>model.fullName</code> <input value="{{fullName}}">
-      </p>
-      <p>
-        <code>model.firstName</code> = {{firstName}}
-      </p>
-      <p>
-        <code>model.lastName</code> = {{lastName}}
-      </p>
+    <h3>Set computed properties</h3>
+    <p>
+      <code>model.fullName</code> <input value="{{fullName}}">
+    </p>
+    <p>
+      <code>model.firstName</code> = {{firstName}}
+    </p>
+    <p>
+      <code>model.lastName</code> = {{lastName}}
+    </p>
 
 
-      <h3><code>model['#route(\\d+)$']</code>, dynamic route handler </h3>
-      <a href="#route42">Link to <code>#route42</code></a>
+    <h3><code>model['#route(\\d+)$']</code>, dynamic route handler </h3>
+    <a href="#route42">Link to <code>#route42</code></a>
 
-      <h3>Nested collections</h3>
-      <ul class="dummy-class just for the_test">
-        {{#collection}}
-        <li>
-          <code>model.collection[i].inner</code>
-          <button onclick={{innerPush}}>push</button>
-          <button onclick="{{innerPop}}" disabled={{popDisabled}}>pop</button>
-          <ul>
-            {{#inner}}<li>{{.}}</li>{{/inner}}
-            {{^inner}}<div>&lt; empty &gt;</div>{{/inner}}
-          </ul>
-          <h5><code>model.collection[i].inner</code>: filtered even numbers</h5>
-          <ul>
-            {{#innerEven}}<li><small>{{.}}</small></li>{{/innerEven}}
-          </ul>
-          <br>
-        </li>
-        {{/collection}}
-        {{^collection}}
-        <div>&lt; empty &gt;</div>
-        {{/collection}}
-      </ul>
+    <h3>Nested collections</h3>
+    <ul class="dummy-class just for the_test">
+      {{#collection}}
+      <li>
+        <code>model.collection[i].inner</code>
+        <button onclick={{innerPush}}>push</button>
+        <button onclick="{{innerPop}}" disabled={{popDisabled}}>pop</button>
+        <ul>
+          {{#inner}}<li>{{.}}</li>{{/inner}}
+          {{^inner}}<div>&lt; empty &gt;</div>{{/inner}}
+        </ul>
+        <h5><code>model.collection[i].inner</code>: filtered even numbers</h5>
+        <ul>
+          {{#innerEven}}<li><small>{{.}}</small></li>{{/innerEven}}
+        </ul>
+        <br>
+      </li>
+      {{/collection}}
+      {{^collection}}
+      <div>&lt; empty &gt;</div>
+      {{/collection}}
+    </ul>
 
-      <br>
-      <button onclick={{push}}>push</button>
-      <button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
-      <br>
+    <br>
+    <button onclick={{push}}>push</button>
+    <button onclick="{{pop}}" disabled={{popDisabled}}>pop</button>
+    <br>
 
-      <h3>Tree via recursive partial</h3>
-      {{>"#tree-template"}}
-    </script>
+    <h3>Tree via recursive partial</h3>
+    {{>"#tree-template"}}
+  </template>
 
-    <script id="tree-template" type="text/template">
-      <ul>
-        {{#tree}}
-        <li>{{value}} {{>"#tree-template"}}</li>
-        {{/tree}}
-      </ul>
-    </script>
+  <template id="tree-template">
+    <ul>
+      {{#tree}}
+      <li>{{value}} {{>"#tree-template"}}</li>
+      {{/tree}}
+    </ul>
+  </template>
 
-    <script id="checkboxes-template" type="text/template">
-      <p>
-        <label><input type="checkbox" checked={{fooCheck}}> check foo</label>
-        <label><input type="checkbox" checked={{barCheck}}> check bar</label>
-      </p>
-      {{#fooCheck}}
-      <p><code>model.checkboxes.fooCheck</code> is checked<p>
-      {{/fooCheck}}
-      {{#barCheck}}
-      <p><code>model.checkboxes.barCheck</code> is checked<p>
-      {{/barCheck}}
-    </script>
+  <template id="checkboxes-template">
+    <p>
+      <label><input type="checkbox" checked={{fooCheck}}> check foo</label>
+      <label><input type="checkbox" checked={{barCheck}}> check bar</label>
+    </p>
+    {{#fooCheck}}
+    <p><code>model.checkboxes.fooCheck</code> is checked<p>
+    {{/fooCheck}}
+    {{#barCheck}}
+    <p><code>model.checkboxes.barCheck</code> is checked<p>
+    {{/barCheck}}
+  </template>
 
-    <script>
-      var innerEven = function () {
-        return this('inner').map(
-          function (x) {
-            return x % 2 === 0 ? x : null 
-          }
-        ).filter(
-          function (x) {
-            return x !== null;
-          }
-        );
+  <script>
+    // Utility function
+    function innerEven() {
+      return this('inner').map(
+        function (x) {
+          return x % 2 === 0 ? x : null 
+        }
+      ).filter(
+        function (x) {
+          return x !== null;
+        }
+      );
+    }
+  </script>
+
+  <script id="model" type="text/model">
+    {
+      // Empty init function, just for illustration
+      '#': function () {
+        // will be called on page load and when route changes
+      },
+
+      // Routes
+      '#simple-route': function () {
+        alert('A simple route without parameters')
+      },
+
+      '#route(\\d+)$': function (route) {
+        // if route definition contains braces,
+        // then route is considered regexp, matched groups are passed as parameters
+        alert('Route ' + route);
+      },
+
+
+      // Properties
+      text: 'lowercase',
+
+      collection: [
+        { 
+          popDisabled: false,
+          inner: [1, 2, 3, 4, 5],
+          innerEven: innerEven
+        }
+      ],
+
+      popDisabled: false,
+
+      tree: [
+        {
+          value: 1,
+          tree: [
+            {
+              value: 2,
+              tree: [
+                {
+                  value: 3
+                },
+                {
+                  value: 4
+                }
+              ]
+            },
+            {
+              value: 5
+            }
+          ]
+        },
+        {
+          value: 6
+        }
+      ],
+
+      field: '',
+
+      'bound-class': true,
+
+      innerHTML: '<p>I am a paragraph, change me: <code><pre>model.innerHTML = "new HTML content"</pre></code></p>',
+
+      options: [
+        { checked: true, text: 'one' },
+        { checked: false, text: 'two' },
+        { checked: false, text: 'three' }
+      ],
+
+      checkboxes: {
+        fooCheck: true,
+        barCheck: false
+      },
+
+      a: 2,
+      b: 2,
+      c: 2,
+
+      // Computed properties
+      sum: function () {
+        return [this('a'), this('b'), this('c')]
+          .reduce(function (prev, curr) {
+            return parseInt(prev) + parseInt(curr);
+          }, 0);
+      },
+
+      sumSquared: function () {
+        var sum = this('sum');
+        return sum * sum;
+      },
+
+      // Asynchronous computed property
+      delayedNegatedSum: function (callback) {
+        // Detect compiler phase
+        if (callback === undefined) {
+          return '...';
+        }
+
+        var sum = this('sum');
+        setTimeout(function () {
+          callback(-sum);
+        }, 2000);
+      },
+
+      // Computed property setter
+      firstName: 'Random',
+      lastName: 'Number',
+      fullName: function (newValue) {
+
+        // Setter? (idiomatic comparison, getters always receive a callback argument)
+        if (newValue && typeof newValue !== 'function') {
+          var names = newValue.split(' ');
+          this('firstName', names[0]);
+          this('lastName', names[1]);
+          return;
+        }
+
+        // Getter
+        return this('firstName') + ' ' + this('lastName');
+      },
+
+
+      // Formatters
+      quote: function (val) {
+        return '"' + val + '"';
+      },
+
+      // Mappings
+      even: function (val) {
+        return val % 2 === 0 ? val : null;
+      },
+
+
+      // event handlers
+      toggle: function (e) {
+        this.text = this.text === 'lowercase' ?
+          'UPPERCASE': 'lowercase';
+        e.preventDefault();
+      },
+      push: function () {
+        this('collection').push({
+          popDisabled: true,
+          inner: [],
+          innerEven: innerEven
+        });
+        this.popDisabled = false;
+      },
+      pop: function () {
+        this.collection.pop();
+        this.popDisabled = this.collection.length === 0;
+      },
+      innerPush: function () {
+        this.inner.push(parseInt(Math.random() * 100));
+        this.popDisabled = false;
+      },
+      innerPop: function () {
+        this.inner.pop();
+        this.popDisabled = this.inner.length === 0;
       }
 
-      var model = {
-        // Empty init function, just for illustration
-        '#': function () {
-          // will be called on page load and when route changes
-        },
-
-        // Routes
-        '#simple-route': function () {
-          alert('A simple route without parameters')
-        },
-
-        '#route(\\d+)$': function (route) {
-          // if route definition contains braces,
-          // then route is considered regexp, matched groups are passed as parameters
-          alert('Route ' + route);
-        },
-
-
-        // Properties
-        text: 'lowercase',
-
-        collection: [
-          { 
-            popDisabled: false,
-            inner: [1, 2, 3, 4, 5],
-            innerEven: innerEven
-          }
-        ],
-
-        popDisabled: false,
-
-        tree: [
-          {
-            value: 1,
-            tree: [
-              {
-                value: 2,
-                tree: [
-                  {
-                    value: 3
-                  },
-                  {
-                    value: 4
-                  }
-                ]
-              },
-              {
-                value: 5
-              }
-            ]
-          },
-          {
-            value: 6
-          }
-        ],
-
-        field: '',
-
-        'bound-class': true,
-
-        innerHTML: '<p>I am a paragraph, change me: <code><pre>model.innerHTML = "new HTML content"</pre></code></p>',
-
-        options: [
-          { checked: true, text: 'one' },
-          { checked: false, text: 'two' },
-          { checked: false, text: 'three' }
-        ],
-
-        checkboxes: {
-          fooCheck: true,
-          barCheck: false
-        },
-
-        a: 2,
-        b: 2,
-        c: 2,
-
-        // Computed properties
-        sum: function () {
-          return [this('a'), this('b'), this('c')]
-            .reduce(function (prev, curr) {
-              return parseInt(prev) + parseInt(curr);
-            }, 0);
-        },
-
-        sumSquared: function () {
-          var sum = this('sum');
-          return sum * sum;
-        },
-
-        // Asynchronous computed property
-        delayedNegatedSum: function (callback) {
-          // Detect compiler phase
-          if (callback === undefined) {
-            return '...';
-          }
-
-          var sum = this('sum');
-          setTimeout(function () {
-            callback(-sum);
-          }, 2000);
-        },
-
-        // Computed property setter
-        firstName: 'Random',
-        lastName: 'Number',
-        fullName: function (newValue) {
-
-          // Setter? (idiomatic comparison, getters always receive a callback argument)
-          if (newValue && typeof newValue !== 'function') {
-            var names = newValue.split(' ');
-            this('firstName', names[0]);
-            this('lastName', names[1]);
-            return;
-          }
-
-          // Getter
-          return this('firstName') + ' ' + this('lastName');
-        },
-
-
-        // Formatters
-        quote: function (val) {
-          return '"' + val + '"';
-        },
-
-        // Mappings
-        even: function (val) {
-          return val % 2 === 0 ? val : null;
-        },
-
-
-        // event handlers
-        toggle: function (e) {
-          this.text = this.text === 'lowercase' ?
-            'UPPERCASE': 'lowercase';
-          e.preventDefault();
-        },
-        push: function () {
-          this.collection.push({
-            popDisabled: true,
-            inner: [],
-            innerEven: innerEven
-          });
-          this.popDisabled = false;
-        },
-        pop: function () {
-          this.collection.pop();
-          this.popDisabled = this.collection.length === 0;
-        },
-        innerPush: function () {
-          this.inner.push(parseInt(Math.random() * 100));
-          this.popDisabled = false;
-        },
-        innerPop: function () {
-          this.inner.pop();
-          this.popDisabled = this.inner.length === 0;
-        }
-      };
-
-      jtmpl('#kitchensink', '#kitchensink', model);
-    </script>
-
-    <a href="reports/coverage/build/jtmpl.js.html">Test coverage reports</a>
-    | <a href="reports/complexity">Complexity reports</a>
-  </div> <!-- .wrapper -->
-  <script>
-    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-    ga('create', 'UA-43285803-1', 'jtmpl.com');
-    ga('send', 'pageview');
+    }
   </script>
+
+  <script src="build/jtmpl.js"></script>
 </body>
 </html>

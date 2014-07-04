@@ -1,43 +1,67 @@
+{% raw %}
+
+
 ## Features
 
-<details open>
-  <summary>Familiar Mustache syntax</summary>
-  <div></div>
-</details>
 
-<details>
-  <summary>Automatic, context-aware data-binding</summary>
-  <div></div>
-</details>
+* Familiar [Mustache](https://mustache.github.io/) syntax
 
-<details>
-  <summary>Functional reactive object model</summary>
-  <div></div>
-</details>
+* Automatic, context-based data-binding
 
-<details>
-  <summary>Requests</summary>
-  <div></div>
-</details>
+* Plain JavaScript object model
 
-<details>
-  <summary>Distributed applications</summary>
-  <div></div>
-</details>
+* Event handling
 
-<details>
-  <summary>Zero boilerplate</summary>
-  <div></div>
-</details>
+* Computed properties (including setters), automatic dependency tracking
 
-<details>
-  <summary>Lightweight</summary>
-  <div></div>
-</details>
+* Routes
+
+* Requests
+
+* Distributed applications
+
+* 100% declarative, zero boilerplate
+
+* Lightweight
+
+[Tell me more...](/features)
 
 
-## Examples
+<br>
+## Example &nbsp;<select><option>Hello</option> <option>TodoMVC</option> </select>
 
-* [Tests](./spec-test.html)
+###### result
 
-* [TodoMVC](http://codepen.io/atmin/full/JkmrD)
+```html
+
+```
+
+###### code
+
+```html
+<!DOCTYPE html>
+
+<div
+  data-template="#template"
+  data-model="#model">
+</div>
+
+<template id="template">
+  <label>
+    Greet goes to
+    <input value="{{who}}">
+  </label>
+  <h3>Hello, {{who}}</h3>
+</template>
+
+<script id="model" type="text/model">
+  {
+    who: 'world'
+  }
+</script>
+
+<script src="build/jtmpl.js"></script>
+```
+
+
+{% endraw %}
