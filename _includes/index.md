@@ -1,6 +1,7 @@
 {% raw %}
 
 
+
 ## Features
 
 
@@ -12,7 +13,7 @@
 
 * Event handling
 
-* Computed properties (including setters), automatic dependency tracking
+* Computed properties
 
 * Routes
 
@@ -27,10 +28,11 @@
 [Tell me more...](/features)
 
 
-<br>
+
+
 ## Example &nbsp;<select><option>Hello</option> <option>TodoMVC</option> </select>
 
-###### result
+###### iframe
 
 ```html
 

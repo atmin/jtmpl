@@ -115,13 +115,13 @@ are recalculated automatically.
 
 ###### All together now
 
-iframe
+* iframe
 
 ```html
 
 ```
 
-code
+* code
 
 ```html
 <!DOCTYPE html>
@@ -232,6 +232,16 @@ a map of strings.
 
 
 ###### Requests
+
+GET
+
+    jtmpl('GET', 'url', function (response) { ... } )
+
+When content-type: application/json, response is parsed object, otherwise string
+
+POST
+
+    jtmpl('POST', 'url' [, params][, function (error, response) { ... }])
 
 
 
