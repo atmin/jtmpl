@@ -1,6 +1,6 @@
 {
   "name": "jtmpl-js",
-  "version": "0.3.1",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/atmin/jtmpl.git"
@@ -13,26 +13,22 @@
   ],
   "devDependencies": {
     "browserify": "^4.2.0",
-    "element-class": "^0.1.1",
-    "freak": "0.0.3",
-    "jshint": "^2.5.1",
-    "npm-watch": "0.0.0",
+    "jshint": "^2.5.2",
+    "jtmpl-core": "^1.0.0",
+    "reem": "0.0.3",
     "simple-server": "^1.0.1",
     "uglify-js": "^2.4.14",
     "watchify": "^0.10.2"
   },
   "scripts": {
-    "jshint": "jshint jtmpl/*.js",
-    "browserify": "browserify --standalone jtmpl jtmpl/main.js > build/jtmpl.js",
-    "watch": "npm-watch",
+    "jshint": "jshint src/*.js",
+    "browserify": "browserify --standalone jtmpl src/main.js > build/jtmpl.js",
+    "watch": "watchify --standalone jtmpl src/main.js -o build/jtmpl.js -dv",
     "uglify": "uglifyjs build/jtmpl.js -c -m --screw-ie8 -o build/jtmpl.min.js",
-    "start": "npm-watch",
+    "start": "npm run dev",
+    "dev": "npm run watch & (sleep 1 && xdg-open http://localhost:4000) && jekyll serve --watch",
     "build": "npm run jshint && npm run browserify && npm run uglify",
-    "test": "npm run build && phantomjs spec.js"
-  },
-  "watch": {
-    "test": "spec.js",
-    "test": "jtmpl/*.js",
-    "test": "jtmpl/rules/*.js"
+    "test": "npm run build && phantomjs tests/phantom.js",
+    "a": "jekyll serve --watch"
   }
 }
