@@ -1,0 +1,1 @@
+require('../../jtmpl-core/build/jtmpl');
