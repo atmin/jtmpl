@@ -36,12 +36,16 @@
 <li><p>Using <code>Stage1</code> output generate DOM and bind elements properties to <code>model</code> properties </p>
 </li>
 </ol>
+<p><em>This is no longer valid for the currently developed branch.
+It uses browser&#39;s HTML parser and binds directly to the resulting nodes
+without requiring a compilation step. It&#39;s simpler, faster (that&#39;s speculation)
+and more robust</em></p>
 <h3 id="hello-world">Hello, world</h3>
 <p><code>Stage1</code> is a template compiler:</p>
 <pre><code>$ jtmpl(&#39;Hello, {{who}}&#39;, { who: &#39;server&#39; })
 
-Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
-<p><br></p>
+Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;
+</code></pre><p><br></p>
 <p><code>Stage2</code> renders live DOM structure:</p>
 <iframe src="hello.html" style="border:0; border-left:1px dotted black; height:4em"></iframe>
 
@@ -82,8 +86,8 @@ Hello, &lt;span data-jt=&quot;who&quot;&gt;server&lt;/span&gt;</code></pre>
     jtmpl(&quot;#view&quot;, &quot;#view&quot;, model)
   &lt;/script&gt;
 &lt;/body&gt;
-&lt;/html&gt;</code></pre>
-<h3 id="downloads">Downloads</h3>
+&lt;/html&gt;
+</code></pre><h3 id="downloads">Downloads</h3>
 <ul>
 <li><p>browse <a href="https://github.com/atmin/jtmpl/blob/master/src/coffee/jtmpl.coffee">jtmpl.coffee (master)</a>, <a href="https://github.com/atmin/jtmpl/blob/dev/src/coffee/jtmpl.coffee">jtmpl.coffee (dev)</a></p>
 </li>
