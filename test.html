@@ -134,10 +134,12 @@
       // Events (via `on` plugin)
       __on__: {
         'click': {
-          '.push': function() {
+          '.push': function(ev) {
+            console.log(ev);
             this('numbers').push(parseInt(Math.random() * 100));
           },
-          '.pop': function() {
+          '.pop': function(ev) {
+            console.log(ev);
             if (this('numbers').len) this('numbers').pop();
           }
         }

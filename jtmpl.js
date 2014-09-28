@@ -58,6 +58,7 @@ function freak(obj, root, parent, prop) {
   };
   var dependents = {};
   var cache = {};
+  var children = {};
 
   // Assert condition
   function assert(cond, msg) {
@@ -72,6 +73,34 @@ function freak(obj, root, parent, prop) {
         i < len; i++) {
       target[props[i]] = properties[props[i]];
     }
+  }
+
+  function deepEqual(x, y) {
+    if (typeof x === "object" && x !== null &&
+        typeof y === "object" && y !== null) {
+
+      if (Object.keys(x).length !== Object.keys(y).length) {
+        return false;
+      }
+
+      for (var prop in x) {
+        if (y.hasOwnProperty(prop)) {
+          if (!deepEqual(x[prop], y[prop])) {
+            return false;
+          }
+        }
+        else {
+          return false;
+        }
+      }
+
+      return true;
+    }
+    else if (x !== y) {
+      return false;
+    }
+
+    return true;
   }
 
   // Event functions
@@ -142,15 +171,14 @@ function freak(obj, root, parent, prop) {
   // Update handler: recalculate dependent properties,
   // trigger change if necessary
   function update(prop, innerProp) {
-    if (typeof cache[prop] === 'function' && innerProp !== undefined ?
-        cache[prop](innerProp) !== instance(prop)(innerProp) :
-        cache[prop] !== instance(prop)) {
+    if (!deepEqual(cache[prop], get(prop))) {
       trigger('change', prop);
     }
 
     // Notify dependents
     for (var i = 0, dep = dependents[prop] || [], len = dep.length;
         i < len; i++) {
+      delete children[dep[i]];
       instance.trigger('update', dep[i]);
     }
 
@@ -176,27 +204,31 @@ function freak(obj, root, parent, prop) {
 
   // Getter for prop, if callback is given
   // can return async value
-  function getter(prop, callback) {
+  function get(prop, callback) {
     var val = obj[prop];
 
-    var result = (typeof val === 'function') ?
+    return cache[prop] = (typeof val === 'function') ?
       // Computed property
-      cache[prop] = val.call(getDependencyTracker(prop), callback) :
+      val.call(getDependencyTracker(prop), callback) :
       // Static property (leaf node in the dependency graph)
       val;
+  }
+
+  function getter(prop, callback) {
+    var result = get(prop, callback);
 
     return result && typeof result === 'object' ?
-
-      typeof cache[prop] === 'function' ?
-        cache[prop] :
-        cache[prop] = freak(val, root || instance, instance, prop) :
-
+      // Wrap object
+      children[prop] ?
+        children[prop] :
+        children[prop] = freak(result, root || instance, instance, prop) :
+      // Simple value
       result;
   }
 
   // Set prop to val
   function setter(prop, val) {
-    var oldVal = getter(prop);
+    var oldVal = get(prop);
 
     if (typeof obj[prop] === 'function') {
       // Computed property setter
@@ -233,7 +265,7 @@ function freak(obj, root, parent, prop) {
     values: obj,
     parent: parent || null,
     root: root || instance,
-    prop: prop || null,
+    prop: prop === undefined ? null : prop,
     // .on(event[, prop], callback)
     on: on,
     // .off(event[, prop][, callback])
@@ -415,7 +447,8 @@ Return documentFragment
 
       // Variables
 
-      var i, children, len, ai, alen, attr, val, ruleVal, buffer, pos, beginPos, bodyBeginPos, body, node, el, t, match, rule, token, block;
+      var i, children, len, ai, alen, attr, val, attrRules, ri, attrVal;
+      var buffer, pos, beginPos, bodyBeginPos, body, node, el, t, match, rule, token, block;
       var fragment = document.createDocumentFragment();
       var freak = _dereq_('freak');
 
@@ -466,6 +499,8 @@ Return documentFragment
             for (ai = 0, alen = el.attributes.length; ai < alen; ai++) {
 
               attr = el.attributes[ai];
+              attrRules = [];
+              attrVal = '';
               val = attr.value;
               t = tokenizer(options, 'g');
 
@@ -474,6 +509,8 @@ Return documentFragment
                 rule = matchRules(match[0], el, attr.name, model, options);
 
                 if (rule) {
+
+                  attrRules.push(rule);
 
                   if (rule.block) {
 
@@ -492,24 +529,31 @@ Return documentFragment
                     }
                     else {
                       // Replace full block tag body with rule contents
-                      attr.value =
-                        attr.value.slice(0, beginPos) +
+                      attrVal +=
+                        val.slice(0, beginPos) +
                         rule.replace(attr.value.slice(bodyBeginPos, match.index)) +
-                        attr.value.slice(match.index + match[0].length);
+                        val.slice(match.index + match[0].length);
                     }
                   }
 
-                  if (rule.replace !== undefined) {
+                  if (!rule.block && rule.replace !== undefined) {
                     attr.value = rule.replace;
                   }
 
-                  if (rule.change) {
-                    model.on('change', rule.block || rule.prop, rule.change);
-                    rule.change();
-                  }
-
                 }
+              }
 
+              // Rule changes can mutate attributes,
+              // so process in another pass
+              if (attrRules.length) {
+                attr.value = attrVal;
+              }
+              for (ri = 0; ri < attrRules.length; ri++) {
+                rule = attrRules[ri];
+                if (rule.change) {
+                  model.on('change', rule.block || rule.prop, rule.change);
+                  rule.change();
+                }
               }
 
             }
@@ -582,7 +626,7 @@ Return documentFragment
 
 ## Constants
 
-*/    
+*/
   module.exports = {
 
     RE_IDENTIFIER: /^[\w\.\-]+$/,
@@ -634,8 +678,12 @@ Evaluate object from literal or CommonJS module
 
       function mixin(target, properties) {
         for (var prop in properties) {
-          if (prop.indexOf('__') === 0 &&
-              prop.lastIndexOf('__') === prop.length - 2) {
+          if (// Plugin
+              (prop.indexOf('__') === 0 &&
+                prop.lastIndexOf('__') === prop.length - 2) ||
+              // Computed property
+              typeof properties[prop] === 'function'
+             ) {
             if (target.values[prop] === undefined) {
               target.values[prop] = properties[prop];
             }
@@ -660,14 +708,22 @@ Evaluate object from literal or CommonJS module
         }
       }
 
-      function evalObject(body) {
+      function evalObject(body, src) {
         var result, module = { exports: {} };
+        src = src ?
+          '\n//@ sourceURL=' + src +
+          '\n//# sourceURL=' + src :
+          '';
         return (body.match(/^\s*{[\S\s]*}\s*$/)) ?
           // Literal
-          eval('result=' + body) :
+          eval('(function(){ var result=' + body + '; return result})()' + src) :
           // CommonJS module
-          new Function('module', 'exports', body + ';return module.exports;')
-            (module, module.exports);
+          eval(
+            '(function(module, exports){' +
+            body +
+            ';return module.exports})' +
+            src
+          )(module, module.exports);
       }
 
       function loadModel(src, template, doc) {
@@ -678,7 +734,7 @@ Evaluate object from literal or CommonJS module
         else if (src.match(consts.RE_NODE_ID)) {
           // Element in this document
           var element = doc.querySelector(src);
-          mixin(model, evalObject(element.innerHTML));
+          mixin(model, evalObject(element.innerHTML, src));
           applyPlugins();
           jtmpl(target, template, model);
         }
@@ -689,7 +745,7 @@ Evaluate object from literal or CommonJS module
             var element = match && new DOMParser()
               .parseFromString(resp, 'text/html')
               .querySelector(match[1]);
-            mixin(model, evalObject(match ? element.innerHTML : resp));
+            mixin(model, evalObject(match ? element.innerHTML : resp, src));
             applyPlugins();
             jtmpl(target, template, model);
           });
@@ -697,6 +753,8 @@ Evaluate object from literal or CommonJS module
       }
 
       function loadTemplate() {
+        if (!src) return;
+
         if (src.match(consts.RE_NODE_ID)) {
           // Template is the contents of element
           // belonging to this document
@@ -918,7 +976,7 @@ Toggles class `some-class` in sync with boolean `model.ifCondition`
       var prop = match && match[1];
       var klass;
 
-      
+
       if (attr === 'class' && match) {
 
         return {
@@ -1011,7 +1069,7 @@ Can be bound to text node
 },{"../compiler":3,"../consts":4}],11:[function(_dereq_,module,exports){
 /*
 
-### Partial 
+### Partial
 
 * {{>"#id"}}
 * {{>"url"}}
@@ -1026,11 +1084,15 @@ Replaces parent tag contents, always wrap in a tag
       var consts = _dereq_('../consts');
       var match = tag.match(consts.RE_PARTIAL);
       var anchor = document.createComment('');
+      var target;
 
-      var loader = match && 
+      var loader = match &&
         function() {
+          if (!target) {
+            target = anchor.parentNode;
+          }
           _dereq_('../loader')(
-            anchor.parentNode,
+            target,
             match[1] ?
               // Variable
               model(match[1]) :
@@ -1181,7 +1243,7 @@ Can be bound to text node
 },{"../compiler":3,"../consts":4}],13:[function(_dereq_,module,exports){
 /*
 
-### {{&var}} 
+### {{&var}}
 
 (`{{{var}}}` is replaced on preprocessing step)
 
@@ -1194,7 +1256,7 @@ Can be bound to node innerHTML
       var prop = match && match[1];
       var anchor = document.createComment('');
       var length = 0;
-      
+
       if (match && !attr) {
         return {
           prop: prop,
@@ -1210,7 +1272,7 @@ Can be bound to node innerHTML
               length--;
             }
 
-            el.innerHTML = model(prop);
+            el.innerHTML = model(prop) || '';
             length = el.childNodes.length;
             for (i = 0; i < length; i++) {
               fragment.appendChild(el.childNodes[0]);
@@ -1237,7 +1299,7 @@ Handle "value", "checked" and "selected" attributes
       function change() {
         var val = model(prop);
         if (node[attr] !== val) {
-          node[attr] = val;
+          node[attr] = val || '';
         }
       }
 
@@ -1302,13 +1364,20 @@ Can be bound to text node data or attribute
 
     module.exports = function(tag, node, attr, model, options) {
       var react, target, change;
-      
+
+      function get() {
+        var val = model(tag);
+        return (typeof val === 'function') ?
+          JSON.stringify(val.values) :
+          val;
+      }
+
       if (tag.match(_dereq_('../consts').RE_IDENTIFIER)) {
 
         if (attr) {
           // Attribute
           change = function() {
-            var val = model(tag);
+            var val = get();
             return val ?
               node.setAttribute(attr, val) :
               node.removeAttribute(attr);
@@ -1318,7 +1387,7 @@ Can be bound to text node data or attribute
           // Text node
           target = document.createTextNode('');
           change = function() {
-            target.data = model(tag) || '';
+            target.data = get() || '';
           };
         }
 
@@ -1413,17 +1482,21 @@ module.exports = jtmpl;
 
 },{"./plugins/on":18,"jtmpl-core/src/main":7}],18:[function(_dereq_,module,exports){
 module.exports = function(events, target) {
-  for (var event in events) {
+  function addEvent(event) {
     target.addEventListener(
       event,
       function(ev) {
         for (var selector in events[event]) {
           if (ev.target.matches(selector)) {
-            events[event][selector].call(ev.target.__jtmpl__);
+            events[event][selector].call(ev.target.__jtmpl__, ev);
           }
         }
       }
     );
+  }
+
+  for (var event in events) {
+    addEvent(event);
   }
 }
 
