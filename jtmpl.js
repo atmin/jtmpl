@@ -56,7 +56,8 @@ function freak(obj, root, parent, prop) {
     'insert': {},
     'delete': {}
   };
-  var dependents = {};
+  var _dependentProps = {};
+  var _dependentContexts = {};
   var cache = {};
   var children = {};
 
@@ -162,60 +163,124 @@ function freak(obj, root, parent, prop) {
   // trigger('update', prop)
   // trigger('insert' or 'delete', index, count)
   function trigger(event, a, b) {
-    (listeners[event][['change'].indexOf(event) > -1 ? a : null] || [])
-      .map(function(listener) {
-        listener.call(instance, a, b);
-      });
+    var handlers = (listeners[event][['change'].indexOf(event) > -1 ? a : null] || []);
+    var i, len = handlers.length;
+    for (i = 0; i < len; i++) {
+      handlers[i].call(instance, a, b);
+    };
+  }
+
+  // Export model to JSON string
+  // NOT exported:
+  // - properties starting with _ (Python private properties convention)
+  // - computed properties (derived from normal properties)
+  function toJSON() {
+    function filter(obj) {
+      var key, filtered = Array.isArray(obj) ? [] : {};
+      for (key in obj) {
+        if (typeof obj[key] === 'object') {
+          filtered[key] = filter(obj[key]);
+        }
+        else if (typeof obj[key] !== 'function' && key[0] !== '_') {
+          filtered[key] = obj[key];
+        }
+      }
+      return filtered;
+    }
+    return JSON.stringify(filter(obj));
+  }
+
+  // Load model from JSON string or object
+  function fromJSON(data) {
+    var key;
+    if (typeof data === 'string') {
+      data = JSON.parse(data);
+    }
+    for (key in data) {
+      instance(key, data[key]);
+      trigger('update', key);
+    }
+    instance.len = obj.length;
   }
 
   // Update handler: recalculate dependent properties,
   // trigger change if necessary
-  function update(prop, innerProp) {
-    if (!deepEqual(cache[prop], get(prop))) {
+  function update(prop) {
+    if (!deepEqual(cache[prop], get(prop, function() {}, true))) {
       trigger('change', prop);
     }
 
     // Notify dependents
-    for (var i = 0, dep = dependents[prop] || [], len = dep.length;
+    for (var i = 0, dep = _dependentProps[prop] || [], len = dep.length;
         i < len; i++) {
       delete children[dep[i]];
-      instance.trigger('update', dep[i]);
+      _dependentContexts[prop][i].trigger('update', dep[i]);
     }
 
     if (instance.parent) {
       // Notify computed properties, depending on parent object
-      instance.parent.trigger('update', instance.prop, prop);
+      instance.parent.trigger('update', instance.prop);
     }
   }
 
   // Proxy the accessor function to record
   // all accessed properties
   function getDependencyTracker(prop) {
-    return function(_prop, _arg) {
-      if (!dependents[_prop]) {
-        dependents[_prop] = [];
+    function tracker(context) {
+      return function(_prop, _arg) {
+        if (!context._dependentProps[_prop]) {
+          context._dependentProps[_prop] = [];
+          context._dependentContexts[_prop] = [];
+        }
+        if (context._dependentProps[_prop].indexOf(prop) === -1) {
+          context._dependentProps[_prop].push(prop);
+          context._dependentContexts[_prop].push(instance);
+        }
+        return context(_prop, _arg, true);
       }
-      if (dependents[_prop].indexOf(prop) === -1) {
-        dependents[_prop].push(prop);
-      }
-      return accessor(_prop, _arg);
     }
+    var result = tracker(instance);
+    construct(result);
+    if (parent) {
+      result.parent = tracker(parent);
+    }
+    result.root = tracker(root || instance);
+    return result;
+  }
+
+  // Shallow clone an object
+  function shallowClone(obj) {
+    var key, clone;
+    if (obj && typeof obj === 'object') {
+      clone = {};
+      for (key in obj) {
+        clone[key] = obj[key];
+      }
+    }
+    else {
+      clone = obj;
+    }
+    return clone;
   }
 
   // Getter for prop, if callback is given
   // can return async value
-  function get(prop, callback) {
+  function get(prop, callback, skipCaching) {
     var val = obj[prop];
-
-    return cache[prop] = (typeof val === 'function') ?
-      // Computed property
-      val.call(getDependencyTracker(prop), callback) :
-      // Static property (leaf node in the dependency graph)
-      val;
+    if (typeof val === 'function') {
+      val = val.call(getDependencyTracker(prop), callback);
+      if (!skipCaching) {
+        cache[prop] = (val === undefined) ? val : shallowClone(val);
+      }
+    }
+    else if (!skipCaching) {
+      cache[prop] = val;
+    }
+    return val;
   }
 
-  function getter(prop, callback) {
-    var result = get(prop, callback);
+  function getter(prop, callback, skipCaching) {
+    var result = get(prop, callback, skipCaching);
 
     return result && typeof result === 'object' ?
       // Wrap object
@@ -239,6 +304,7 @@ function freak(obj, root, parent, prop) {
       obj[prop] = val;
       if (val && typeof val === 'object') {
         delete cache[prop];
+        delete children[prop];
       }
     }
 
@@ -248,94 +314,103 @@ function freak(obj, root, parent, prop) {
   }
 
   // Functional accessor, unify getter and setter
-  function accessor(prop, arg) {
+  function accessor(prop, arg, skipCaching) {
     return (
       (arg === undefined || typeof arg === 'function') ?
         getter : setter
-    )(prop, arg);
+    )(prop, arg, skipCaching);
   }
+
+  // Attach instance members
+  function construct(target) {
+    mixin(target, {
+      values: obj,
+      parent: parent || null,
+      root: root || target,
+      prop: prop === undefined ? null : prop,
+      // .on(event[, prop], callback)
+      on: on,
+      // .off(event[, prop][, callback])
+      off: off,
+      // .trigger(event[, prop])
+      trigger: trigger,
+      toJSON: toJSON,
+      // Deprecated. It has always been broken, anyway
+      // Will think how to implement properly
+      fromJSON: fromJSON,
+      // Internal: dependency tracking
+      _dependentProps: _dependentProps,
+      _dependentContexts: _dependentContexts
+    });
+
+    // Wrap mutating array method to update
+    // state and notify listeners
+    function wrapArrayMethod(method, func) {
+      return function() {
+        var result = [][method].apply(obj, arguments);
+        this.len = this.values.length;
+        cache = {};
+        children = {};
+        func.apply(this, arguments);
+        target.parent.trigger('update', target.prop);
+        return result;
+      };
+    }
+
+    if (Array.isArray(obj)) {
+      mixin(target, {
+        // Function prototype already contains length
+        // `len` specifies array length
+        len: obj.length,
+
+        pop: wrapArrayMethod('pop', function() {
+          trigger('delete', this.len, 1);
+        }),
+
+        push: wrapArrayMethod('push', function() {
+          trigger('insert', this.len - 1, 1);
+        }),
+
+        reverse: wrapArrayMethod('reverse', function() {
+          trigger('delete', 0, this.len);
+          trigger('insert', 0, this.len);
+        }),
+
+        shift: wrapArrayMethod('shift', function() {
+          trigger('delete', 0, 1);
+        }),
+
+        unshift: wrapArrayMethod('unshift', function() {
+          trigger('insert', 0, 1);
+        }),
+
+        sort: wrapArrayMethod('sort', function() {
+          trigger('delete', 0, this.len);
+          trigger('insert', 0, this.len);
+        }),
+
+        splice: wrapArrayMethod('splice', function() {
+          if (arguments[1]) {
+            trigger('delete', arguments[0], arguments[1]);
+          }
+          if (arguments.length > 2) {
+            trigger('insert', arguments[0], arguments.length - 2);
+          }
+        })
+
+      });
+    }
+  }
+
+  on('update', update);
 
   // Create freak instance
   var instance = function() {
     return accessor.apply(null, arguments);
   };
 
-  // Attach instance properties
-  mixin(instance, {
-    values: obj,
-    parent: parent || null,
-    root: root || instance,
-    prop: prop === undefined ? null : prop,
-    // .on(event[, prop], callback)
-    on: on,
-    // .off(event[, prop][, callback])
-    off: off,
-    // .trigger(event[, prop])
-    trigger: trigger
-  });
-
-  // Wrap mutating array method to update
-  // state and notify listeners
-  function wrapArrayMethod(method, func) {
-    return function() {
-      var result = [][method].apply(obj, arguments);
-      this.len = this.values.length;
-      func.apply(this, arguments);
-      instance.parent.trigger('update', instance.prop);
-      return result;
-    };
-  }
-
-  if (Array.isArray(obj)) {
-    mixin(instance, {
-      // Function prototype already contains length
-      // This specifies array length
-      len: obj.length,
-
-      pop: wrapArrayMethod('pop', function() {
-        trigger('delete', this.len, 1);
-      }),
-
-      push: wrapArrayMethod('push', function() {
-        trigger('insert', this.len - 1, 1);
-      }),
-
-      reverse: wrapArrayMethod('reverse', function() {
-        cache = {};
-        trigger('delete', 0, this.len);
-        trigger('insert', 0, this.len);
-      }),
-
-      shift: wrapArrayMethod('shift', function() {
-        cache = {};
-        trigger('delete', 0, 1);
-      }),
-
-      unshift: wrapArrayMethod('unshift', function() {
-        cache = {};
-        trigger('insert', 0, 1);
-      }),
-
-      sort: wrapArrayMethod('sort', function() {
-        cache = {};
-        trigger('delete', 0, this.len);
-        trigger('insert', 0, this.len);
-      }),
-
-      splice: wrapArrayMethod('splice', function() {
-        cache = {};
-        if (arguments[1]) {
-          trigger('delete', arguments[0], arguments[1]);
-        }
-        if (arguments.length > 2) {
-          trigger('insert', arguments[0], arguments.length - 2);
-        }
-      })
-
-    });
-  }
-
-  on('update', update);
+  // Attach instance members
+  construct(instance);
 
   return instance;
 }
@@ -969,11 +1044,17 @@ It must return either:
 
 Toggles class `some-class` in sync with boolean `model.ifCondition`
 
+
+### class="{{^notIfCondition}}some-class{{/}}"
+
+Toggles class `some-class` in sync with boolean not `model.notIfCondition`
+
 */
 
     module.exports = function(tag, node, attr, model, options) {
-      var match = tag.match(new RegExp('#' + _dereq_('../consts').RE_SRC_IDENTIFIER));
-      var prop = match && match[1];
+      var match = tag.match(new RegExp('(#|\\^)' + _dereq_('../consts').RE_SRC_IDENTIFIER));
+      var inverted = match && (match[1] === '^');
+      var prop = match && match[2];
       var klass;
 
 
@@ -990,7 +1071,7 @@ Toggles class `some-class` in sync with boolean `model.ifCondition`
           change: function() {
             var val = model(prop);
             _dereq_('element-class')(node)
-              [!!val && 'add' || 'remove'](klass);
+              [(inverted === !val) && 'add' || 'remove'](klass);
           }
         };
       }
@@ -1049,7 +1130,7 @@ Can be bound to text node
       }
 
 
-      if (match) {
+      if (match && !attr) {
 
         return {
           prop: prop,
@@ -1066,6 +1147,7 @@ Can be bound to text node
 
       }
     }
+
 },{"../compiler":3,"../consts":4}],11:[function(_dereq_,module,exports){
 /*
 
@@ -1474,13 +1556,16 @@ Requests API
     };
 
 },{}],17:[function(_dereq_,module,exports){
+_dereq_('./polyfills/matches');
+
 var jtmpl = _dereq_('jtmpl-core/src/main');
 
 jtmpl.plugins.on = _dereq_('./plugins/on');
+jtmpl.plugins.routes = _dereq_('./plugins/routes');
 
 module.exports = jtmpl;
 
-},{"./plugins/on":18,"jtmpl-core/src/main":7}],18:[function(_dereq_,module,exports){
+},{"./plugins/on":18,"./plugins/routes":19,"./polyfills/matches":20,"jtmpl-core/src/main":7}],18:[function(_dereq_,module,exports){
 module.exports = function(events, target) {
   function addEvent(event) {
     target.addEventListener(
@@ -1499,6 +1584,26 @@ module.exports = function(events, target) {
     addEvent(event);
   }
 }
+
+},{}],19:[function(_dereq_,module,exports){
+module.exports = function(routes, target) {
+};
+
+},{}],20:[function(_dereq_,module,exports){
+typeof Element !== 'undefined' && (function(ElementPrototype) {
+  ElementPrototype.matches = ElementPrototype.matches ||
+    ElementPrototype.mozMatchesSelector ||
+    ElementPrototype.msMatchesSelector ||
+    ElementPrototype.oMatchesSelector ||
+    ElementPrototype.webkitMatchesSelector ||
+    function (selector) {
+      var node = this,
+      nodes = (node.parentNode || node.document).querySelectorAll(selector),
+      i = -1;
+      while (nodes[++i] && nodes[i] != node);
+      return !!nodes[i];
+    };
+})(Element.prototype);
 
 },{}]},{},[17])
 (17)
