@@ -36,67 +36,14 @@
     </ul>
 </nav>
 
-<h3 id="roadmap">Roadmap</h3>
-<p>Upcoming jtmpl 0.4.0 will be a complete rewrite. Here&#39;s what&#39;s changing:</p>
-<h4 id="source-language">Source language</h4>
-<p>New language is JavaScript, augmented with <a href="http://sweetjs.org">Sweet.js</a>, <a href="https://github.com/jlongster/es6-macros">es6macros</a> and <a href="https://github.com/natefaubion/sparkler">sparkler</a>. CoffeeScript is an excellent prototyping language and helped develop the idea. JavaScript base would be more accessible and can be shaped with macros to fit closely jtmpl needs. </p>
-<h4 id="eliminate-the-compiler">Eliminate the compiler</h4>
-<p>The compiler is a major piece of complexity and code volume. Every browser already includes a HTML parser that can be leveraged. So compiler will be removed completely, Mustache tags will be parsed from the constructed (offline) DOM tree instead &ndash; a much simpler approach.</p>
-<h4 id="immutable-structures">Immutable structures</h4>
-<p>Switching to immutable data structures eliminates a large class of bugs, will make code simpler and possible to be better optimized by a smart JS engine. The implications for the library user are routes and event handlers should refer to current <code>model</code> only via the <code>this</code> context (<code>this.__root__</code> and <code>this.__parent__</code> will be provided) and never via referencing variable.</p>
-<h4 id="functional-representation">Functional representation</h4>
-<p>There won&#39;t be data-jt attributes anymore. A compiled template is a function, that constructs a DOM fragment and sets up data-binding and event handling, akin to the intermediate representation you get when compiling a template via traditional engine.</p>
-<h4 id="features-target">Features target</h4>
-<ul>
-<li><p>automatic bidirectional data-binding based on context</p>
-</li>
-<li><p>computed properties with automatic dependency management</p>
-</li>
-<li><p>asynchronous computed properties</p>
-</li>
-<li><p>set a computed property</p>
-</li>
-<li><p>mappings</p>
-</li>
-<li><p>formatters</p>
-</li>
-<li><p>routes &ndash; simple and regexp specified</p>
-</li>
-<li><p>partials</p>
-<ul>
-<li><p>literal, synchronous &ndash; <code>{{&gt;&quot;#template-by-id-to-include&quot;}}</code></p>
-</li>
-<li><p>literal, asynchronous &ndash; <code>{{&gt;&quot;//url/of/template&quot;}}</code></p>
-</li>
-<li><p>variable, can be updated at runtime &ndash; <code>{{&gt;url_or_element_id}}</code></p>
-</li>
-</ul>
-</li>
-<li><p>make <code>jtmpl(&#39;#target-id&#39;, &#39;#template-id&#39;, model)</code> boilerplate optional:</p>
-<pre><code>&lt;!-- target --&gt;
-&lt;article data-template=&quot;#template-id&quot; data-model=&quot;#model&quot;&gt;&lt;/article&gt;
-&lt;!-- 
-Or you can use URLs instead of referencing by id, just like in partials.
-Easy distributed applications.
---&gt;
-
-&lt;script id=&quot;template-id&quot; type=&quot;text/template&quot;&gt;
-      Hello, {{who}}
-&lt;/script&gt;
-
-&lt;script id=&quot;model&quot; type=&quot;text/model&quot;&gt;
-    {
-        who: &#39;world&#39;
-    }
-&lt;/script&gt;</code></pre>
-</li>
-<li><p>XHR</p>
-</li>
-</ul>
-<h4 id="test-coverage">Test coverage</h4>
-<p>Include test coverage report during build process, aim for 100% test coverage.</p>
-<h4 id="performance-tests-regression-warnings">Performance tests, regression warnings</h4>
-<p>Have to think some more on this.</p>
+<h3 id="news">News</h3>
+<h5 id="2014-09-16">2014-09-16</h5>
+<p>jtmpl 1.0.0 is now a fact. It lives in the &#39;1.0&#39; branch.
+Installable via npm: <code>npm install jtmpl-js</code></p>
+<p>Site update coming soon.</p>
+<h5 id="2014-06-25">2014-06-25</h5>
+<p>Functional reactive object wrapper has been decoupled
+into a new project, <a href="https://github.com/atmin/freak">freak</a></p>
 
           <footer>
               <span>{&rsaquo;</span> Copyright &copy; 2013-2014 Atanas Minev, <a href="LICENSE">MIT license</a>
