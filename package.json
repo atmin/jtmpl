@@ -16,7 +16,7 @@
     "element-class": "^0.1.1",
     "freak": "^0.4.4",
     "jshint": "^2.5.2",
-    "jtmpl-core": "1.0.12",
+    "jtmpl-core": "1.0.13",
     "simple-server": "^1.0.1",
     "uglify-js": "^2.4.14",
     "watchify": "^0.10.2"
