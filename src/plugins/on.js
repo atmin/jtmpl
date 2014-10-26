@@ -5,7 +5,11 @@ module.exports = function(events, target) {
       function(ev) {
         for (var selector in events[event]) {
           if (ev.target.matches(selector)) {
-            events[event][selector].call(ev.target.__jtmpl__, ev);
+            var node = ev.target;
+            while (!node.__jtmpl__ && node.parentNode) {
+              node = node.parentNode;
+            }
+            events[event][selector].call(node.__jtmpl__, ev);
           }
         }
       }
@@ -15,4 +19,4 @@ module.exports = function(events, target) {
   for (var event in events) {
     addEvent(event);
   }
-}
+};

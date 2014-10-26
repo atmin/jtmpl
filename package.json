@@ -1,6 +1,6 @@
 {
   "name": "jtmpl-js",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/atmin/jtmpl.git"
@@ -16,7 +16,6 @@
     "element-class": "^0.1.1",
     "freak": "^0.4.4",
     "jshint": "^2.5.2",
-    "jtmpl-core": "1.0.13",
     "simple-server": "^1.0.1",
     "uglify-js": "^2.4.14",
     "watchify": "^0.10.2"
@@ -25,7 +24,7 @@
     "jshint": "jshint src/*.js",
     "browserify": "browserify --standalone jtmpl src/main.js > jtmpl.js",
     "watch": "watchify --standalone jtmpl src/main.js -o jtmpl.js -dv",
-    "uglify": "uglifyjs jtmpl.js -c -m --screw-ie8 -o jtmpl.min.js",
+    "uglify": "uglifyjs jtmpl.js -c -m -o jtmpl.min.js",
     "start": "npm run dev",
     "dev": "npm run watch & (sleep 1 && xdg-open http://localhost:4000) && jekyll serve --watch",
     "build": "npm run jshint && npm run browserify && npm run uglify",
