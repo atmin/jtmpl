@@ -12,13 +12,41 @@
     }
   ],
   "devDependencies": {
+    "atob": "^1.1.2",
+    "brfs": "^1.2.0",
     "browserify": "^4.2.0",
+    "connect": "^3.3.1",
     "element-class": "^0.1.1",
     "freak": "^0.4.4",
     "jshint": "^2.5.2",
-    "simple-server": "^1.0.1",
+    "node-static": "^0.7.6",
+    "tape": "^3.0.1",
+    "testling": "^1.7.1",
     "uglify-js": "^2.4.14",
     "watchify": "^0.10.2"
+  },
+  "browserify": {
+    "transform": [
+      "brfs"
+    ]
+  },
+  "testling": {
+    "files": [
+      "./spec/main.js"
+    ],
+    "scripts": [
+      "./jtmpl.js"
+    ],
+    "browsers": [
+      "ie/9..latest",
+      "chrome/22..latest",
+      "firefox/16..latest",
+      "safari/latest",
+      "opera/11.0..latest",
+      "iphone/6",
+      "ipad/6",
+      "android-browser/latest"
+    ]
   },
   "scripts": {
     "jshint": "jshint src/*.js",
@@ -28,6 +56,6 @@
     "start": "npm run dev",
     "dev": "npm run watch & (sleep 1 && xdg-open http://localhost:4000) && jekyll serve --watch",
     "build": "npm run jshint && npm run browserify && npm run uglify",
-    "test": "npm run build && phantomjs tests/phantom.js"
+    "test": "tape spec/*.js"
   }
 }
