@@ -27,6 +27,7 @@
     "karma-sauce-launcher": "^0.2.10",
     "karma-spec-reporter": "0.0.13",
     "mocha": "^2.0.1",
+    "sauce-connect-launcher": "^0.7.0",
     "uglify-js": "^2.4.14"
   },
   "browserify": {
