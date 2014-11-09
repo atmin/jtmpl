@@ -41,6 +41,7 @@
     "start": "npm run dev",
     "dev": "karma start local.karma.conf.js",
     "build": "npm run jshint && npm run browserify && npm run uglify",
-    "test": "karma start --single-run=true --browsers=Chrome,Firefox,PhantomJS local.karma.conf.js"
+    "check": "karma start --single-run=true --browsers=Chrome,Firefox,PhantomJS local.karma.conf.js",
+    "test": "karma start karma.conf-ci.js"
   }
 }
