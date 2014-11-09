@@ -1,4 +1,4 @@
-// Inline main.html contents into testling bundle
+// Inline main.html contents
 /* jshint evil:true */
 document.write(
   require('atob')(
@@ -10,12 +10,20 @@ document.write(
   )
 );
 
-// Tests via tape
-var test = require('tape');
 
-test('jtmpl is a function', function(t) {
-  t.ok(typeof jtmpl === 'function', 'jtmpl is a function');
-  t.ok(typeof jtmpl === 'function', 'jtmpl is a function 22222');
-  console.log('# window.location is ' + window.location);
-  t.end();
+describe('jtmpl test suite', function() {
+
+  var proceed = false;
+
+  beforeEach(function(done) {
+    setTimeout(function() {
+      proceed = true;
+      done();
+    }, 1000);
+    if (proceed) done();
+  });
+
+  describe('jtmpl', require('./base'));
+  describe('plugins', require('./plugins'));
+  describe('render', require('./render'));
 });

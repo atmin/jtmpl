@@ -127,6 +127,12 @@ jtmpl._get = function(model, prop) {
 
 
 /*
+ * Polyfills
+ */
+require('./polyfills/matches');
+
+
+/*
  * Plugins
  */
 jtmpl.plugins = require('./plugins');
@@ -136,3 +142,4 @@ jtmpl.plugins = require('./plugins');
  * Export
  */
 module.exports = jtmpl;
+if (typeof window !== 'undefined') window.jtmpl = jtmpl;

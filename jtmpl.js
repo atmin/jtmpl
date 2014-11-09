@@ -1406,6 +1406,12 @@ jtmpl._get = function(model, prop) {
 
 
 /*
+ * Polyfills
+ */
+_dereq_('./polyfills/matches');
+
+
+/*
  * Plugins
  */
 jtmpl.plugins = _dereq_('./plugins');
@@ -1415,8 +1421,9 @@ jtmpl.plugins = _dereq_('./plugins');
  * Export
  */
 module.exports = jtmpl;
+if (typeof window !== 'undefined') window.jtmpl = jtmpl;
 
-},{"./compile":4,"./loader":5,"./parse":7,"./plugins":8,"./utemplate":12,"./xhr":13,"freak":1}],7:[function(_dereq_,module,exports){
+},{"./compile":4,"./loader":5,"./parse":7,"./plugins":8,"./polyfills/matches":12,"./utemplate":13,"./xhr":14,"freak":1}],7:[function(_dereq_,module,exports){
 /**
  * Parse a text template to DOM structure ready for compiling
  * @see compile
@@ -1536,6 +1543,22 @@ module.exports = function(routes, target) {
 };
 
 },{}],12:[function(_dereq_,module,exports){
+typeof Element !== 'undefined' && (function(ElementPrototype) {
+  ElementPrototype.matches = ElementPrototype.matches ||
+    ElementPrototype.mozMatchesSelector ||
+    ElementPrototype.msMatchesSelector ||
+    ElementPrototype.oMatchesSelector ||
+    ElementPrototype.webkitMatchesSelector ||
+    function (selector) {
+      var node = this,
+      nodes = (node.parentNode || node.document).querySelectorAll(selector),
+      i = -1;
+      while (nodes[++i] && nodes[i] != node);
+      return !!nodes[i];
+    };
+})(Element.prototype);
+
+},{}],13:[function(_dereq_,module,exports){
 /**
  * utemplate
  *
@@ -1625,7 +1648,7 @@ function utemplate(template, model, onChange) {
 
 module.exports = utemplate;
 
-},{}],13:[function(_dereq_,module,exports){
+},{}],14:[function(_dereq_,module,exports){
 /*
 
 Requests API

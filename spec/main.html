@@ -1,6 +1,6 @@
 <div id="target" data-jtmpl="#app"></div>
 
-<div id="target2" data-jtmpl="#target2" data-model="spec/external-model.js">
+<div id="target2" data-jtmpl="#target2" data-model="/base/spec/external-model.js">
   <h3>Another target, self-contained template, external model</h3>
   {{#items}}{{.}}&nbsp;{{/}}
 </div>
@@ -74,7 +74,7 @@
   <p>
     <select>
       {{#options}}
-      <option selected={{checked}}>{{text}}</option>
+      <option selected="{{checked}}">{{text}}</option>
       {{/options}}
     </select>
   </p>
@@ -83,7 +83,7 @@
   <h4><code>model('options')</code></h4>
   <p>
     {{#options}}
-    <label><input type="radio" name="radio-group" checked={{checked}}>{{text}}</label>
+    <label><input type="radio" name="radio-group" checked="{{checked}}">{{text}}</label>
     {{/options}}
   </p>
 
@@ -103,11 +103,11 @@
   <h4><code>model('options2')</code></h4>
   <p>
     {{#options2}}
-    <label><input type="checkbox" checked={{checked}}> {{text}}</label>
+    <label><input type="checkbox" class="checkbox-group" checked={{checked}}> {{text}}</label>
     {{/}}
   </p>
   <p>
-    <label><input type="checkbox" checked="{{checkAll}}"> <code>model('checkAll')</code> (computed getter/setter)</label>
+    <label><input type="checkbox" class="checkbox-group-all" checked="{{checkAll}}"> <code>model('checkAll')</code> (computed getter/setter)</label>
   </p>
 
 
@@ -127,6 +127,10 @@
   {{/}}
 
 
+  <h4>DIV height=<code>model('height')</code></h4>
+  <div style="height: {{height}}px"></div>
+
+
   <h4><code>model('tree')</code></h4>
   <div>{{>"#tree-template"}}</div>
 
@@ -134,7 +138,7 @@
   <h4><code>model('externalPartial')</code></h4>
   <div>
   {{#externalPartial}}
-    {{>"spec/partials.html#a-partial"}}
+    {{>"/base/spec/partials.html#a-partial"}}
   {{/}}
   </div>
 
@@ -151,7 +155,7 @@
   <ul>
     {{#tree}}
     <li>
-      {{value}}
+      <span class="tree-node-value">{{value}}</span>
       <div>{{>"#tree-template"}}</div>
     </li>
     {{/tree}}
@@ -238,14 +242,15 @@
         value: 6
       }
     ],
+    height: 127,
     externalPartial: {
       extended: 'extended property',
     },
     context: {
       own: 'host',
-      dynamicPartial: 'spec/partials.html#partial2'
+      dynamicPartial: '/base/spec/partials.html#partial2'
     },
-    dynamicPartial: 'spec/partials.html#partial2'
+    dynamicPartial: '/base/spec/partials.html#partial2'
   }
 </script>
 

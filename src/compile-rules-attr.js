@@ -144,35 +144,39 @@ module.exports = [
             }
           }
 
-          // radio group?
-          if (node.type === 'radio' && node.name) {
-            if (!radioGroups[node.name]) {
-              // Init radio group ([0]: node, [1]: model)
-              radioGroups[node.name] = [[], []];
+          function init() {
+            // radio group?
+            if (node.type === 'radio' && node.name) {
+              if (!radioGroups[node.name]) {
+                // Init radio group ([0]: node, [1]: model)
+                radioGroups[node.name] = [[], []];
+              }
+              // Add input to radio group
+              radioGroups[node.name][0].push(node);
+              // Add context to radio group
+              radioGroups[node.name][1].push(model);
             }
-            // Add input to radio group
-            radioGroups[node.name][0].push(node);
-            // Add context to radio group
-            radioGroups[node.name][1].push(model);
+
+            node.addEventListener('click', function() {
+              if (node.type === 'radio' && node.name) {
+                radioGroupsUpdating[node.name] = true;
+                // Update all inputs from the group
+                for (var i = 0, len = radioGroups[node.name][0].length; i < len; i++) {
+                  radioGroups[node.name][1][i](prop, radioGroups[node.name][0][i].checked);
+                }
+                radioGroupsUpdating[node.name] = false;
+              }
+              else {
+                // Update current input only
+                model(prop, node.checked);
+              }
+            });
+
+            model.on('change', prop, change);
+            setTimeout(change);
           }
 
-          node.addEventListener('click', function() {
-            if (node.type === 'radio' && node.name) {
-              radioGroupsUpdating[node.name] = true;
-              // Update all inputs from the group
-              for (var i = 0, len = radioGroups[node.name][0].length; i < len; i++) {
-                radioGroups[node.name][1][i](prop, radioGroups[node.name][0][i].checked);
-              }
-              radioGroupsUpdating[node.name] = false;
-            }
-            else {
-              // Update current input only
-              model(prop, node.checked);
-            }
-          });
-
-          model.on('change', prop, change);
-          setTimeout(change);
+          setTimeout(init);
         }
 
       };
