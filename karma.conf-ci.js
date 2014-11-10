@@ -13,8 +13,31 @@ module.exports = function(config) {
     }
   }
 
+
+  // Workaround Sauce Labs concurrency issues
+  // Check: https://github.com/karma-runner/karma-sauce-launcher/issues/40
+  var batchId = [].reduce.call(
+    process.argv,
+    function(prev, curr) {
+      return (curr && curr.indexOf('--batch-') === 0) ?
+        curr.substr(8) : prev;
+    },
+    null
+  );
+  var browserConcurrency = 3;
+
   // Browsers to run on Sauce Labs
   var customLaunchers = {
+    'SL_ChromeWin7': {
+      base: 'SauceLabs',
+      browserName: 'chrome',
+      platform: 'Windows 7'
+    },
+    'SL_FirefoxWin7': {
+      base: 'SauceLabs',
+      browserName: 'firefox',
+      platform: 'Windows 7'
+    },
     'SL_Chrome': {
       base: 'SauceLabs',
       browserName: 'chrome'
@@ -38,13 +61,70 @@ module.exports = function(config) {
       browserName: 'internet explorer',
       version: '11'
     },
-    'SL_iPhone': {
+    'SL_Safari': {
+      base: 'SauceLabs',
+      browserName: 'safari',
+      platform: 'OS X 10.9',
+      version: '7'
+    },
+    'SL_Android': {
+      base: 'SauceLabs',
+      browserName: 'android',
+      platform: 'Linux',
+      version: '4.0'
+    },
+    'SL_AndroidTablet': {
+      base: 'SauceLabs',
+      browserName: 'android',
+      platform: 'Linux',
+      version: '4.0',
+      'device-type': 'tablet'
+    },
+    'SL_iPhone7': {
+      base: 'SauceLabs',
+      browserName: 'iPhone',
+      platform: 'OSX 10.9',
+      version: '7'
+    },
+    'SL_iPhone81': {
       base: 'SauceLabs',
       browserName: 'iPhone',
       platform: 'OSX 10.9',
       version: '8.1'
+    },
+    'SL_iPad7': {
+      base: 'SauceLabs',
+      browserName: 'iPad',
+      platform: 'OSX 10.9',
+      version: '7'
+    },
+    'SL_iPad81': {
+      base: 'SauceLabs',
+      browserName: 'iPad',
+      platform: 'OSX 10.9',
+      version: '8.1'
+    },
+    'SL_Opera12': {
+      base: 'SauceLabs',
+      browserName: 'opea',
+      platform: 'Windows 7',
+      version: '12'
     }
   };
+
+  var launchersBatch = [].reduce.call(
+    Object.keys(customLaunchers),
+    function(launchers, curr, index) {
+      if (batchId === null || batchId == Math.ceil(index / browserConcurrency)) {
+        launchers[curr] = customLaunchers[curr];
+      }
+      return launchers;
+    },
+    {}
+  );
+
+  console.log('batchId = ' + batchId);
+  console.log('launchersBatch.length = ' + Object.keys(launchersBatch).length);
 
   config.set({
 
@@ -75,7 +155,7 @@ module.exports = function(config) {
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ['spec', 'saucelabs'],
+    reporters: ['dots', 'saucelabs'],
 
 
     // web server port
@@ -90,12 +170,12 @@ module.exports = function(config) {
     sauceLabs: {
       testName: 'jtmpl test suite'
     },
-    captureTimeout: 120000,
-    customLaunchers: customLaunchers,
+    captureTimeout: 90000,
+    customLaunchers: launchersBatch,
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: Object.keys(customLaunchers),
+    browsers: Object.keys(launchersBatch),
     singleRun: true
   });
 };
