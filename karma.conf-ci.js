@@ -103,13 +103,13 @@ module.exports = function(config) {
       browserName: 'iPad',
       platform: 'OSX 10.9',
       version: '8.1'
-    },
-    'SL_Opera12': {
+    }/*,
+    'SL_CHROME_Opera12': {
       base: 'SauceLabs',
       browserName: 'opera',
       platform: 'Windows 7',
       version: '12'
-    }
+    }*/
   };
 
   var launchersBatch = [].reduce.call(
