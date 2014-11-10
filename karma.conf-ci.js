@@ -106,7 +106,7 @@ module.exports = function(config) {
     },
     'SL_Opera12': {
       base: 'SauceLabs',
-      browserName: 'opea',
+      browserName: 'opera',
       platform: 'Windows 7',
       version: '12'
     }
@@ -170,7 +170,7 @@ module.exports = function(config) {
     sauceLabs: {
       testName: 'jtmpl test suite'
     },
-    captureTimeout: 90000,
+    captureTimeout: 120000,
     customLaunchers: launchersBatch,
 
     // start these browsers
