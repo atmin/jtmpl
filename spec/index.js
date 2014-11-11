@@ -19,11 +19,11 @@ describe('jtmpl test suite', function() {
     setTimeout(function() {
       proceed = true;
       done();
-    }, 1000);
+    }, 1500);
     if (proceed) done();
   });
 
-  describe('jtmpl', require('./base'));
+  describe('jtmpl', require('./jtmpl'));
   describe('plugins', require('./plugins'));
   describe('render', require('./render'));
 });

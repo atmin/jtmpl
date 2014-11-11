@@ -40,11 +40,13 @@ module.exports = function(config) {
     },
     'SL_Chrome': {
       base: 'SauceLabs',
-      browserName: 'chrome'
+      browserName: 'chrome',
+      platform: 'Linux'
     },
     'SL_Firefox': {
       base: 'SauceLabs',
-      browserName: 'firefox'
+      browserName: 'firefox',
+      platform: 'Linux'
     },
     'SL_IE9': {
       base: 'SauceLabs',
@@ -103,13 +105,7 @@ module.exports = function(config) {
       browserName: 'iPad',
       platform: 'OSX 10.9',
       version: '8.1'
-    }/*,
-    'SL_CHROME_Opera12': {
-      base: 'SauceLabs',
-      browserName: 'opera',
-      platform: 'Windows 7',
-      version: '12'
-    }*/
+    }
   };
 
   var launchersBatch = [].reduce.call(
@@ -142,13 +138,13 @@ module.exports = function(config) {
     files: [
       { pattern: 'src/**/*', included: false },
       { pattern: 'spec/*', included: false },
-      'src/main.js',
-      'spec/main.js'
+      'src/index.js',
+      'spec/index.js'
     ],
 
     preprocessors: {
-      'src/main.js': ['browserify'],
-      'spec/main.js': ['browserify']
+      'src/index.js': ['browserify'],
+      'spec/index.js': ['browserify']
     },
 
 
