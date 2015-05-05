@@ -131,6 +131,13 @@ jtmpl._get = function(model, prop) {
  */
 
 jtmpl.rules = require('./prepare-runtime')();
+jtmpl.normalizeModel = function(model) {
+  return typeof model === "function" ?
+    model :
+    typeof model === "object" ?
+      jtmpl(model) :
+      jtmpl({".": model});
+};
 
 /*
  * Polyfills

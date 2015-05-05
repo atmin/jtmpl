@@ -44,13 +44,7 @@ function compile(template, sourceURL, depth) {
   }
 
   // Wrap model in a Freak instance, if necessary
-  func += indented([
-    'model = typeof model === "function" ?',
-    '  model :',
-    '  typeof model === "object" ?',
-    '    jtmpl(model) :',
-    '    jtmpl({".": model});'
-  ]);
+  func += indented(['model = jtmpl.normalizeModel(model);']);
 
   // Iterate childNodes
   for (var i = 0, childNodes = template.childNodes, len = childNodes.length, node;
@@ -94,14 +88,17 @@ function compile(template, sourceURL, depth) {
                     '  frag,',
                     '  model,',
                     '  ' + JSON.stringify(rules[ri].block(match)) + ',',   // prop
-                      compile(
-                        block,
-                        '', //sourceURL && (sourceURL + '-' + node.innerHTML + '[' + i + ']'),
-                        depth + 2
-                      ) + ', ',
+                  ]);
+                  func +=
+                    compile(
+                      block,
+                      '', //sourceURL && (sourceURL + '-' + node.innerHTML + '[' + i + ']'),
+                      depth + 1
+                    ) + ', ';
+                  func += indented([
                     '  globals',
                     ');'
-                    ]);
+                  ]);
                 }
 
               }
@@ -153,13 +150,14 @@ function compile(template, sourceURL, depth) {
 
           if (node.nodeName !== 'INPUT') {
             // Recursively compile
+            func += indented(['node.appendChild(']);
+            func +=
+              compile(
+                node,
+                '', //sourceURL && (sourceURL + '-' + node.nodeName + '[' + i + ']'),
+                depth + 1
+              );
             func += indented([
-              'node.appendChild(',
-                compile(
-                  node,
-                  '', //sourceURL && (sourceURL + '-' + node.nodeName + '[' + i + ']'),
-                  depth + 1
-                ),
               '  (model)',
               ');'
             ]);
