@@ -386,36 +386,34 @@ module.exports = [
   /**
    * value="{{var}}"
    */
-  function(node, attr) {
-    var match = node.getAttribute(attr).match(RE_DELIMITED_VAR);
-    if (attr === 'value' && match) {
+  {
+    id: 'var',
+    match: function(node, attr) {
+      return node.getAttribute(attr).match(RE_DELIMITED_VAR);
+    },
+    prop: function(match) {
+      return match[1];
+    },
+    rule: function(node, attr, model, prop) {
 
-      return {
-
-        prop: match[1],
-
-        rule: function(node, attr, model, prop) {
-
-          function change() {
-            var val = jtmpl._get(model, prop);
-            if (node[attr] !== val) {
-              node[attr] = val || '';
-            }
-          }
-
-          // text input?
-          var eventType = ['text', 'password'].indexOf(node.type) > -1 ?
-            'keyup' : 'change'; // IE9 incorectly reports it supports input event
-
-          node.addEventListener(eventType, function() {
-            model(prop, node[attr]);
-          });
-
-          model.on('change', prop, change);
-          change();
-
+      function change() {
+        var val = jtmpl._get(model, prop);
+        if (node[attr] !== val) {
+          node[attr] = val || '';
         }
-      };
+      }
+
+      // text input?
+      var eventType = ['text', 'password'].indexOf(node.type) > -1 ?
+        'keyup' : 'change'; // IE9 incorectly reports it supports input event
+
+      node.addEventListener(eventType, function() {
+        model(prop, node[attr]);
+      });
+
+      model.on('change', prop, change);
+      change();
+
     }
   },
 
@@ -425,68 +423,66 @@ module.exports = [
   /**
    * selected="{{var}}"
    */
-  function(node, attr) {
-    var match = node.getAttribute(attr).match(RE_DELIMITED_VAR);
-    if (attr === 'jtmpl-selected' && match) {
+  {
+    id: 'selected_var',
+    match: function(node, attr) {
+      return node.getAttribute(attr).match(RE_DELIMITED_VAR);
+    },
+    prop: function(match) {
+      return match[1];
+    },
+    rule: function(node, attr, model, prop) {
 
-      return {
-
-        prop: match[1],
-
-        rule: function(node, attr, model, prop) {
-
-          function change() {
-            if (node.nodeName === 'OPTION') {
-              var i = selects.indexOf(node.parentNode);
-              if (selectsUpdating[i]) {
-                return;
-              }
-              for (var j = 0, len = selectOptions[i].length; j < len; j++) {
-                selectOptions[i][j].selected = selectOptionsContexts[i][j](prop);
-              }
-            }
-            else {
-              node.selected = model(prop);
-            }
+      function change() {
+        if (node.nodeName === 'OPTION') {
+          var i = selects.indexOf(node.parentNode);
+          if (selectsUpdating[i]) {
+            return;
           }
-
-          if (node.nodeName === 'OPTION') {
-
-            // Process async, as parentNode is still documentFragment
-            setTimeout(function() {
-              var i = selects.indexOf(node.parentNode);
-              if (i === -1) {
-                // Add <select> to list
-                i = selects.push(node.parentNode) - 1;
-                // Init options
-                selectOptions.push([]);
-                // Init options contexts
-                selectOptionsContexts.push([]);
-                // Attach change listener
-                node.parentNode.addEventListener('change', function() {
-                  selectsUpdating[i] = true;
-                  for (var oi = 0, olen = selectOptions[i].length; oi < olen; oi++) {
-                    selectOptionsContexts[i][oi](prop, selectOptions[i][oi].selected);
-                  }
-                  selectsUpdating[i] = false;
-                });
-              }
-              // Remember option and context
-              selectOptions[i].push(node);
-              selectOptionsContexts[i].push(model);
-            }, 0);
-
+          for (var j = 0, len = selectOptions[i].length; j < len; j++) {
+            selectOptions[i][j].selected = selectOptionsContexts[i][j](prop);
           }
-          else {
-            node.addEventListener('change', function() {
-              model(prop, this.selected);
+        }
+        else {
+          node.selected = model(prop);
+        }
+      }
+
+      if (node.nodeName === 'OPTION') {
+
+        // Process async, as parentNode is still documentFragment
+        setTimeout(function() {
+          var i = selects.indexOf(node.parentNode);
+          if (i === -1) {
+            // Add <select> to list
+            i = selects.push(node.parentNode) - 1;
+            // Init options
+            selectOptions.push([]);
+            // Init options contexts
+            selectOptionsContexts.push([]);
+            // Attach change listener
+            node.parentNode.addEventListener('change', function() {
+              selectsUpdating[i] = true;
+              for (var oi = 0, olen = selectOptions[i].length; oi < olen; oi++) {
+                selectOptionsContexts[i][oi](prop, selectOptions[i][oi].selected);
+              }
+              selectsUpdating[i] = false;
             });
           }
+          // Remember option and context
+          selectOptions[i].push(node);
+          selectOptionsContexts[i].push(model);
+        }, 0);
 
-          model.on('change', prop, change);
-          setTimeout(change);
-        }
-      };
+      }
+      else {
+        node.addEventListener('change', function() {
+          model(prop, this.selected);
+        });
+      }
+
+      model.on('change', prop, change);
+      setTimeout(change);
     }
   },
 
@@ -496,66 +492,63 @@ module.exports = [
   /**
    * checked="{{var}}"
    */
-  function(node, attr) {
-    var match = node.getAttribute(attr).match(RE_DELIMITED_VAR);
-    if (attr === 'jtmpl-checked' && match) {
+  {
+    id: 'checked_var',
+    match: function(node, attr) {
+      return node.getAttribute(attr).match(RE_DELIMITED_VAR);
+    },
+    prop: function(match) {
+      return match[1];
+    },
+    rule: function(node, attr, model, prop) {
 
-      return {
-
-        prop: match[1],
-
-        rule: function(node, attr, model, prop) {
-
-          function change() {
-            if (node.name) {
-              if (radioGroupsUpdating[node.name]) {
-                return;
-              }
-              for (var i = 0, len = radioGroups[node.name][0].length; i < len; i++) {
-                radioGroups[node.name][0][i].checked = radioGroups[node.name][1][i](prop);
-              }
-            }
-            else {
-              node.checked = model(prop);
-            }
+      function change() {
+        if (node.name) {
+          if (radioGroupsUpdating[node.name]) {
+            return;
           }
-
-          function init() {
-            // radio group?
-            if (node.type === 'radio' && node.name) {
-              if (!radioGroups[node.name]) {
-                // Init radio group ([0]: node, [1]: model)
-                radioGroups[node.name] = [[], []];
-              }
-              // Add input to radio group
-              radioGroups[node.name][0].push(node);
-              // Add context to radio group
-              radioGroups[node.name][1].push(model);
-            }
-
-            node.addEventListener('click', function() {
-              if (node.type === 'radio' && node.name) {
-                radioGroupsUpdating[node.name] = true;
-                // Update all inputs from the group
-                for (var i = 0, len = radioGroups[node.name][0].length; i < len; i++) {
-                  radioGroups[node.name][1][i](prop, radioGroups[node.name][0][i].checked);
-                }
-                radioGroupsUpdating[node.name] = false;
-              }
-              else {
-                // Update current input only
-                model(prop, node.checked);
-              }
-            });
-
-            model.on('change', prop, change);
-            setTimeout(change);
+          for (var i = 0, len = radioGroups[node.name][0].length; i < len; i++) {
+            radioGroups[node.name][0][i].checked = radioGroups[node.name][1][i](prop);
           }
+        }
+        else {
+          node.checked = model(prop);
+        }
+      }
 
-          setTimeout(init);
+      function init() {
+        // radio group?
+        if (node.type === 'radio' && node.name) {
+          if (!radioGroups[node.name]) {
+            // Init radio group ([0]: node, [1]: model)
+            radioGroups[node.name] = [[], []];
+          }
+          // Add input to radio group
+          radioGroups[node.name][0].push(node);
+          // Add context to radio group
+          radioGroups[node.name][1].push(model);
         }
 
-      };
+        node.addEventListener('click', function() {
+          if (node.type === 'radio' && node.name) {
+            radioGroupsUpdating[node.name] = true;
+            // Update all inputs from the group
+            for (var i = 0, len = radioGroups[node.name][0].length; i < len; i++) {
+              radioGroups[node.name][1][i](prop, radioGroups[node.name][0][i].checked);
+            }
+            radioGroupsUpdating[node.name] = false;
+          }
+          else {
+            // Update current input only
+            model(prop, node.checked);
+          }
+        });
+
+        model.on('change', prop, change);
+        setTimeout(change);
+      }
+
+      setTimeout(init);
     }
   },
 
@@ -565,27 +558,25 @@ module.exports = [
   /**
    * attribute="{{var}}"
    */
-  function(node, attr) {
-    var match = node.getAttribute(attr).match(RE_DELIMITED_VAR);
-    if (match) {
+  {
+    id: 'attribute_var',
+    match: function(node, attr) {
+      return node.getAttribute(attr).match(RE_DELIMITED_VAR);
+    },
+    prop: function(match) {
+      return match[1];
+    },
+    rule: function(node, attr, model, prop) {
 
-      return {
+      function change() {
+        var val = jtmpl._get(model, prop);
+        return val ?
+          node.setAttribute(attr, val) :
+          node.removeAttribute(attr);
+      }
 
-        prop: match[1],
-
-        rule: function(node, attr, model, prop) {
-
-          function change() {
-            var val = jtmpl._get(model, prop);
-            return val ?
-              node.setAttribute(attr, val) :
-              node.removeAttribute(attr);
-          }
-
-          model.on('change', prop, change);
-          change();
-        }
-      };
+      model.on('change', prop, change);
+      change();
     }
   },
 
@@ -596,20 +587,24 @@ module.exports = [
    * Fallback rule, process via @see utemplate
    * Strip jtmpl- prefix
    */
-  function(node, attr) {
-    return {
-      prop: node.getAttribute(attr),
-      rule: function(node, attr, model, prop) {
-        var attrName = attr.replace('jtmpl-', '');
-        function change() {
-          node.setAttribute(
-            attrName,
-            jtmpl.utemplate(prop, model, change)
-          );
-        }
-        change();
+  {
+    id: 'utemplate',
+    match: function(node, attr) {
+      return node.getAttribute(attr);
+    },
+    prop: function(match) {
+      return match;
+    },
+    rule: function(node, attr, model, prop) {
+      var attrName = attr.replace('jtmpl-', '');
+      function change() {
+        node.setAttribute(
+          attrName,
+          jtmpl.utemplate(prop, model, change)
+        );
       }
-    };
+      change();
+    }
   }
 
 ];
@@ -620,342 +615,326 @@ module.exports = [
  *
  */
 module.exports = [
-
   /* jshint evil: true */
-
-
-
 
   /**
    * {{var}}
    */
-  function(node) {
-    if (node.innerHTML.match(/^[\w\.\-]+$/)) {
-
-      return {
-
-        prop: node.innerHTML,
-
-        rule: function(fragment, model, prop) {
-          var textNode = document.createTextNode(jtmpl._get(model, prop) || '');
-          fragment.appendChild(textNode);
-          model.on('change', prop, function() {
-            textNode.data = jtmpl._get(model, prop) || '';
-          });
-        }
-      };
+  {
+    id: 'var',
+    match: function(node) {
+      return node.innerHTML.match(/^[\w\.\-]+$/);
+    },
+    prop: function(match) {
+      return match[0];
+    },
+    rule: function(fragment, model, prop) {
+      var textNode = document.createTextNode(jtmpl._get(model, prop) || '');
+      fragment.appendChild(textNode);
+      model.on('change', prop, function() {
+        textNode.data = jtmpl._get(model, prop) || '';
+      });
     }
   },
-
 
 
 
   /**
    * {{&var}}
    */
-  function(node) {
-    var match = node.innerHTML.match(/^&([\w\.\-]+)$/);
-    if (match) {
-      return {
+  {
 
-        prop: match[1],
+    id: 'not_var',
+    match: function(node) {
+      return node.innerHTML.match(/^&([\w\.\-]+)$/);
+    },
+    prop: function(match) {
+      return match[1];
+    },
+    rule: function(fragment, model, prop) {
 
-        rule: function(fragment, model, prop) {
+      // Anchor node for keeping section location
+      var anchor = document.createComment('');
+      // Number of rendered nodes
+      var length = 0;
 
-          // Anchor node for keeping section location
-          var anchor = document.createComment('');
-          // Number of rendered nodes
-          var length = 0;
+      function change() {
+        var frag = document.createDocumentFragment();
+        var el = document.createElement('body');
+        var i;
 
-          function change() {
-            var frag = document.createDocumentFragment();
-            var el = document.createElement('body');
-            var i;
-
-            // Delete old rendering
-            while (length) {
-              anchor.parentNode.removeChild(anchor.previousSibling);
-              length--;
-            }
-
-            el.innerHTML = model(prop) || '';
-            length = el.childNodes.length;
-            for (i = 0; i < length; i++) {
-              frag.appendChild(el.childNodes[0]);
-            }
-            anchor.parentNode.insertBefore(frag, anchor);
-          }
-
-          fragment.appendChild(anchor);
-          model.on('change', prop, change);
-          change();
+        // Delete old rendering
+        while (length) {
+          anchor.parentNode.removeChild(anchor.previousSibling);
+          length--;
         }
 
-      };
-    }
-  },
+        el.innerHTML = model(prop) || '';
+        length = el.childNodes.length;
+        for (i = 0; i < length; i++) {
+          frag.appendChild(el.childNodes[0]);
+        }
+        anchor.parentNode.insertBefore(frag, anchor);
+      }
 
+      fragment.appendChild(anchor);
+      model.on('change', prop, change);
+      change();
+    }
+
+  },
 
 
 
   /**
    * {{>partial}}
    */
-  function(node) {
-    // match: [1]=var_name, [2]='single-quoted' [3]="double-quoted"
-    var match = node.innerHTML.match(/>([\w\.\-]+)|'([^\']*)\'|"([^"]*)"/);
+  {
+    id: 'partial',
+    match: function(node) {
+      // match: [1]=var_name, [2]='single-quoted' [3]="double-quoted"
+      return node.innerHTML.match(/>([\w\.\-]+)|'([^\']*)\'|"([^"]*)"/);
+    },
+    prop: function(match) {
+      return match;
+    },
+    rule: function(fragment, model, match) {
+      var anchor = document.createComment('');
+      var target;
 
-    if (match) {
-      return {
-
-        prop: match,
-
-        rule: function(fragment, model, match) {
-
-          var anchor = document.createComment('');
-          var target;
-
-          function loader() {
-            if (!target) {
-              target = anchor.parentNode;
-            }
-            jtmpl.loader(
-              target,
-              match[1] ?
-                // Variable
-                model(match[1]) :
-                // Literal
-                match[2] || match[3],
-              model
-            );
-          }
-          if (match[1]) {
-            // Variable
-            model.on('change', match[1], loader);
-          }
-          fragment.appendChild(anchor);
-          // Load async
-          setTimeout(loader);
+      function loader() {
+        if (!target) {
+          target = anchor.parentNode;
         }
-      };
+        jtmpl.loader(
+          target,
+          match[1] ?
+            // Variable
+            model(match[1]) :
+            // Literal
+            match[2] || match[3],
+          model
+        );
+      }
+      if (match[1]) {
+        // Variable
+        model.on('change', match[1], loader);
+      }
+      fragment.appendChild(anchor);
+      // Load async
+      setTimeout(loader);
     }
   },
-
 
 
 
   /**
    * {{#section}}
    */
-  function(node) {
-    var match = node.innerHTML.match(/^#([\w\.\-]+)$/);
+  {
+    id: 'section',
+    match: function(node) {
+      return node.innerHTML.match(/^#([\w\.\-]+)$/);
+    },
+    block: function(match) {
+      return match[1];
+    },
+    rule: function(fragment, model, prop, template) {
 
-    if (match) {
+      // Anchor node for keeping section location
+      var anchor = document.createComment('');
+      // Number of rendered nodes
+      var length = 0;
+      // How many childNodes in one section item
+      var chunkSize;
 
-      return {
+      function update(i) {
+        return function() {
+          var parent = anchor.parentNode;
+          var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
+          var pos = anchorIndex - length + i * chunkSize;
+          var size = chunkSize;
+          var arr = prop === '.' ? model : model(prop);
 
-        block: match[1],
-
-        rule: function(fragment, model, prop, template) {
-
-          // Anchor node for keeping section location
-          var anchor = document.createComment('');
-          // Number of rendered nodes
-          var length = 0;
-          // How many childNodes in one section item
-          var chunkSize;
-
-          function update(i) {
-            return function() {
-              var parent = anchor.parentNode;
-              var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
-              var pos = anchorIndex - length + i * chunkSize;
-              var size = chunkSize;
-              var arr = prop === '.' ? model : model(prop);
-
-              while (size--) {
-                parent.removeChild(parent.childNodes[pos]);
-              }
-              parent.insertBefore(
-                eval(template + '(arr(i))'),
-                parent.childNodes[pos]
-              );
-            };
+          while (size--) {
+            parent.removeChild(parent.childNodes[pos]);
           }
+          parent.insertBefore(
+            eval(template + '(arr(i))'),
+            parent.childNodes[pos]
+          );
+        };
+      }
 
-          function insert(index, count) {
-            var parent = anchor.parentNode;
-            var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
-            var pos = anchorIndex - length + index * chunkSize;
-            var size = count * chunkSize;
-            var i, fragment;
-            var arr = prop === '.' ? model : model(prop);
+      function insert(index, count) {
+        var parent = anchor.parentNode;
+        var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
+        var pos = anchorIndex - length + index * chunkSize;
+        var size = count * chunkSize;
+        var i, fragment;
+        var arr = prop === '.' ? model : model(prop);
 
-            for (i = 0, fragment = document.createDocumentFragment();
-                i < count; i++) {
-              fragment.appendChild(eval(template + '(arr(index + i))'));
-            }
-
-            parent.insertBefore(fragment, parent.childNodes[pos]);
-            length = length + size;
-          }
-
-          function del(index, count) {
-            var parent = anchor.parentNode;
-            var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
-            var pos = anchorIndex - length + index * chunkSize;
-            var size = count * chunkSize;
-
-            length = length - size;
-
-            while (size--) {
-              parent.removeChild(parent.childNodes[pos]);
-            }
-          }
-
-          function change() {
-            var val = prop === '.' ? model : model(prop);
-            var i, len, render;
-
-            // Delete old rendering
-            while (length) {
-              anchor.parentNode.removeChild(anchor.previousSibling);
-              length--;
-            }
-
-            // Array?
-            if (typeof val === 'function' && val.len !== undefined) {
-              val.on('insert', insert);
-              val.on('delete', del);
-              render = document.createDocumentFragment();
-
-              //console.log('rendering ' + val.len + ' values');
-              var func = eval(template);
-              var child, childModel;
-              for (i = 0, len = val.values.length; i < len; i++) {
-                // TODO: implement event delegation for array indexes
-                // Also, using val.values[i] instead of val[i]
-                // saves A LOT of heap memory. Figure out how to do
-                // on demand model creation.
-                val.on('change', i, update(i));
-                //render.appendChild(eval(template + '(val(i))'));
-                //render.appendChild(func(val.values[i]));
-                childModel = val(i);
-                child = func(childModel);
-                child.__jtmpl__ = childModel;
-                render.appendChild(child);
-              }
-
-              length = render.childNodes.length;
-              chunkSize = ~~(length / len);
-              anchor.parentNode.insertBefore(render, anchor);
-            }
-
-            // Object?
-            else if (typeof val === 'function' && val.len === undefined) {
-              render = eval(template + '(val)');
-              length = render.childNodes.length;
-              chunkSize = length;
-              anchor.parentNode.insertBefore(render, anchor);
-              anchor.parentNode.__jtmpl__ = model;
-            }
-
-            // Cast to boolean
-            else {
-              if (!!val) {
-                render = eval(template + '(model)');
-                length = render.childNodes.length;
-                chunkSize = length;
-                anchor.parentNode.insertBefore(render, anchor);
-              }
-            }
-          }
-
-          fragment.appendChild(anchor);
-          change();
-          model.on('change', prop, change);
+        for (i = 0, fragment = document.createDocumentFragment();
+            i < count; i++) {
+          fragment.appendChild(eval(template + '(arr(index + i))'));
         }
-      };
+
+        parent.insertBefore(fragment, parent.childNodes[pos]);
+        length = length + size;
+      }
+
+      function del(index, count) {
+        var parent = anchor.parentNode;
+        var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
+        var pos = anchorIndex - length + index * chunkSize;
+        var size = count * chunkSize;
+
+        length = length - size;
+
+        while (size--) {
+          parent.removeChild(parent.childNodes[pos]);
+        }
+      }
+
+      function change() {
+        var val = prop === '.' ? model : model(prop);
+        var i, len, render;
+
+        // Delete old rendering
+        while (length) {
+          anchor.parentNode.removeChild(anchor.previousSibling);
+          length--;
+        }
+
+        // Array?
+        if (typeof val === 'function' && val.len !== undefined) {
+          val.on('insert', insert);
+          val.on('delete', del);
+          render = document.createDocumentFragment();
+
+          //console.log('rendering ' + val.len + ' values');
+          var func = eval(template);
+          var child, childModel;
+          for (i = 0, len = val.values.length; i < len; i++) {
+            // TODO: implement event delegation for array indexes
+            // Also, using val.values[i] instead of val[i]
+            // saves A LOT of heap memory. Figure out how to do
+            // on demand model creation.
+            val.on('change', i, update(i));
+            //render.appendChild(eval(template + '(val(i))'));
+            //render.appendChild(func(val.values[i]));
+            childModel = val(i);
+            child = func(childModel);
+            child.__jtmpl__ = childModel;
+            render.appendChild(child);
+          }
+
+          length = render.childNodes.length;
+          chunkSize = ~~(length / len);
+          anchor.parentNode.insertBefore(render, anchor);
+        }
+
+        // Object?
+        else if (typeof val === 'function' && val.len === undefined) {
+          render = eval(template + '(val)');
+          length = render.childNodes.length;
+          chunkSize = length;
+          anchor.parentNode.insertBefore(render, anchor);
+          anchor.parentNode.__jtmpl__ = model;
+        }
+
+        // Cast to boolean
+        else {
+          if (!!val) {
+            render = eval(template + '(model)');
+            length = render.childNodes.length;
+            chunkSize = length;
+            anchor.parentNode.insertBefore(render, anchor);
+          }
+        }
+      }
+
+      fragment.appendChild(anchor);
+      change();
+      model.on('change', prop, change);
     }
   },
-
-
 
 
 
   /**
    * {{^inverted_section}}
    */
-  function(node) {
-    var match = node.innerHTML.match(/^\^([\w\.\-]+)$/);
+  {
+    id: 'inverted_section',
+    match: function(node) {
+      return node.innerHTML.match(/^\^([\w\.\-]+)$/);
+    },
+    block: function(match) {
+      return match[1];
+    },
+    rule: function(fragment, model, prop, template) {
 
-    if (match) {
+      // Anchor node for keeping section location
+      var anchor = document.createComment('');
+      // Number of rendered nodes
+      var length = 0;
 
-      return {
+      function change() {
+        var val = prop === '.' ? model : model(prop);
+        var i, len, render;
 
-        block: match[1],
-
-        rule: function(fragment, model, prop, template) {
-
-          // Anchor node for keeping section location
-          var anchor = document.createComment('');
-          // Number of rendered nodes
-          var length = 0;
-
-          function change() {
-            var val = prop === '.' ? model : model(prop);
-            var i, len, render;
-
-            // Delete old rendering
-            while (length) {
-              anchor.parentNode.removeChild(anchor.previousSibling);
-              length--;
-            }
-
-            // Array?
-            if (typeof val === 'function' && val.len !== undefined) {
-              val.on('insert', change);
-              val.on('delete', change);
-              render = document.createDocumentFragment();
-
-              if (val.len === 0) {
-                render.appendChild(eval(template + '(val(i))'));
-              }
-
-              length = render.childNodes.length;
-              anchor.parentNode.insertBefore(render, anchor);
-            }
-            // Cast to boolean
-            else {
-              if (!val) {
-                render = eval(template + '(model)');
-                length = render.childNodes.length;
-                anchor.parentNode.insertBefore(render, anchor);
-              }
-            }
-          }
-
-          fragment.appendChild(anchor);
-          change();
-          model.on('change', prop, change);
+        // Delete old rendering
+        while (length) {
+          anchor.parentNode.removeChild(anchor.previousSibling);
+          length--;
         }
 
+        // Array?
+        if (typeof val === 'function' && val.len !== undefined) {
+          val.on('insert', change);
+          val.on('delete', change);
+          render = document.createDocumentFragment();
 
-      };
+          if (val.len === 0) {
+            render.appendChild(eval(template + '(val(i))'));
+          }
+
+          length = render.childNodes.length;
+          anchor.parentNode.insertBefore(render, anchor);
+        }
+        // Cast to boolean
+        else {
+          if (!val) {
+            render = eval(template + '(model)');
+            length = render.childNodes.length;
+            anchor.parentNode.insertBefore(render, anchor);
+          }
+        }
+      }
+
+      fragment.appendChild(anchor);
+      change();
+      model.on('change', prop, change);
     }
+
   },
 
 
-
   /*
-   * Fallback rule, not recognized jtmpl tag
+   * Fallback rule, not recognized jtmpl tag, emit verbatim
    */
-  function(node) {
-    return {
-      rule: function(fragment) {
-        fragment.appendChild(document.createTextNode('REMOVEMELATER'));
-      }
-    };
+  {
+    id: 'emit_verbatim',
+    match: function(node) {
+      return node.innerHTML;
+    },
+    prop: function(match) {
+      return match;
+    },
+    rule: function(fragment, model, match) {
+      fragment.appendChild(document.createTextNode(match));
+    }
   }
 ];
 
@@ -975,7 +954,8 @@ function compile(template, sourceURL, depth) {
 
   // Generate dynamic function body
   var func = '(function(model) {\n' +
-    'var frag = document.createDocumentFragment(), node;\n\n';
+    'var frag = document.createDocumentFragment(), node;\n' +
+    'if (!jtmpl.rules) jtmpl.prepareRuntime();\n\n';
 
   if (!depth) {
     // Global bookkeeping
@@ -1012,29 +992,29 @@ function compile(template, sourceURL, depth) {
           for (ri = 0, rules = _dereq_('./compile-rules-node'), rlen = rules.length;
               ri < rlen; ri++) {
 
-            match = rules[ri](node);
+            match = rules[ri].match(node);
 
             // Rule found?
             if (match) {
 
               // Block tag?
-              if (match.block) {
+              if (rules[ri].block) {
 
                 // Fetch block template
                 block = document.createDocumentFragment();
                 for (i++;
-                    (i < len) && !matchEndBlock(match.block, childNodes[i].innerHTML || '');
+                    (i < len) && !matchEndBlock(rules[ri].block, node.innerHTML || '');
                     i++) {
-                  block.appendChild(childNodes[i].cloneNode(true));
+                  block.appendChild(node.cloneNode(true));
                 }
 
                 if (i === len) {
-                  throw 'jtmpl: Unclosed ' + match.block;
+                  throw 'jtmpl: Unclosed ' + rules[ri].block;
                 }
                 else {
-                  func += '(' + match.rule.toString() + ')' +
+                  func += 'jtmpl.rules.node.' + rules[ri].id +
                     '(frag, model, ' +
-                    JSON.stringify(match.block) + ', ' +   // prop
+                    JSON.stringify(rules[ri].block) + ', ' +   // prop
                     JSON.stringify(
                       // template
                       compile(
@@ -1048,7 +1028,7 @@ function compile(template, sourceURL, depth) {
               }
               // Inline tag
               else {
-                func += '(' + match.rule.toString() + ')' +
+                func += 'jtmpl.rules.node.' + rules[ri].id +
                   '(frag, model, ' + JSON.stringify(match.prop) + ');\n';
               }
 
@@ -1061,6 +1041,7 @@ function compile(template, sourceURL, depth) {
         else {
           // Create element
           func += 'node = document.createElement("' + node.nodeName + '");\n';
+          func += 'node.__jtmpl__ = model;\n';
 
           // Process attributes
           for (var ai = 0, attributes = node.attributes, alen = attributes.length;
@@ -1069,16 +1050,16 @@ function compile(template, sourceURL, depth) {
             for (ri = 0, rules = _dereq_('./compile-rules-attr'), rlen = rules.length;
                 ri < rlen; ri++) {
 
-              match = rules[ri](node, attributes[ai].name.toLowerCase());
+              match = rules[ri].match(node, attributes[ai].name.toLowerCase());
 
               if (match) {
 
                 // Match found, append rule to func
-                func += '(' + match.rule.toString() + ')' +
+                func += 'jtmpl.rules.attr.' + rules[ri].id +
                   '(node, ' +
                   JSON.stringify(attributes[ai].name) + // attr
                   ', model, ' +
-                  JSON.stringify(match.prop) +          // prop
+                  JSON.stringify(rules[ri].prop(match)) +          // prop
                   ');\n';
 
                 // Skip other attribute rules
@@ -1262,6 +1243,7 @@ jtmpl.RE_ENDS_WITH_NODE_ID = /.+(#[\w\.\-]+)$/;
 
 jtmpl.parse = _dereq_('./parse');
 jtmpl.compile = _dereq_('./compile');
+jtmpl.prepareRuntime = _dereq_('./prepare-runtime');
 jtmpl.loader = _dereq_('./loader');
 jtmpl.utemplate = _dereq_('./utemplate');
 jtmpl._get = function(model, prop) {
@@ -1289,8 +1271,9 @@ jtmpl.plugins = _dereq_('./plugins');
  */
 module.exports = jtmpl;
 if (typeof window !== 'undefined') window.jtmpl = jtmpl;
+if (typeof define === 'function') define('jtmpl', [], jtmpl);
 
-},{"./compile":4,"./loader":6,"./parse":7,"./plugins":8,"./polyfills/matches":12,"./utemplate":13,"./xhr":14,"freak":1}],6:[function(_dereq_,module,exports){
+},{"./compile":4,"./loader":6,"./parse":7,"./plugins":8,"./polyfills/matches":12,"./prepare-runtime":13,"./utemplate":14,"./xhr":15,"freak":1}],6:[function(_dereq_,module,exports){
 /*
 
 Evaluate object from literal or CommonJS module
@@ -1563,6 +1546,24 @@ typeof Element !== 'undefined' && (function(ElementPrototype) {
 })(Element.prototype);
 
 },{}],13:[function(_dereq_,module,exports){
+/*
+ * Prepare runtime for jtmpl compiled functions
+ */
+module.exports = function() {
+  var rules = {
+    node: {},
+    attr: {}
+  };
+  _dereq_('./compile-rules-node').forEach(function(rule) {
+    rules.node[rule.id] = rule.rule;
+  });
+  _dereq_('./compile-rules-attr').forEach(function(rule) {
+    rules.attr[rule.id] = rule.rule;
+  });
+  return rules;
+};
+
+},{"./compile-rules-attr":2,"./compile-rules-node":3}],14:[function(_dereq_,module,exports){
 /**
  * utemplate
  *
@@ -1652,7 +1653,7 @@ function utemplate(template, model, onChange) {
 
 module.exports = utemplate;
 
-},{}],14:[function(_dereq_,module,exports){
+},{}],15:[function(_dereq_,module,exports){
 /*
 
 Requests API

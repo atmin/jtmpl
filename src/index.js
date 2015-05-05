@@ -127,6 +127,12 @@ jtmpl._get = function(model, prop) {
 
 
 /*
+ * Init runtime
+ */
+
+jtmpl.rules = require('./prepare-runtime')();
+
+/*
  * Polyfills
  */
 require('./polyfills/matches');
@@ -143,3 +149,4 @@ jtmpl.plugins = require('./plugins');
  */
 module.exports = jtmpl;
 if (typeof window !== 'undefined') window.jtmpl = jtmpl;
+if (typeof define === 'function') define('jtmpl', [], jtmpl);

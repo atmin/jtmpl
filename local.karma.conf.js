@@ -32,8 +32,8 @@ module.exports = function(config) {
     // PhantomJS is always good to have
     browsers: [
       //'Firefox',
-      //'Chrome',
-      'PhantomJS'
+      'Chrome'
+      //'PhantomJS'
     ]
 
   });

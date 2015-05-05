@@ -11,27 +11,46 @@ function compile(template, sourceURL, depth) {
   var ri, rules, rlen;
   var match, block;
 
-  // Generate dynamic function body
-  var func = '(function(model) {\n' +
-    'var frag = document.createDocumentFragment(), node;\n\n';
+  depth = (depth || 0) + 1;
 
-  if (!depth) {
+  function indented(lines, fix) {
+    fix = fix || 0;
+    for (var i = 0, ind = ''; i < (depth || 0) + fix; i++) {
+      ind += '  ';
+    }
+    return lines
+      .map(function(line) {
+        return ind + line;
+      })
+      .join('\n') + '\n';
+  }
+
+  // Generate dynamic function body
+  var func = indented(['(function(model) {'], -1);
+  func += indented(['var frag = document.createDocumentFragment(), node;']);
+
+  if (depth === 1) {
     // Global bookkeeping
-    func +=
-      'var radioGroups = {};\n' +
-      'var radioGroupsUpdating = {};\n' +
-      'var selects = [];\n' +
-      'var selectsUpdating = [];\n' +
-      'var selectOptions = [];\n' +
-      'var selectOptionsContexts = [];\n\n';
+    func += indented([
+      'var globals = {',
+      '  radioGroups: {},',
+      '  radioGroupsUpdating: {},',
+      '  selects: [],',
+      '  selectsUpdating: [],',
+      '  selectOptions: [],',
+      '  selectOptionsContexts: []',
+      '};'
+    ]);
   }
 
   // Wrap model in a Freak instance, if necessary
-  func += 'model = typeof model === "function" ?' +
-    'model : ' +
-    'typeof model === "object" ?' +
-      'jtmpl(model) :' +
-      'jtmpl({".": model});\n\n';
+  func += indented([
+    'model = typeof model === "function" ?',
+    '  model :',
+    '  typeof model === "object" ?',
+    '    jtmpl(model) :',
+    '    jtmpl({".": model});'
+  ]);
 
   // Iterate childNodes
   for (var i = 0, childNodes = template.childNodes, len = childNodes.length, node;
@@ -50,44 +69,46 @@ function compile(template, sourceURL, depth) {
           for (ri = 0, rules = require('./compile-rules-node'), rlen = rules.length;
               ri < rlen; ri++) {
 
-            match = rules[ri](node);
+            match = rules[ri].match(node);
 
             // Rule found?
             if (match) {
 
               // Block tag?
-              if (match.block) {
+              if (rules[ri].block) {
 
                 // Fetch block template
                 block = document.createDocumentFragment();
-                for (i++;
-                    (i < len) && !matchEndBlock(match.block, childNodes[i].innerHTML || '');
-                    i++) {
-                  block.appendChild(childNodes[i].cloneNode(true));
+                for (i++, node = childNodes[i];
+                    (i < len) && !matchEndBlock(rules[ri].block(match), node.innerHTML || '');
+                    i++, node = childNodes[i]) {
+                  block.appendChild(node.cloneNode(true));
                 }
 
                 if (i === len) {
-                  throw 'jtmpl: Unclosed ' + match.block;
+                  throw 'jtmpl: Unclosed ' + rules[ri].block(match);
                 }
                 else {
-                  func += '(' + match.rule.toString() + ')' +
-                    '(frag, model, ' +
-                    JSON.stringify(match.block) + ', ' +   // prop
-                    JSON.stringify(
-                      // template
+                  func += indented([
+                    'jtmpl.rules.node.' + rules[ri].id + '(',
+                    '  frag,',
+                    '  model,',
+                    '  ' + JSON.stringify(rules[ri].block(match)) + ',',   // prop
                       compile(
                         block,
-                        sourceURL && (sourceURL + '-' + node.innerHTML + '[' + i + ']'),
-                        (depth || 0) + 1
-                      )
-                    ) + ');';
+                        '', //sourceURL && (sourceURL + '-' + node.innerHTML + '[' + i + ']'),
+                        depth + 2
+                      ) + ', ',
+                    '  globals',
+                    ');'
+                    ]);
                 }
 
               }
               // Inline tag
               else {
-                func += '(' + match.rule.toString() + ')' +
-                  '(frag, model, ' + JSON.stringify(match.prop) + ');\n';
+                func += indented(['jtmpl.rules.node.' + rules[ri].id +
+                  '(frag, model, ' + JSON.stringify(rules[ri].prop(match)) + ');']);
               }
 
               // Skip remaining rules
@@ -98,7 +119,10 @@ function compile(template, sourceURL, depth) {
 
         else {
           // Create element
-          func += 'node = document.createElement("' + node.nodeName + '");\n';
+          func += indented([
+            'node = document.createElement("' + node.nodeName + '");',
+            'node.__jtmpl__ = model;'
+          ]);
 
           // Process attributes
           for (var ai = 0, attributes = node.attributes, alen = attributes.length;
@@ -107,17 +131,19 @@ function compile(template, sourceURL, depth) {
             for (ri = 0, rules = require('./compile-rules-attr'), rlen = rules.length;
                 ri < rlen; ri++) {
 
-              match = rules[ri](node, attributes[ai].name.toLowerCase());
+              match = rules[ri].match(node, attributes[ai].name.toLowerCase());
 
               if (match) {
 
                 // Match found, append rule to func
-                func += '(' + match.rule.toString() + ')' +
+                func += indented([
+                  'jtmpl.rules.attr.' + rules[ri].id +
                   '(node, ' +
                   JSON.stringify(attributes[ai].name) + // attr
                   ', model, ' +
-                  JSON.stringify(match.prop) +          // prop
-                  ');\n';
+                  JSON.stringify(rules[ri].prop(match)) + // prop
+                  ', globals);'
+                ]);
 
                 // Skip other attribute rules
                 break;
@@ -127,16 +153,20 @@ function compile(template, sourceURL, depth) {
 
           if (node.nodeName !== 'INPUT') {
             // Recursively compile
-            func += 'node.appendChild(' +
-              compile(
-                node,
-            sourceURL && (sourceURL + '-' + node.nodeName + '[' + i + ']'),
-            (depth || 0) + 1
-            ) + '(model));\n';
+            func += indented([
+              'node.appendChild(',
+                compile(
+                  node,
+                  '', //sourceURL && (sourceURL + '-' + node.nodeName + '[' + i + ']'),
+                  depth + 1
+                ),
+              '  (model)',
+              ');'
+            ]);
           }
 
           // Append to fragment
-          func += 'frag.appendChild(node);\n';
+          func += indented(['frag.appendChild(node);']);
         }
 
         break;
@@ -144,21 +174,24 @@ function compile(template, sourceURL, depth) {
 
       // Text node
       case 3:
-        func += 'frag.appendChild(document.createTextNode(' +
-          JSON.stringify(node.data) + '));\n';
+        func += indented(['frag.appendChild(document.createTextNode(' +
+          JSON.stringify(node.data) + '));']);
         break;
 
 
       // Comment node
       case 8:
-        func += 'frag.appendChild(document.createComment(' +
-          JSON.stringify(node.data) + '));\n';
+        func += indented(['frag.appendChild(document.createComment(' +
+          JSON.stringify(node.data) + '));']);
         break;
 
     } // end switch
   } // end iterate childNodes
 
-  func += 'return frag; })';
+  func += indented([
+    '  return frag;',
+    '})'
+  ], -1);
   func += sourceURL ?
     '\n//@ sourceURL=' + sourceURL + '\n//# sourceURL=' + sourceURL + '\n' :
     '';
