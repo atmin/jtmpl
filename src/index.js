@@ -129,7 +129,7 @@ jtmpl._get = function(model, prop, pipe) {
 jtmpl.applyPipe = function(val, pipe, filters) {
   pipe = pipe.split('|');
   for (var i=0, len=pipe.length; i < len; i++) {
-    val = filters[pipe[i]](val);
+    val = filters[pipe[i].trim()](val);
   }
   return val;
 };

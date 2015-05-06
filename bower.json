@@ -1,7 +1,7 @@
 {
   "name": "jtmpl",
-  "version": "1.1.0",
-  "main": ["jtmpl.min.js", "jtmpl.js"],
+  "version": "1.2.0",
+  "main": "jtmpl.js",
   "ignore": [],
   "dependencies": {},
   "devDependencies": {
