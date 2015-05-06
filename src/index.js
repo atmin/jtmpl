@@ -118,11 +118,20 @@ jtmpl.parse = require('./parse');
 jtmpl.compile = require('./compile');
 jtmpl.loader = require('./loader');
 jtmpl.utemplate = require('./utemplate');
-jtmpl._get = function(model, prop) {
+jtmpl._get = function(model, prop, pipe) {
   var val = model(prop);
   return (typeof val === 'function') ?
     JSON.stringify(val.values) :
-    val;
+    pipe ?
+      jtmpl.applyPipe(val, pipe, model.root.values.__filters__) :
+      val;
+};
+jtmpl.applyPipe = function(val, pipe, filters) {
+  pipe = pipe.split('|');
+  for (var i=0, len=pipe.length; i < len; i++) {
+    val = filters[pipe[i]](val);
+  }
+  return val;
 };
 
 

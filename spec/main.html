@@ -14,6 +14,8 @@
   <input value="{{variable}}" {{! multiline
     mustache
     comment }}/> = <span id="variable">{{variable}}</span>
+  <h4><code>model('variable')</code> * 10 + 1</h4>
+  <span>{{variable|mul10|plus1}}</span>
   <h4><code>model('nonExistentVariable')</code></h4>
   <input value="{{nonExistentVariable}}"> = <span>{{nonExistentVariable}}</span>
 
@@ -165,6 +167,15 @@
 
 <script id="model">
   if (typeof module !== 'undefined') module.exports = {
+
+    __filters__: {
+      mul10: function(val) {
+        return val * 10;
+      },
+      plus1: function(val) {
+        return val + 1;
+      }
+    },
 
     // Plugins
     __init__: function() {
