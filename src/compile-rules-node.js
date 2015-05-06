@@ -2,25 +2,28 @@
  * Node rules
  *
  */
-module.exports = [
-  /* jshint evil: true */
+var RE_BEGIN = /^\s*/.source;
+var RE_END = /\s*$/.source;
+var RE_IDENTIFIER = /([\w\.\-]+)/.source;
+var RE_IDENTIFIER_PIPE = /([\w\.\-]+)\s*(?:\|(.*))?/.source;
 
+module.exports = [
   /**
    * {{var}}
    */
   {
     id: 'var',
     match: function(node) {
-      return node.innerHTML.match(/^[\w\.\-]+$/);
+      return node.innerHTML.match(RegExp(RE_BEGIN + RE_IDENTIFIER_PIPE + RE_END));
     },
     prop: function(match) {
-      return match[0];
+      return match;
     },
     rule: function(fragment, model, prop) {
-      var textNode = document.createTextNode(jtmpl._get(model, prop) || '');
+      var textNode = document.createTextNode(jtmpl._get(model, prop[1], prop[2]) || '');
       fragment.appendChild(textNode);
-      model.on('change', prop, function() {
-        textNode.data = jtmpl._get(model, prop) || '';
+      model.on('change', prop[1], function() {
+        textNode.data = jtmpl._get(model, prop[1], prop[2]) || '';
       });
     }
   },
@@ -31,13 +34,12 @@ module.exports = [
    * {{&var}}
    */
   {
-
     id: 'not_var',
     match: function(node) {
-      return node.innerHTML.match(/^&([\w\.\-]+)$/);
+      return node.innerHTML.match(RegExp(RE_BEGIN + '&' + RE_IDENTIFIER + RE_END));
     },
     prop: function(match) {
-      return match[1];
+      return match;
     },
     rule: function(fragment, model, prop) {
 
@@ -57,7 +59,7 @@ module.exports = [
           length--;
         }
 
-        el.innerHTML = model(prop) || '';
+        el.innerHTML = jtmpl._get(model, prop[1], prop[2]) || '';
         length = el.childNodes.length;
         for (i = 0; i < length; i++) {
           frag.appendChild(el.childNodes[0]);
@@ -66,10 +68,9 @@ module.exports = [
       }
 
       fragment.appendChild(anchor);
-      model.on('change', prop, change);
+      model.on('change', prop[1], change);
       change();
     }
-
   },
 
 
@@ -122,10 +123,10 @@ module.exports = [
   {
     id: 'section',
     match: function(node) {
-      return node.innerHTML.match(/^#([\w\.\-]+)$/);
+      return node.innerHTML.match(RegExp(RE_BEGIN + '#' + RE_IDENTIFIER_PIPE + RE_END));
     },
     block: function(match) {
-      return match[1];
+      return match;
     },
     rule: function(fragment, model, prop, template) {
 
@@ -142,7 +143,7 @@ module.exports = [
           var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
           var pos = anchorIndex - length + i * chunkSize;
           var size = chunkSize;
-          var arr = prop === '.' ? model : model(prop);
+          var arr = prop[1] === '.' ? model : jtmpl._get(model, prop[1], prop[2]);
 
           while (size--) {
             parent.removeChild(parent.childNodes[pos]);
@@ -160,7 +161,7 @@ module.exports = [
         var pos = anchorIndex - length + index * chunkSize;
         var size = count * chunkSize;
         var i, fragment;
-        var arr = prop === '.' ? model : model(prop);
+        var arr = prop[1] === '.' ? model : jtmpl._get(model, prop[1], prop[2]);
 
         for (i = 0, fragment = document.createDocumentFragment();
             i < count; i++) {
@@ -185,7 +186,7 @@ module.exports = [
       }
 
       function change() {
-        var val = prop === '.' ? model : model(prop);
+        var val = prop[1] === '.' ? model : model(prop[1]); //jtmpl._get(model, prop[1], prop[2]);
         var i, len, render;
 
         // Delete old rendering
@@ -243,7 +244,7 @@ module.exports = [
 
       fragment.appendChild(anchor);
       change();
-      model.on('change', prop, change);
+      model.on('change', prop[1], change);
     }
   },
 
@@ -255,10 +256,10 @@ module.exports = [
   {
     id: 'inverted_section',
     match: function(node) {
-      return node.innerHTML.match(/^\^([\w\.\-]+)$/);
+      return node.innerHTML.match(RE_BEGIN + '\\^' + RE_IDENTIFIER_PIPE + RE_END);
     },
     block: function(match) {
-      return match[1];
+      return match;
     },
     rule: function(fragment, model, prop, template) {
 
@@ -268,7 +269,7 @@ module.exports = [
       var length = 0;
 
       function change() {
-        var val = prop === '.' ? model : model(prop);
+        var val = prop[1] === '.' ? model : model(prop[1]); //jtmpl._get(model, prop[1], prop[2]);
         var i, len, render;
 
         // Delete old rendering
@@ -302,7 +303,7 @@ module.exports = [
 
       fragment.appendChild(anchor);
       change();
-      model.on('change', prop, change);
+      model.on('change', prop[1], change);
     }
 
   },

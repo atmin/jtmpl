@@ -74,13 +74,13 @@ function compile(template, sourceURL, depth) {
                 // Fetch block template
                 block = document.createDocumentFragment();
                 for (i++, node = childNodes[i];
-                    (i < len) && !matchEndBlock(rules[ri].block(match), node.innerHTML || '');
+                    (i < len) && !matchEndBlock(rules[ri].block(match[1]), node.innerHTML || '');
                     i++, node = childNodes[i]) {
                   block.appendChild(node.cloneNode(true));
                 }
 
                 if (i === len) {
-                  throw 'jtmpl: Unclosed ' + rules[ri].block(match);
+                  throw 'jtmpl: Unclosed ' + rules[ri].block(match[1]);
                 }
                 else {
                   func += indented([
