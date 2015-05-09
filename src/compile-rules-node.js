@@ -157,16 +157,19 @@ module.exports = [
 
       function insert(index, count) {
         var parent = anchor.parentNode;
-        var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
-        var pos = anchorIndex - length + index * chunkSize;
-        var size = count * chunkSize;
-        var i, fragment;
-        var arr = prop[1] === '.' ? model : jtmpl._get(model, prop[1], prop[2]);
+        var i, fragment, render;
+        var arr = prop[1] === '.' ? model : model(prop[1]);//jtmpl._get(model, prop[1], prop[2]);
 
         for (i = 0, fragment = document.createDocumentFragment();
             i < count; i++) {
-          fragment.appendChild(template(arr(index + i)));
+          render = template(arr(index + i));
+          chunkSize = render.childNodes.length;
+          fragment.appendChild(render);
         }
+
+        var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
+        var pos = anchorIndex - length + index * chunkSize;
+        var size = count * chunkSize;
 
         parent.insertBefore(fragment, parent.childNodes[pos]);
         length = length + size;

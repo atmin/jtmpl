@@ -1,4 +1,4 @@
-!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.jtmpl=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.jtmpl = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
 
 function freak(obj, root, parent, prop) {
@@ -373,7 +373,7 @@ function freak(obj, root, parent, prop) {
 // CommonJS export
 if (typeof module === 'object') module.exports = freak;
 
-},{}],2:[function(_dereq_,module,exports){
+},{}],2:[function(require,module,exports){
 var RE_DELIMITED_VAR = /^\{\{([\w\.\-]+)\}\}$/;
 
 
@@ -389,7 +389,7 @@ module.exports = [
   {
     id: 'var',
     match: function(node, attr) {
-      return node.getAttribute(attr).match(RE_DELIMITED_VAR);
+      return attr === 'value' && node.getAttribute(attr).match(RE_DELIMITED_VAR);
     },
     prop: function(match) {
       return match[1];
@@ -426,21 +426,21 @@ module.exports = [
   {
     id: 'selected_var',
     match: function(node, attr) {
-      return node.getAttribute(attr).match(RE_DELIMITED_VAR);
+      return attr === 'jtmpl-selected' && node.getAttribute(attr).match(RE_DELIMITED_VAR);
     },
     prop: function(match) {
       return match[1];
     },
-    rule: function(node, attr, model, prop) {
+    rule: function(node, attr, model, prop, globals) {
 
       function change() {
         if (node.nodeName === 'OPTION') {
-          var i = selects.indexOf(node.parentNode);
-          if (selectsUpdating[i]) {
+          var i = globals.selects.indexOf(node.parentNode);
+          if (globals.selectsUpdating[i]) {
             return;
           }
-          for (var j = 0, len = selectOptions[i].length; j < len; j++) {
-            selectOptions[i][j].selected = selectOptionsContexts[i][j](prop);
+          for (var j = 0, len = globals.selectOptions[i].length; j < len; j++) {
+            globals.selectOptions[i][j].selected = globals.selectOptionsContexts[i][j](prop);
           }
         }
         else {
@@ -452,26 +452,26 @@ module.exports = [
 
         // Process async, as parentNode is still documentFragment
         setTimeout(function() {
-          var i = selects.indexOf(node.parentNode);
+          var i = globals.selects.indexOf(node.parentNode);
           if (i === -1) {
             // Add <select> to list
-            i = selects.push(node.parentNode) - 1;
+            i = globals.selects.push(node.parentNode) - 1;
             // Init options
-            selectOptions.push([]);
+            globals.selectOptions.push([]);
             // Init options contexts
-            selectOptionsContexts.push([]);
+            globals.selectOptionsContexts.push([]);
             // Attach change listener
             node.parentNode.addEventListener('change', function() {
-              selectsUpdating[i] = true;
-              for (var oi = 0, olen = selectOptions[i].length; oi < olen; oi++) {
-                selectOptionsContexts[i][oi](prop, selectOptions[i][oi].selected);
+              globals.selectsUpdating[i] = true;
+              for (var oi = 0, olen = globals.selectOptions[i].length; oi < olen; oi++) {
+                globals.selectOptionsContexts[i][oi](prop, globals.selectOptions[i][oi].selected);
               }
-              selectsUpdating[i] = false;
+              globals.selectsUpdating[i] = false;
             });
           }
           // Remember option and context
-          selectOptions[i].push(node);
-          selectOptionsContexts[i].push(model);
+          globals.selectOptions[i].push(node);
+          globals.selectOptionsContexts[i].push(model);
         }, 0);
 
       }
@@ -495,20 +495,20 @@ module.exports = [
   {
     id: 'checked_var',
     match: function(node, attr) {
-      return node.getAttribute(attr).match(RE_DELIMITED_VAR);
+      return attr === 'jtmpl-checked' && node.getAttribute(attr).match(RE_DELIMITED_VAR);
     },
     prop: function(match) {
       return match[1];
     },
-    rule: function(node, attr, model, prop) {
+    rule: function(node, attr, model, prop, globals) {
 
       function change() {
         if (node.name) {
-          if (radioGroupsUpdating[node.name]) {
+          if (globals.radioGroupsUpdating[node.name]) {
             return;
           }
-          for (var i = 0, len = radioGroups[node.name][0].length; i < len; i++) {
-            radioGroups[node.name][0][i].checked = radioGroups[node.name][1][i](prop);
+          for (var i = 0, len = globals.radioGroups[node.name][0].length; i < len; i++) {
+            globals.radioGroups[node.name][0][i].checked = globals.radioGroups[node.name][1][i](prop);
           }
         }
         else {
@@ -519,24 +519,24 @@ module.exports = [
       function init() {
         // radio group?
         if (node.type === 'radio' && node.name) {
-          if (!radioGroups[node.name]) {
+          if (!globals.radioGroups[node.name]) {
             // Init radio group ([0]: node, [1]: model)
-            radioGroups[node.name] = [[], []];
+            globals.radioGroups[node.name] = [[], []];
           }
           // Add input to radio group
-          radioGroups[node.name][0].push(node);
+          globals.radioGroups[node.name][0].push(node);
           // Add context to radio group
-          radioGroups[node.name][1].push(model);
+          globals.radioGroups[node.name][1].push(model);
         }
 
         node.addEventListener('click', function() {
           if (node.type === 'radio' && node.name) {
-            radioGroupsUpdating[node.name] = true;
+            globals.radioGroupsUpdating[node.name] = true;
             // Update all inputs from the group
-            for (var i = 0, len = radioGroups[node.name][0].length; i < len; i++) {
-              radioGroups[node.name][1][i](prop, radioGroups[node.name][0][i].checked);
+            for (var i = 0, len = globals.radioGroups[node.name][0].length; i < len; i++) {
+              globals.radioGroups[node.name][1][i](prop, globals.radioGroups[node.name][0][i].checked);
             }
-            radioGroupsUpdating[node.name] = false;
+            globals.radioGroupsUpdating[node.name] = false;
           }
           else {
             // Update current input only
@@ -590,10 +590,10 @@ module.exports = [
   {
     id: 'utemplate',
     match: function(node, attr) {
-      return node.getAttribute(attr);
+      return { template: node.getAttribute(attr) };
     },
     prop: function(match) {
-      return match;
+      return match.template;
     },
     rule: function(node, attr, model, prop) {
       var attrName = attr.replace('jtmpl-', '');
@@ -609,30 +609,33 @@ module.exports = [
 
 ];
 
-},{}],3:[function(_dereq_,module,exports){
+},{}],3:[function(require,module,exports){
 /*
  * Node rules
  *
  */
-module.exports = [
-  /* jshint evil: true */
+var RE_BEGIN = /^\s*/.source;
+var RE_END = /\s*$/.source;
+var RE_IDENTIFIER = /([\w\.\-]+)/.source;
+var RE_IDENTIFIER_PIPE = /([\w\.\-]+)\s*(?:\|(.*))?/.source;
 
+module.exports = [
   /**
    * {{var}}
    */
   {
     id: 'var',
     match: function(node) {
-      return node.innerHTML.match(/^[\w\.\-]+$/);
+      return node.innerHTML.match(RegExp(RE_BEGIN + RE_IDENTIFIER_PIPE + RE_END));
     },
     prop: function(match) {
-      return match[0];
+      return match;
     },
     rule: function(fragment, model, prop) {
-      var textNode = document.createTextNode(jtmpl._get(model, prop) || '');
+      var textNode = document.createTextNode(jtmpl._get(model, prop[1], prop[2]) || '');
       fragment.appendChild(textNode);
-      model.on('change', prop, function() {
-        textNode.data = jtmpl._get(model, prop) || '';
+      model.on('change', prop[1], function() {
+        textNode.data = jtmpl._get(model, prop[1], prop[2]) || '';
       });
     }
   },
@@ -643,13 +646,12 @@ module.exports = [
    * {{&var}}
    */
   {
-
     id: 'not_var',
     match: function(node) {
-      return node.innerHTML.match(/^&([\w\.\-]+)$/);
+      return node.innerHTML.match(RegExp(RE_BEGIN + '&' + RE_IDENTIFIER + RE_END));
     },
     prop: function(match) {
-      return match[1];
+      return match;
     },
     rule: function(fragment, model, prop) {
 
@@ -669,7 +671,7 @@ module.exports = [
           length--;
         }
 
-        el.innerHTML = model(prop) || '';
+        el.innerHTML = jtmpl._get(model, prop[1], prop[2]) || '';
         length = el.childNodes.length;
         for (i = 0; i < length; i++) {
           frag.appendChild(el.childNodes[0]);
@@ -678,10 +680,9 @@ module.exports = [
       }
 
       fragment.appendChild(anchor);
-      model.on('change', prop, change);
+      model.on('change', prop[1], change);
       change();
     }
-
   },
 
 
@@ -734,10 +735,10 @@ module.exports = [
   {
     id: 'section',
     match: function(node) {
-      return node.innerHTML.match(/^#([\w\.\-]+)$/);
+      return node.innerHTML.match(RegExp(RE_BEGIN + '#' + RE_IDENTIFIER_PIPE + RE_END));
     },
     block: function(match) {
-      return match[1];
+      return match;
     },
     rule: function(fragment, model, prop, template) {
 
@@ -754,13 +755,13 @@ module.exports = [
           var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
           var pos = anchorIndex - length + i * chunkSize;
           var size = chunkSize;
-          var arr = prop === '.' ? model : model(prop);
+          var arr = prop[1] === '.' ? model : jtmpl._get(model, prop[1], prop[2]);
 
           while (size--) {
             parent.removeChild(parent.childNodes[pos]);
           }
           parent.insertBefore(
-            eval(template + '(arr(i))'),
+            template(arr(i)),
             parent.childNodes[pos]
           );
         };
@@ -768,16 +769,19 @@ module.exports = [
 
       function insert(index, count) {
         var parent = anchor.parentNode;
-        var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
-        var pos = anchorIndex - length + index * chunkSize;
-        var size = count * chunkSize;
-        var i, fragment;
-        var arr = prop === '.' ? model : model(prop);
+        var i, fragment, render;
+        var arr = prop[1] === '.' ? model : model(prop[1]);//jtmpl._get(model, prop[1], prop[2]);
 
         for (i = 0, fragment = document.createDocumentFragment();
             i < count; i++) {
-          fragment.appendChild(eval(template + '(arr(index + i))'));
+          render = template(arr(index + i));
+          chunkSize = render.childNodes.length;
+          fragment.appendChild(render);
         }
+
+        var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
+        var pos = anchorIndex - length + index * chunkSize;
+        var size = count * chunkSize;
 
         parent.insertBefore(fragment, parent.childNodes[pos]);
         length = length + size;
@@ -797,7 +801,7 @@ module.exports = [
       }
 
       function change() {
-        var val = prop === '.' ? model : model(prop);
+        var val = prop[1] === '.' ? model : model(prop[1]); //jtmpl._get(model, prop[1], prop[2]);
         var i, len, render;
 
         // Delete old rendering
@@ -813,7 +817,6 @@ module.exports = [
           render = document.createDocumentFragment();
 
           //console.log('rendering ' + val.len + ' values');
-          var func = eval(template);
           var child, childModel;
           for (i = 0, len = val.values.length; i < len; i++) {
             // TODO: implement event delegation for array indexes
@@ -822,9 +825,9 @@ module.exports = [
             // on demand model creation.
             val.on('change', i, update(i));
             //render.appendChild(eval(template + '(val(i))'));
-            //render.appendChild(func(val.values[i]));
+            //render.appendChild(template(val.values[i]));
             childModel = val(i);
-            child = func(childModel);
+            child = template(childModel);
             child.__jtmpl__ = childModel;
             render.appendChild(child);
           }
@@ -836,7 +839,7 @@ module.exports = [
 
         // Object?
         else if (typeof val === 'function' && val.len === undefined) {
-          render = eval(template + '(val)');
+          render = template(val);
           length = render.childNodes.length;
           chunkSize = length;
           anchor.parentNode.insertBefore(render, anchor);
@@ -846,7 +849,7 @@ module.exports = [
         // Cast to boolean
         else {
           if (!!val) {
-            render = eval(template + '(model)');
+            render = template(model);
             length = render.childNodes.length;
             chunkSize = length;
             anchor.parentNode.insertBefore(render, anchor);
@@ -856,7 +859,7 @@ module.exports = [
 
       fragment.appendChild(anchor);
       change();
-      model.on('change', prop, change);
+      model.on('change', prop[1], change);
     }
   },
 
@@ -868,10 +871,10 @@ module.exports = [
   {
     id: 'inverted_section',
     match: function(node) {
-      return node.innerHTML.match(/^\^([\w\.\-]+)$/);
+      return node.innerHTML.match(RE_BEGIN + '\\^' + RE_IDENTIFIER_PIPE + RE_END);
     },
     block: function(match) {
-      return match[1];
+      return match;
     },
     rule: function(fragment, model, prop, template) {
 
@@ -881,7 +884,7 @@ module.exports = [
       var length = 0;
 
       function change() {
-        var val = prop === '.' ? model : model(prop);
+        var val = prop[1] === '.' ? model : model(prop[1]); //jtmpl._get(model, prop[1], prop[2]);
         var i, len, render;
 
         // Delete old rendering
@@ -897,7 +900,7 @@ module.exports = [
           render = document.createDocumentFragment();
 
           if (val.len === 0) {
-            render.appendChild(eval(template + '(val(i))'));
+            render.appendChild(template(val(i)));
           }
 
           length = render.childNodes.length;
@@ -906,7 +909,7 @@ module.exports = [
         // Cast to boolean
         else {
           if (!val) {
-            render = eval(template + '(model)');
+            render = template(model);
             length = render.childNodes.length;
             anchor.parentNode.insertBefore(render, anchor);
           }
@@ -915,7 +918,7 @@ module.exports = [
 
       fragment.appendChild(anchor);
       change();
-      model.on('change', prop, change);
+      model.on('change', prop[1], change);
     }
 
   },
@@ -938,7 +941,7 @@ module.exports = [
   }
 ];
 
-},{}],4:[function(_dereq_,module,exports){
+},{}],4:[function(require,module,exports){
 /**
  * Compile a template, parsed by @see parse
  *
@@ -952,28 +955,40 @@ function compile(template, sourceURL, depth) {
   var ri, rules, rlen;
   var match, block;
 
-  // Generate dynamic function body
-  var func = '(function(model) {\n' +
-    'var frag = document.createDocumentFragment(), node;\n' +
-    'if (!jtmpl.rules) jtmpl.prepareRuntime();\n\n';
+  depth = (depth || 0) + 1;
 
-  if (!depth) {
+  function indented(lines, fix) {
+    fix = fix || 0;
+    for (var i = 0, ind = ''; i < (depth || 0) + fix; i++) {
+      ind += '  ';
+    }
+    return lines
+      .map(function(line) {
+        return ind + line;
+      })
+      .join('\n') + '\n';
+  }
+
+  // Generate dynamic function body
+  var func = indented(['(function(model) {'], -1);
+  func += indented(['var frag = document.createDocumentFragment(), node;']);
+
+  if (depth === 1) {
     // Global bookkeeping
-    func +=
-      'var radioGroups = {};\n' +
-      'var radioGroupsUpdating = {};\n' +
-      'var selects = [];\n' +
-      'var selectsUpdating = [];\n' +
-      'var selectOptions = [];\n' +
-      'var selectOptionsContexts = [];\n\n';
+    func += indented([
+      'var globals = {',
+      '  radioGroups: {},',
+      '  radioGroupsUpdating: {},',
+      '  selects: [],',
+      '  selectsUpdating: [],',
+      '  selectOptions: [],',
+      '  selectOptionsContexts: []',
+      '};'
+    ]);
   }
 
   // Wrap model in a Freak instance, if necessary
-  func += 'model = typeof model === "function" ?' +
-    'model : ' +
-    'typeof model === "object" ?' +
-      'jtmpl(model) :' +
-      'jtmpl({".": model});\n\n';
+  func += indented(['model = jtmpl.normalizeModel(model);']);
 
   // Iterate childNodes
   for (var i = 0, childNodes = template.childNodes, len = childNodes.length, node;
@@ -989,7 +1004,7 @@ function compile(template, sourceURL, depth) {
         // jtmpl tag?
         if (node.nodeName === 'SCRIPT' && node.type === 'text/jtmpl-tag') {
 
-          for (ri = 0, rules = _dereq_('./compile-rules-node'), rlen = rules.length;
+          for (ri = 0, rules = require('./compile-rules-node'), rlen = rules.length;
               ri < rlen; ri++) {
 
             match = rules[ri].match(node);
@@ -1002,34 +1017,39 @@ function compile(template, sourceURL, depth) {
 
                 // Fetch block template
                 block = document.createDocumentFragment();
-                for (i++;
-                    (i < len) && !matchEndBlock(rules[ri].block, node.innerHTML || '');
-                    i++) {
+                for (i++, node = childNodes[i];
+                    (i < len) && !matchEndBlock(rules[ri].block(match[1]), node.innerHTML || '');
+                    i++, node = childNodes[i]) {
                   block.appendChild(node.cloneNode(true));
                 }
 
                 if (i === len) {
-                  throw 'jtmpl: Unclosed ' + rules[ri].block;
+                  throw 'jtmpl: Unclosed ' + rules[ri].block(match[1]);
                 }
                 else {
-                  func += 'jtmpl.rules.node.' + rules[ri].id +
-                    '(frag, model, ' +
-                    JSON.stringify(rules[ri].block) + ', ' +   // prop
-                    JSON.stringify(
-                      // template
-                      compile(
-                        block,
-                        sourceURL && (sourceURL + '-' + node.innerHTML + '[' + i + ']'),
-                        (depth || 0) + 1
-                      )
-                    ) + ');';
+                  func += indented([
+                    'jtmpl.rules.node.' + rules[ri].id + '(',
+                    '  frag,',
+                    '  model,',
+                    '  ' + JSON.stringify(rules[ri].block(match)) + ',',   // prop
+                  ]);
+                  func +=
+                    compile(
+                      block,
+                      '', //sourceURL && (sourceURL + '-' + node.innerHTML + '[' + i + ']'),
+                      depth + 1
+                    ) + ', ';
+                  func += indented([
+                    '  globals',
+                    ');'
+                  ]);
                 }
 
               }
               // Inline tag
               else {
-                func += 'jtmpl.rules.node.' + rules[ri].id +
-                  '(frag, model, ' + JSON.stringify(match.prop) + ');\n';
+                func += indented(['jtmpl.rules.node.' + rules[ri].id +
+                  '(frag, model, ' + JSON.stringify(rules[ri].prop(match)) + ');']);
               }
 
               // Skip remaining rules
@@ -1040,14 +1060,16 @@ function compile(template, sourceURL, depth) {
 
         else {
           // Create element
-          func += 'node = document.createElement("' + node.nodeName + '");\n';
-          func += 'node.__jtmpl__ = model;\n';
+          func += indented([
+            'node = document.createElement("' + node.nodeName + '");',
+            'node.__jtmpl__ = model;'
+          ]);
 
           // Process attributes
           for (var ai = 0, attributes = node.attributes, alen = attributes.length;
                ai < alen; ai++) {
 
-            for (ri = 0, rules = _dereq_('./compile-rules-attr'), rlen = rules.length;
+            for (ri = 0, rules = require('./compile-rules-attr'), rlen = rules.length;
                 ri < rlen; ri++) {
 
               match = rules[ri].match(node, attributes[ai].name.toLowerCase());
@@ -1055,12 +1077,14 @@ function compile(template, sourceURL, depth) {
               if (match) {
 
                 // Match found, append rule to func
-                func += 'jtmpl.rules.attr.' + rules[ri].id +
+                func += indented([
+                  'jtmpl.rules.attr.' + rules[ri].id +
                   '(node, ' +
                   JSON.stringify(attributes[ai].name) + // attr
                   ', model, ' +
-                  JSON.stringify(rules[ri].prop(match)) +          // prop
-                  ');\n';
+                  JSON.stringify(rules[ri].prop(match)) + // prop
+                  ', globals);'
+                ]);
 
                 // Skip other attribute rules
                 break;
@@ -1070,16 +1094,21 @@ function compile(template, sourceURL, depth) {
 
           if (node.nodeName !== 'INPUT') {
             // Recursively compile
-            func += 'node.appendChild(' +
+            func += indented(['node.appendChild(']);
+            func +=
               compile(
                 node,
-            sourceURL && (sourceURL + '-' + node.nodeName + '[' + i + ']'),
-            (depth || 0) + 1
-            ) + '(model));\n';
+                '', //sourceURL && (sourceURL + '-' + node.nodeName + '[' + i + ']'),
+                depth + 1
+              );
+            func += indented([
+              '  (model)',
+              ');'
+            ]);
           }
 
           // Append to fragment
-          func += 'frag.appendChild(node);\n';
+          func += indented(['frag.appendChild(node);']);
         }
 
         break;
@@ -1087,21 +1116,24 @@ function compile(template, sourceURL, depth) {
 
       // Text node
       case 3:
-        func += 'frag.appendChild(document.createTextNode(' +
-          JSON.stringify(node.data) + '));\n';
+        func += indented(['frag.appendChild(document.createTextNode(' +
+          JSON.stringify(node.data) + '));']);
         break;
 
 
       // Comment node
       case 8:
-        func += 'frag.appendChild(document.createComment(' +
-          JSON.stringify(node.data) + '));\n';
+        func += indented(['frag.appendChild(document.createComment(' +
+          JSON.stringify(node.data) + '));']);
         break;
 
     } // end switch
   } // end iterate childNodes
 
-  func += 'return frag; })';
+  func += indented([
+    '  return frag;',
+    '})'
+  ], -1);
   func += sourceURL ?
     '\n//@ sourceURL=' + sourceURL + '\n//# sourceURL=' + sourceURL + '\n' :
     '';
@@ -1124,156 +1156,7 @@ function matchEndBlock(block, str) {
 
 module.exports = compile;
 
-},{"./compile-rules-attr":2,"./compile-rules-node":3}],5:[function(_dereq_,module,exports){
-/*
- * Main function
- */
-/* jshint evil: true */
-function jtmpl() {
-  var args = [].slice.call(arguments);
-  var target, t, template, model;
-
-  // jtmpl('HTTP_METHOD', url[, parameters[, callback[, options]]])?
-  if (['GET', 'POST'].indexOf(args[0]) > -1) {
-    return _dereq_('./xhr').apply(null, args);
-  }
-
-  // jtmpl(object)?
-  else if (args.length === 1 && typeof args[0] === 'object') {
-    // return Freak instance
-    return _dereq_('freak')(args[0]);
-  }
-
-  // jtmpl(target)?
-  else if (args.length === 1 && typeof args[0] === 'string') {
-    // return model
-    return document.querySelector(args[0]).__jtmpl__;
-  }
-
-  // jtmpl(target, template, model[, options])?
-  else if (
-    ( args[0] && args[0].nodeType ||
-      (typeof args[0] === 'string')
-    ) &&
-
-    ( (args[1] && typeof args[1].appendChild === 'function') ||
-      (typeof args[1] === 'string')
-    ) &&
-
-    args[2] !== undefined
-
-  ) {
-
-    target = args[0] && args[0].nodeType  ?
-      args[0] :
-      document.querySelector(args[0]);
-
-    template = args[1].match(jtmpl.RE_NODE_ID) ?
-      document.querySelector(args[1]).innerHTML :
-      args[1];
-
-    model =
-      typeof args[2] === 'function' ?
-        // already wrapped
-        args[2] :
-        // otherwise wrap
-        jtmpl(
-          typeof args[2] === 'object' ?
-            // object
-            args[2] :
-
-            typeof args[2] === 'string' && args[2].match(jtmpl.RE_NODE_ID) ?
-              // src, load it
-              _dereq_('./loader')
-                (document.querySelector(args[2]).innerHTML) :
-
-              // simple value, box it
-              {'.': args[2]}
-        );
-
-    if (target.nodeName === 'SCRIPT') {
-      t = document.createElement('div');
-      t.id = target.id;
-      target.parentNode.replaceChild(t, target);
-      target = t;
-    }
-
-    // Associate target and model
-    target.__jtmpl__ = model;
-
-    // Empty target
-    target.innerHTML = '';
-
-    // Assign compiled template
-    //target.appendChild(require('./compiler')(template, model, args[3]));
-    target.appendChild(
-      eval(
-        jtmpl.compile(
-          jtmpl.parse(template),
-          target.getAttribute('data-jtmpl')
-        ) + '(model)'
-      )
-    );
-  }
-}
-
-
-
-/*
- * On page ready, process jtmpl targets
- */
-
-window.addEventListener('DOMContentLoaded', function() {
-  var loader = _dereq_('./loader');
-  var targets = document.querySelectorAll('[data-jtmpl]');
-
-  for (var i = 0, len = targets.length; i < len; i++) {
-    loader(targets[i], targets[i].getAttribute('data-jtmpl'));
-  }
-});
-
-
-/*
- * Export stuff
- *
- * TODO: refactorme
- */
-jtmpl.RE_NODE_ID = /^#[\w\.\-]+$/;
-jtmpl.RE_ENDS_WITH_NODE_ID = /.+(#[\w\.\-]+)$/;
-
-jtmpl.parse = _dereq_('./parse');
-jtmpl.compile = _dereq_('./compile');
-jtmpl.prepareRuntime = _dereq_('./prepare-runtime');
-jtmpl.loader = _dereq_('./loader');
-jtmpl.utemplate = _dereq_('./utemplate');
-jtmpl._get = function(model, prop) {
-  var val = model(prop);
-  return (typeof val === 'function') ?
-    JSON.stringify(val.values) :
-    val;
-};
-
-
-/*
- * Polyfills
- */
-_dereq_('./polyfills/matches');
-
-
-/*
- * Plugins
- */
-jtmpl.plugins = _dereq_('./plugins');
-
-
-/*
- * Export
- */
-module.exports = jtmpl;
-if (typeof window !== 'undefined') window.jtmpl = jtmpl;
-if (typeof define === 'function') define('jtmpl', [], jtmpl);
-
-},{"./compile":4,"./loader":6,"./parse":7,"./plugins":8,"./polyfills/matches":12,"./prepare-runtime":13,"./utemplate":14,"./xhr":15,"freak":1}],6:[function(_dereq_,module,exports){
+},{"./compile-rules-attr":2,"./compile-rules-node":3}],5:[function(require,module,exports){
 /*
 
 Evaluate object from literal or CommonJS module
@@ -1410,7 +1293,7 @@ Evaluate object from literal or CommonJS module
       loadTemplate();
     };
 
-},{}],7:[function(_dereq_,module,exports){
+},{}],6:[function(require,module,exports){
 /**
  * Parse a text template to DOM structure ready for compiling
  * @see compile
@@ -1480,14 +1363,14 @@ function parse(template) {
 
 module.exports = parse;
 
-},{}],8:[function(_dereq_,module,exports){
+},{}],7:[function(require,module,exports){
 module.exports = {
-  init: _dereq_('./plugins/init'),
-  on: _dereq_('./plugins/on'),
-  routes: _dereq_('./plugins/routes')
+  init: require('./plugins/init'),
+  on: require('./plugins/on'),
+  routes: require('./plugins/routes')
 };
 
-},{"./plugins/init":9,"./plugins/on":10,"./plugins/routes":11}],9:[function(_dereq_,module,exports){
+},{"./plugins/init":8,"./plugins/on":9,"./plugins/routes":10}],8:[function(require,module,exports){
 /*
  * Init plugin
  */
@@ -1501,7 +1384,7 @@ module.exports = function(arg) {
   }
 };
 
-},{}],10:[function(_dereq_,module,exports){
+},{}],9:[function(require,module,exports){
 module.exports = function(events, target) {
   function addEvent(event) {
     target.addEventListener(
@@ -1525,11 +1408,11 @@ module.exports = function(events, target) {
   }
 };
 
-},{}],11:[function(_dereq_,module,exports){
+},{}],10:[function(require,module,exports){
 module.exports = function(routes, target) {
 };
 
-},{}],12:[function(_dereq_,module,exports){
+},{}],11:[function(require,module,exports){
 typeof Element !== 'undefined' && (function(ElementPrototype) {
   ElementPrototype.matches = ElementPrototype.matches ||
     ElementPrototype.mozMatchesSelector ||
@@ -1545,7 +1428,7 @@ typeof Element !== 'undefined' && (function(ElementPrototype) {
     };
 })(Element.prototype);
 
-},{}],13:[function(_dereq_,module,exports){
+},{}],12:[function(require,module,exports){
 /*
  * Prepare runtime for jtmpl compiled functions
  */
@@ -1554,16 +1437,16 @@ module.exports = function() {
     node: {},
     attr: {}
   };
-  _dereq_('./compile-rules-node').forEach(function(rule) {
+  require('./compile-rules-node').forEach(function(rule) {
     rules.node[rule.id] = rule.rule;
   });
-  _dereq_('./compile-rules-attr').forEach(function(rule) {
+  require('./compile-rules-attr').forEach(function(rule) {
     rules.attr[rule.id] = rule.rule;
   });
   return rules;
 };
 
-},{"./compile-rules-attr":2,"./compile-rules-node":3}],14:[function(_dereq_,module,exports){
+},{"./compile-rules-attr":2,"./compile-rules-node":3}],13:[function(require,module,exports){
 /**
  * utemplate
  *
@@ -1653,7 +1536,7 @@ function utemplate(template, model, onChange) {
 
 module.exports = utemplate;
 
-},{}],15:[function(_dereq_,module,exports){
+},{}],14:[function(require,module,exports){
 /*
 
 Requests API
@@ -1739,6 +1622,174 @@ Requests API
 
     };
 
-},{}]},{},[5])
-(5)
+},{}],15:[function(require,module,exports){
+/*
+ * Main function
+ */
+function jtmpl() {
+  var args = [].slice.call(arguments);
+  var target, t, template, model;
+
+  // jtmpl('HTTP_METHOD', url[, parameters[, callback[, options]]])?
+  if (['GET', 'POST'].indexOf(args[0]) > -1) {
+    return require('./xhr').apply(null, args);
+  }
+
+  // jtmpl(object)?
+  else if (args.length === 1 && typeof args[0] === 'object') {
+    // return Freak instance
+    return require('freak')(args[0]);
+  }
+
+  // jtmpl(target)?
+  else if (args.length === 1 && typeof args[0] === 'string') {
+    // return model
+    return document.querySelector(args[0]).__jtmpl__;
+  }
+
+  // jtmpl(target, template, model[, options])?
+  else if (
+    ( args[0] && args[0].nodeType ||
+      (typeof args[0] === 'string')
+    ) &&
+
+    ( (args[1] && typeof args[1].appendChild === 'function') ||
+      (typeof args[1] === 'string')
+    ) &&
+
+    args[2] !== undefined
+
+  ) {
+
+    target = args[0] && args[0].nodeType  ?
+      args[0] :
+      document.querySelector(args[0]);
+
+    template = args[1].match(jtmpl.RE_NODE_ID) ?
+      document.querySelector(args[1]).innerHTML :
+      args[1];
+
+    model =
+      typeof args[2] === 'function' ?
+        // already wrapped
+        args[2] :
+        // otherwise wrap
+        jtmpl(
+          typeof args[2] === 'object' ?
+            // object
+            args[2] :
+
+            typeof args[2] === 'string' && args[2].match(jtmpl.RE_NODE_ID) ?
+              // src, load it
+              require('./loader')
+                (document.querySelector(args[2]).innerHTML) :
+
+              // simple value, box it
+              {'.': args[2]}
+        );
+
+    if (target.nodeName === 'SCRIPT') {
+      t = document.createElement('div');
+      t.id = target.id;
+      target.parentNode.replaceChild(t, target);
+      target = t;
+    }
+
+    // Associate target and model
+    target.__jtmpl__ = model;
+
+    // Empty target
+    target.innerHTML = '';
+
+    // Assign compiled template
+    /* jshint evil: true */
+    target.appendChild(
+      eval(
+        jtmpl.compile(
+          jtmpl.parse(template),
+          target.getAttribute('data-jtmpl')
+        ) + '(model)'
+      )
+    );
+  }
+}
+
+
+
+/*
+ * On page ready, process jtmpl targets
+ */
+
+window.addEventListener('DOMContentLoaded', function() {
+  var loader = require('./loader');
+  var targets = document.querySelectorAll('[data-jtmpl]');
+
+  for (var i = 0, len = targets.length; i < len; i++) {
+    loader(targets[i], targets[i].getAttribute('data-jtmpl'));
+  }
+});
+
+
+/*
+ * Export stuff
+ *
+ * TODO: refactorme
+ */
+jtmpl.RE_NODE_ID = /^#[\w\.\-]+$/;
+jtmpl.RE_ENDS_WITH_NODE_ID = /.+(#[\w\.\-]+)$/;
+
+jtmpl.parse = require('./parse');
+jtmpl.compile = require('./compile');
+jtmpl.loader = require('./loader');
+jtmpl.utemplate = require('./utemplate');
+jtmpl._get = function(model, prop, pipe) {
+  var val = model(prop);
+  return (typeof val === 'function') ?
+    JSON.stringify(val.values) :
+    pipe ?
+      jtmpl.applyPipe(val, pipe, model.root.values.__filters__) :
+      val;
+};
+jtmpl.applyPipe = function(val, pipe, filters) {
+  pipe = pipe.split('|');
+  for (var i=0, len=pipe.length; i < len; i++) {
+    val = filters[pipe[i].trim()](val);
+  }
+  return val;
+};
+
+
+/*
+ * Init runtime
+ */
+
+jtmpl.rules = require('./prepare-runtime')();
+jtmpl.normalizeModel = function(model) {
+  return typeof model === 'function' ?
+    model :
+    typeof model === 'object' ?
+      jtmpl(model) :
+      jtmpl({'.': model});
+};
+
+/*
+ * Polyfills
+ */
+require('./polyfills/matches');
+
+
+/*
+ * Plugins
+ */
+jtmpl.plugins = require('./plugins');
+
+
+/*
+ * Export
+ */
+module.exports = jtmpl;
+if (typeof window !== 'undefined') window.jtmpl = jtmpl;
+if (typeof define === 'function') define('jtmpl', [], jtmpl);
+
+},{"./compile":4,"./loader":5,"./parse":6,"./plugins":7,"./polyfills/matches":11,"./prepare-runtime":12,"./utemplate":13,"./xhr":14,"freak":1}]},{},[15])(15)
 });

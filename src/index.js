@@ -1,7 +1,6 @@
 /*
  * Main function
  */
-/* jshint evil: true */
 function jtmpl() {
   var args = [].slice.call(arguments);
   var target, t, template, model;
@@ -78,7 +77,7 @@ function jtmpl() {
     target.innerHTML = '';
 
     // Assign compiled template
-    //target.appendChild(require('./compiler')(template, model, args[3]));
+    /* jshint evil: true */
     target.appendChild(
       eval(
         jtmpl.compile(
@@ -141,11 +140,11 @@ jtmpl.applyPipe = function(val, pipe, filters) {
 
 jtmpl.rules = require('./prepare-runtime')();
 jtmpl.normalizeModel = function(model) {
-  return typeof model === "function" ?
+  return typeof model === 'function' ?
     model :
-    typeof model === "object" ?
+    typeof model === 'object' ?
       jtmpl(model) :
-      jtmpl({".": model});
+      jtmpl({'.': model});
 };
 
 /*
