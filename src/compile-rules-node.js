@@ -143,7 +143,11 @@ module.exports = [
           var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
           var pos = anchorIndex - length + i * chunkSize;
           var size = chunkSize;
-          var arr = prop[1] === '.' ? model : jtmpl._get(model, prop[1], prop[2]);
+          var arr = jtmpl.applyPipe(
+            prop[1] === '.' ? model : model(prop[1]),
+            prop[2],
+            model
+          );
 
           while (size--) {
             parent.removeChild(parent.childNodes[pos]);
@@ -189,7 +193,11 @@ module.exports = [
       }
 
       function change() {
-        var val = prop[1] === '.' ? model : model(prop[1]); //jtmpl._get(model, prop[1], prop[2]);
+        var val = jtmpl.applyPipe(
+          prop[1] === '.' ? model : model(prop[1]),
+          prop[2] || '',
+          model
+        );
         var i, len, render;
 
         // Delete old rendering
@@ -211,7 +219,7 @@ module.exports = [
             // Also, using val.values[i] instead of val[i]
             // saves A LOT of heap memory. Figure out how to do
             // on demand model creation.
-            val.on('change', i, update(i));
+            //val.on('change', i, update(i));
             //render.appendChild(eval(template + '(val(i))'));
             //render.appendChild(template(val.values[i]));
             childModel = val(i);
@@ -219,6 +227,8 @@ module.exports = [
             child.__jtmpl__ = childModel;
             render.appendChild(child);
           }
+
+          val.on('change', update);
 
           length = render.childNodes.length;
           chunkSize = ~~(length / len);

@@ -1,6 +1,6 @@
 {
   "name": "jtmpl",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "main": "jtmpl.js",
   "ignore": [],
   "dependencies": {},

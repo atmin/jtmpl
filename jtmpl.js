@@ -1,13 +1,13 @@
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.jtmpl = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.jtmpl=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 'use strict';
 
 function freak(obj, root, parent, prop) {
 
   var listeners = {
-    'change': {},
-    'update': {},
-    'insert': {},
-    'delete': {}
+    'change': [],
+    'update': [],
+    'insert': [],
+    'delete': []
   };
   var _dependentProps = {};
   var _dependentContexts = {};
@@ -60,6 +60,12 @@ function freak(obj, root, parent, prop) {
   }
 
   // Event functions
+
+  // on('change', function(prop) { ... })
+  // on('change', 'prop', function() { ... })
+  // on('update', function(prop) { ... })
+  // on('insert', function(index, count) { ... })
+  // on('delete', function(index, count) { ... })
   function on() {
     var event = arguments[0];
     var prop = ['string', 'number'].indexOf(typeof arguments[1]) > -1 ?
@@ -71,19 +77,25 @@ function freak(obj, root, parent, prop) {
           arguments[2] : null;
 
     // Args check
-    assert(['change', 'update', 'insert', 'delete'].indexOf(event) > -1);
     assert(
-      (['change'].indexOf(event) > -1 && prop !== null) ||
+      (event === 'change') ||
       (['insert', 'delete', 'update'].indexOf(event) > -1 && prop === null)
     );
 
-    // Init listeners for prop
-    if (!listeners[event][prop]) {
-      listeners[event][prop] = [];
+    // Init listeners
+    if (!listeners[event]) {
+      listeners[event] = [];
     }
     // Already registered?
-    if (listeners[event][prop].indexOf(callback) === -1) {
-      listeners[event][prop].push(callback);
+    if (listeners[event].indexOf(callback) === -1) {
+      listeners[event].push(
+        (event === 'change' && prop !== null) ?
+          // on('change', 'prop', function() { ... })
+          function(_prop) {
+            if (_prop === prop) callback.call(instance);
+          } :
+          callback
+      );
     }
   }
 
@@ -118,11 +130,11 @@ function freak(obj, root, parent, prop) {
   // trigger('update', prop)
   // trigger('insert' or 'delete', index, count)
   function trigger(event, a, b) {
-    var handlers = (listeners[event][['change'].indexOf(event) > -1 ? a : null] || []);
+    var handlers = listeners[event] || [];
     var i, len = handlers.length;
     for (i = 0; i < len; i++) {
       handlers[i].call(instance, a, b);
-    };
+    }
   }
 
   // Export model to JSON string
@@ -300,7 +312,7 @@ function freak(obj, root, parent, prop) {
 
     // Wrap mutating array method to update
     // state and notify listeners
-    function wrapArrayMethod(method, func) {
+    function wrapMutatingArrayMethod(method, func) {
       return function() {
         var result = [][method].apply(obj, arguments);
         this.len = this.values.length;
@@ -312,39 +324,55 @@ function freak(obj, root, parent, prop) {
       };
     }
 
+    // Wrap callback of an array method to
+    // provide this content to the currently processed item
+    function proxyArrayMethod(method) {
+      return function() {
+        var callback = arguments[0];
+        return [][method].apply(
+          obj,
+          callback ?
+            [function(el, i) {
+              return callback.apply(target(i), arguments);
+            }].concat([].slice.call(arguments, 1)) :
+            arguments
+        );
+      };
+    }
+
     if (Array.isArray(obj)) {
       mixin(target, {
         // Function prototype already contains length
         // `len` specifies array length
         len: obj.length,
 
-        pop: wrapArrayMethod('pop', function() {
+        pop: wrapMutatingArrayMethod('pop', function() {
           trigger('delete', this.len, 1);
         }),
 
-        push: wrapArrayMethod('push', function() {
+        push: wrapMutatingArrayMethod('push', function() {
           trigger('insert', this.len - 1, 1);
         }),
 
-        reverse: wrapArrayMethod('reverse', function() {
+        reverse: wrapMutatingArrayMethod('reverse', function() {
           trigger('delete', 0, this.len);
           trigger('insert', 0, this.len);
         }),
 
-        shift: wrapArrayMethod('shift', function() {
+        shift: wrapMutatingArrayMethod('shift', function() {
           trigger('delete', 0, 1);
         }),
 
-        unshift: wrapArrayMethod('unshift', function() {
+        unshift: wrapMutatingArrayMethod('unshift', function() {
           trigger('insert', 0, 1);
         }),
 
-        sort: wrapArrayMethod('sort', function() {
+        sort: wrapMutatingArrayMethod('sort', function() {
           trigger('delete', 0, this.len);
           trigger('insert', 0, this.len);
         }),
 
-        splice: wrapArrayMethod('splice', function() {
+        splice: wrapMutatingArrayMethod('splice', function() {
           if (arguments[1]) {
             trigger('delete', arguments[0], arguments[1]);
           }
@@ -353,6 +381,13 @@ function freak(obj, root, parent, prop) {
           }
         })
 
+      });
+
+      [
+        'forEach', 'every', 'some', 'filter', 'find', 'findIndex',
+        'keys', 'map', 'reduce', 'reduceRight'
+      ].forEach(function(method) {
+        target[method] = proxyArrayMethod(method);
       });
     }
   }
@@ -373,7 +408,7 @@ function freak(obj, root, parent, prop) {
 // CommonJS export
 if (typeof module === 'object') module.exports = freak;
 
-},{}],2:[function(require,module,exports){
+},{}],2:[function(_dereq_,module,exports){
 var RE_DELIMITED_VAR = /^\{\{([\w\.\-]+)\}\}$/;
 
 
@@ -609,7 +644,7 @@ module.exports = [
 
 ];
 
-},{}],3:[function(require,module,exports){
+},{}],3:[function(_dereq_,module,exports){
 /*
  * Node rules
  *
@@ -755,7 +790,11 @@ module.exports = [
           var anchorIndex = [].indexOf.call(parent.childNodes, anchor);
           var pos = anchorIndex - length + i * chunkSize;
           var size = chunkSize;
-          var arr = prop[1] === '.' ? model : jtmpl._get(model, prop[1], prop[2]);
+          var arr = jtmpl.applyPipe(
+            prop[1] === '.' ? model : model(prop[1]),
+            prop[2],
+            model
+          );
 
           while (size--) {
             parent.removeChild(parent.childNodes[pos]);
@@ -801,7 +840,11 @@ module.exports = [
       }
 
       function change() {
-        var val = prop[1] === '.' ? model : model(prop[1]); //jtmpl._get(model, prop[1], prop[2]);
+        var val = jtmpl.applyPipe(
+          prop[1] === '.' ? model : model(prop[1]),
+          prop[2] || '',
+          model
+        );
         var i, len, render;
 
         // Delete old rendering
@@ -823,7 +866,7 @@ module.exports = [
             // Also, using val.values[i] instead of val[i]
             // saves A LOT of heap memory. Figure out how to do
             // on demand model creation.
-            val.on('change', i, update(i));
+            //val.on('change', i, update(i));
             //render.appendChild(eval(template + '(val(i))'));
             //render.appendChild(template(val.values[i]));
             childModel = val(i);
@@ -831,6 +874,8 @@ module.exports = [
             child.__jtmpl__ = childModel;
             render.appendChild(child);
           }
+
+          val.on('change', update);
 
           length = render.childNodes.length;
           chunkSize = ~~(length / len);
@@ -941,7 +986,7 @@ module.exports = [
   }
 ];
 
-},{}],4:[function(require,module,exports){
+},{}],4:[function(_dereq_,module,exports){
 /**
  * Compile a template, parsed by @see parse
  *
@@ -1004,7 +1049,7 @@ function compile(template, sourceURL, depth) {
         // jtmpl tag?
         if (node.nodeName === 'SCRIPT' && node.type === 'text/jtmpl-tag') {
 
-          for (ri = 0, rules = require('./compile-rules-node'), rlen = rules.length;
+          for (ri = 0, rules = _dereq_('./compile-rules-node'), rlen = rules.length;
               ri < rlen; ri++) {
 
             match = rules[ri].match(node);
@@ -1069,7 +1114,7 @@ function compile(template, sourceURL, depth) {
           for (var ai = 0, attributes = node.attributes, alen = attributes.length;
                ai < alen; ai++) {
 
-            for (ri = 0, rules = require('./compile-rules-attr'), rlen = rules.length;
+            for (ri = 0, rules = _dereq_('./compile-rules-attr'), rlen = rules.length;
                 ri < rlen; ri++) {
 
               match = rules[ri].match(node, attributes[ai].name.toLowerCase());
@@ -1156,7 +1201,177 @@ function matchEndBlock(block, str) {
 
 module.exports = compile;
 
-},{"./compile-rules-attr":2,"./compile-rules-node":3}],5:[function(require,module,exports){
+},{"./compile-rules-attr":2,"./compile-rules-node":3}],5:[function(_dereq_,module,exports){
+/*
+ * Main function
+ */
+function jtmpl() {
+  var args = [].slice.call(arguments);
+  var target, t, template, model;
+
+  // jtmpl('HTTP_METHOD', url[, parameters[, callback[, options]]])?
+  if (['GET', 'POST'].indexOf(args[0]) > -1) {
+    return _dereq_('./xhr').apply(null, args);
+  }
+
+  // jtmpl(object)?
+  else if (args.length === 1 && typeof args[0] === 'object') {
+    // return Freak instance
+    return _dereq_('freak')(args[0]);
+  }
+
+  // jtmpl(target)?
+  else if (args.length === 1 && typeof args[0] === 'string') {
+    // return model
+    return document.querySelector(args[0]).__jtmpl__;
+  }
+
+  // jtmpl(target, template, model[, options])?
+  else if (
+    ( args[0] && args[0].nodeType ||
+      (typeof args[0] === 'string')
+    ) &&
+
+    ( (args[1] && typeof args[1].appendChild === 'function') ||
+      (typeof args[1] === 'string')
+    ) &&
+
+    args[2] !== undefined
+
+  ) {
+
+    target = args[0] && args[0].nodeType  ?
+      args[0] :
+      document.querySelector(args[0]);
+
+    template = args[1].match(jtmpl.RE_NODE_ID) ?
+      document.querySelector(args[1]).innerHTML :
+      args[1];
+
+    model =
+      typeof args[2] === 'function' ?
+        // already wrapped
+        args[2] :
+        // otherwise wrap
+        jtmpl(
+          typeof args[2] === 'object' ?
+            // object
+            args[2] :
+
+            typeof args[2] === 'string' && args[2].match(jtmpl.RE_NODE_ID) ?
+              // src, load it
+              _dereq_('./loader')
+                (document.querySelector(args[2]).innerHTML) :
+
+              // simple value, box it
+              {'.': args[2]}
+        );
+
+    if (target.nodeName === 'SCRIPT') {
+      t = document.createElement('div');
+      t.id = target.id;
+      target.parentNode.replaceChild(t, target);
+      target = t;
+    }
+
+    // Associate target and model
+    target.__jtmpl__ = model;
+
+    // Empty target
+    target.innerHTML = '';
+
+    // Assign compiled template
+    /* jshint evil: true */
+    target.appendChild(
+      eval(
+        jtmpl.compile(
+          jtmpl.parse(template),
+          target.getAttribute('data-jtmpl')
+        ) + '(model)'
+      )
+    );
+  }
+}
+
+
+
+/*
+ * On page ready, process jtmpl targets
+ */
+
+window.addEventListener('DOMContentLoaded', function() {
+  var loader = _dereq_('./loader');
+  var targets = document.querySelectorAll('[data-jtmpl]');
+
+  for (var i = 0, len = targets.length; i < len; i++) {
+    loader(targets[i], targets[i].getAttribute('data-jtmpl'));
+  }
+});
+
+
+/*
+ * Export stuff
+ *
+ * TODO: refactorme
+ */
+jtmpl.RE_NODE_ID = /^#[\w\.\-]+$/;
+jtmpl.RE_ENDS_WITH_NODE_ID = /.+(#[\w\.\-]+)$/;
+
+jtmpl.parse = _dereq_('./parse');
+jtmpl.compile = _dereq_('./compile');
+jtmpl.loader = _dereq_('./loader');
+jtmpl.utemplate = _dereq_('./utemplate');
+jtmpl._get = function(model, prop, pipe) {
+  var val = model(prop);
+  return (typeof val === 'function') ?
+    JSON.stringify(val.values) :
+    jtmpl.applyPipe(val, pipe, model);
+};
+jtmpl.applyPipe = function(val, pipe, model) {
+  if (!pipe) {
+    return val;
+  }
+  pipe = pipe.split('|');
+  for (var i=0, len=pipe.length; i < len; i++) {
+    val = model.root.values.__filters__[pipe[i].trim()](val);
+  }
+  return val;
+};
+
+
+/*
+ * Init runtime
+ */
+
+jtmpl.rules = _dereq_('./prepare-runtime')();
+jtmpl.normalizeModel = function(model) {
+  return typeof model === 'function' ?
+    model :
+    typeof model === 'object' ?
+      jtmpl(model) :
+      jtmpl({'.': model});
+};
+
+/*
+ * Polyfills
+ */
+_dereq_('./polyfills/matches');
+
+
+/*
+ * Plugins
+ */
+jtmpl.plugins = _dereq_('./plugins');
+
+
+/*
+ * Export
+ */
+module.exports = jtmpl;
+if (typeof window !== 'undefined') window.jtmpl = jtmpl;
+if (typeof define === 'function') define('jtmpl', [], jtmpl);
+
+},{"./compile":4,"./loader":6,"./parse":7,"./plugins":8,"./polyfills/matches":12,"./prepare-runtime":13,"./utemplate":14,"./xhr":15,"freak":1}],6:[function(_dereq_,module,exports){
 /*
 
 Evaluate object from literal or CommonJS module
@@ -1293,7 +1508,7 @@ Evaluate object from literal or CommonJS module
       loadTemplate();
     };
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(_dereq_,module,exports){
 /**
  * Parse a text template to DOM structure ready for compiling
  * @see compile
@@ -1363,14 +1578,14 @@ function parse(template) {
 
 module.exports = parse;
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(_dereq_,module,exports){
 module.exports = {
-  init: require('./plugins/init'),
-  on: require('./plugins/on'),
-  routes: require('./plugins/routes')
+  init: _dereq_('./plugins/init'),
+  on: _dereq_('./plugins/on'),
+  routes: _dereq_('./plugins/routes')
 };
 
-},{"./plugins/init":8,"./plugins/on":9,"./plugins/routes":10}],8:[function(require,module,exports){
+},{"./plugins/init":9,"./plugins/on":10,"./plugins/routes":11}],9:[function(_dereq_,module,exports){
 /*
  * Init plugin
  */
@@ -1384,7 +1599,7 @@ module.exports = function(arg) {
   }
 };
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(_dereq_,module,exports){
 module.exports = function(events, target) {
   function addEvent(event) {
     target.addEventListener(
@@ -1408,11 +1623,11 @@ module.exports = function(events, target) {
   }
 };
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(_dereq_,module,exports){
 module.exports = function(routes, target) {
 };
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(_dereq_,module,exports){
 typeof Element !== 'undefined' && (function(ElementPrototype) {
   ElementPrototype.matches = ElementPrototype.matches ||
     ElementPrototype.mozMatchesSelector ||
@@ -1428,7 +1643,7 @@ typeof Element !== 'undefined' && (function(ElementPrototype) {
     };
 })(Element.prototype);
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(_dereq_,module,exports){
 /*
  * Prepare runtime for jtmpl compiled functions
  */
@@ -1437,16 +1652,16 @@ module.exports = function() {
     node: {},
     attr: {}
   };
-  require('./compile-rules-node').forEach(function(rule) {
+  _dereq_('./compile-rules-node').forEach(function(rule) {
     rules.node[rule.id] = rule.rule;
   });
-  require('./compile-rules-attr').forEach(function(rule) {
+  _dereq_('./compile-rules-attr').forEach(function(rule) {
     rules.attr[rule.id] = rule.rule;
   });
   return rules;
 };
 
-},{"./compile-rules-attr":2,"./compile-rules-node":3}],13:[function(require,module,exports){
+},{"./compile-rules-attr":2,"./compile-rules-node":3}],14:[function(_dereq_,module,exports){
 /**
  * utemplate
  *
@@ -1536,7 +1751,7 @@ function utemplate(template, model, onChange) {
 
 module.exports = utemplate;
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(_dereq_,module,exports){
 /*
 
 Requests API
@@ -1622,174 +1837,6 @@ Requests API
 
     };
 
-},{}],15:[function(require,module,exports){
-/*
- * Main function
- */
-function jtmpl() {
-  var args = [].slice.call(arguments);
-  var target, t, template, model;
-
-  // jtmpl('HTTP_METHOD', url[, parameters[, callback[, options]]])?
-  if (['GET', 'POST'].indexOf(args[0]) > -1) {
-    return require('./xhr').apply(null, args);
-  }
-
-  // jtmpl(object)?
-  else if (args.length === 1 && typeof args[0] === 'object') {
-    // return Freak instance
-    return require('freak')(args[0]);
-  }
-
-  // jtmpl(target)?
-  else if (args.length === 1 && typeof args[0] === 'string') {
-    // return model
-    return document.querySelector(args[0]).__jtmpl__;
-  }
-
-  // jtmpl(target, template, model[, options])?
-  else if (
-    ( args[0] && args[0].nodeType ||
-      (typeof args[0] === 'string')
-    ) &&
-
-    ( (args[1] && typeof args[1].appendChild === 'function') ||
-      (typeof args[1] === 'string')
-    ) &&
-
-    args[2] !== undefined
-
-  ) {
-
-    target = args[0] && args[0].nodeType  ?
-      args[0] :
-      document.querySelector(args[0]);
-
-    template = args[1].match(jtmpl.RE_NODE_ID) ?
-      document.querySelector(args[1]).innerHTML :
-      args[1];
-
-    model =
-      typeof args[2] === 'function' ?
-        // already wrapped
-        args[2] :
-        // otherwise wrap
-        jtmpl(
-          typeof args[2] === 'object' ?
-            // object
-            args[2] :
-
-            typeof args[2] === 'string' && args[2].match(jtmpl.RE_NODE_ID) ?
-              // src, load it
-              require('./loader')
-                (document.querySelector(args[2]).innerHTML) :
-
-              // simple value, box it
-              {'.': args[2]}
-        );
-
-    if (target.nodeName === 'SCRIPT') {
-      t = document.createElement('div');
-      t.id = target.id;
-      target.parentNode.replaceChild(t, target);
-      target = t;
-    }
-
-    // Associate target and model
-    target.__jtmpl__ = model;
-
-    // Empty target
-    target.innerHTML = '';
-
-    // Assign compiled template
-    /* jshint evil: true */
-    target.appendChild(
-      eval(
-        jtmpl.compile(
-          jtmpl.parse(template),
-          target.getAttribute('data-jtmpl')
-        ) + '(model)'
-      )
-    );
-  }
-}
-
-
-
-/*
- * On page ready, process jtmpl targets
- */
-
-window.addEventListener('DOMContentLoaded', function() {
-  var loader = require('./loader');
-  var targets = document.querySelectorAll('[data-jtmpl]');
-
-  for (var i = 0, len = targets.length; i < len; i++) {
-    loader(targets[i], targets[i].getAttribute('data-jtmpl'));
-  }
-});
-
-
-/*
- * Export stuff
- *
- * TODO: refactorme
- */
-jtmpl.RE_NODE_ID = /^#[\w\.\-]+$/;
-jtmpl.RE_ENDS_WITH_NODE_ID = /.+(#[\w\.\-]+)$/;
-
-jtmpl.parse = require('./parse');
-jtmpl.compile = require('./compile');
-jtmpl.loader = require('./loader');
-jtmpl.utemplate = require('./utemplate');
-jtmpl._get = function(model, prop, pipe) {
-  var val = model(prop);
-  return (typeof val === 'function') ?
-    JSON.stringify(val.values) :
-    pipe ?
-      jtmpl.applyPipe(val, pipe, model.root.values.__filters__) :
-      val;
-};
-jtmpl.applyPipe = function(val, pipe, filters) {
-  pipe = pipe.split('|');
-  for (var i=0, len=pipe.length; i < len; i++) {
-    val = filters[pipe[i].trim()](val);
-  }
-  return val;
-};
-
-
-/*
- * Init runtime
- */
-
-jtmpl.rules = require('./prepare-runtime')();
-jtmpl.normalizeModel = function(model) {
-  return typeof model === 'function' ?
-    model :
-    typeof model === 'object' ?
-      jtmpl(model) :
-      jtmpl({'.': model});
-};
-
-/*
- * Polyfills
- */
-require('./polyfills/matches');
-
-
-/*
- * Plugins
- */
-jtmpl.plugins = require('./plugins');
-
-
-/*
- * Export
- */
-module.exports = jtmpl;
-if (typeof window !== 'undefined') window.jtmpl = jtmpl;
-if (typeof define === 'function') define('jtmpl', [], jtmpl);
-
-},{"./compile":4,"./loader":5,"./parse":6,"./plugins":7,"./polyfills/matches":11,"./prepare-runtime":12,"./utemplate":13,"./xhr":14,"freak":1}]},{},[15])(15)
+},{}]},{},[5])
+(5)
 });

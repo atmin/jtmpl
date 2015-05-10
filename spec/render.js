@@ -18,6 +18,10 @@ module.exports = function() {
     ok(qs('#variable').innerHTML === '42');
   });
 
+  it('{{variable|mul10|plus1}}', function() {
+    ok(qs('#variable-pipe').innerHTML === '421');
+  });
+
   it('{{{innerHTML}}}', function() {
     ok(
       qs('#innerHTML').innerHTML.trim() ===

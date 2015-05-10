@@ -15,7 +15,7 @@
     mustache
     comment }}/> = <span id="variable">{{variable}}</span>
   <h4><code>model('variable')</code> * 10 + 1</h4>
-  <span>{{variable|mul10|plus1}}</span>
+  <span id="variable-pipe">{{variable|mul10|plus1}}</span>
   <h4><code>model('nonExistentVariable')</code></h4>
   <input value="{{nonExistentVariable}}"> = <span>{{nonExistentVariable}}</span>
 
@@ -31,6 +31,8 @@
 
 
   <h4><code>model('numbers')</code></h4>
+  <a href="#" class="mul10">multiply all by 10</a>
+  <a href="#" class="div10">divide all by 10</a>
   <ul>
   {{#numbers}}
     <li>{{.}}</li>
@@ -181,8 +183,28 @@
     },
 
     // Plugins
+
+    // Init
     __init__: function() {
       this('initialized', true);
+    },
+
+    // Events
+    __on__: {
+      click: {
+        '.mul10': function() {
+          var numbers = this('numbers');
+          numbers.values.forEach(function(val, i) {
+            numbers(i, numbers(i) * 10);
+          });
+        },
+        '.div10': function() {
+          var numbers = this('numbers');
+          numbers.values.forEach(function(val, i) {
+            numbers(i, numbers(i) / 10);
+          });
+        }
+      }
     },
 
     // Fields

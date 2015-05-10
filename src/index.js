@@ -121,14 +121,15 @@ jtmpl._get = function(model, prop, pipe) {
   var val = model(prop);
   return (typeof val === 'function') ?
     JSON.stringify(val.values) :
-    pipe ?
-      jtmpl.applyPipe(val, pipe, model.root.values.__filters__) :
-      val;
+    jtmpl.applyPipe(val, pipe, model);
 };
-jtmpl.applyPipe = function(val, pipe, filters) {
+jtmpl.applyPipe = function(val, pipe, model) {
+  if (!pipe) {
+    return val;
+  }
   pipe = pipe.split('|');
   for (var i=0, len=pipe.length; i < len; i++) {
-    val = filters[pipe[i].trim()](val);
+    val = model.root.values.__filters__[pipe[i].trim()](val);
   }
   return val;
 };
