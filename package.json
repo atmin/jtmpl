@@ -1,6 +1,6 @@
 {
   "name": "jtmpl-js",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/atmin/jtmpl.git"
@@ -16,7 +16,7 @@
     "brfs": "^1.2.0",
     "browserify": "^4.2.0",
     "element-class": "^0.1.1",
-    "freak": "^0.5.1",
+    "freak": "^0.5.2",
     "jshint": "^2.5.2",
     "karma": "^0.12.24",
     "karma-bro": "^0.10.0",

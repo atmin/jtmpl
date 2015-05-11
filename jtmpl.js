@@ -9,6 +9,13 @@ function freak(obj, root, parent, prop) {
     'insert': [],
     'delete': []
   };
+  var registeredListeners = {
+    'change': [],
+    'update': [],
+    'insert': [],
+    'delete': []
+  };
+  //var registeredListeners = Object.create(listeners);
   var _dependentProps = {};
   var _dependentContexts = {};
   var cache = {};
@@ -82,12 +89,9 @@ function freak(obj, root, parent, prop) {
       (['insert', 'delete', 'update'].indexOf(event) > -1 && prop === null)
     );
 
-    // Init listeners
-    if (!listeners[event]) {
-      listeners[event] = [];
-    }
     // Already registered?
-    if (listeners[event].indexOf(callback) === -1) {
+    if (registeredListeners[event].indexOf(callback) === -1) {
+      registeredListeners[event].push(callback);
       listeners[event].push(
         (event === 'change' && prop !== null) ?
           // on('change', 'prop', function() { ... })
@@ -110,17 +114,17 @@ function freak(obj, root, parent, prop) {
           arguments[2] : null;
     var i;
 
-    if (!listeners[event][prop]) return;
-
     // Remove all property watchers?
     if (!callback) {
-      listeners[event][prop] = [];
+      registeredListeners[event] = [];
+      listeners[event] = [];
     }
     else {
       // Remove specific callback
-      i = listeners[event][prop].indexOf(callback);
+      i = registeredListeners[event].indexOf(callback);
       if (i > -1) {
-        listeners[event][prop].splice(i, 1);
+        registeredListeners[event].splice(i, 1);
+        listeners[event].splice(i, 1);
       }
     }
 
