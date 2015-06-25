@@ -10,7 +10,7 @@ function compile(template, sourceURL, depth) {
 
   var ri, rules, rlen;
   var match, block;
-
+  
   depth = (depth || 0) + 1;
 
   function indented(lines, fix) {
@@ -116,10 +116,18 @@ function compile(template, sourceURL, depth) {
 
         else {
           // Create element
-          func += indented([
-            'node = document.createElement("' + node.nodeName + '");',
-            'node.__jtmpl__ = model;'
-          ]);
+          if(node.nodeName === "svg"){
+            func += indented([
+              'node = document.createElementNS("http://www.w3.org/2000/svg", "' + node.nodeName + '");',
+              'node.innerHTML = \'' + node.innerHTML.trim().replace(/\n/g, '\\') + '\';',
+              'node.__jtmpl__ = model;'
+            ]);
+          }else{
+            func += indented([
+              'node = document.createElement("' + node.nodeName + '");',
+              'node.__jtmpl__ = model;'
+            ]);
+          }
 
           // Process attributes
           for (var ai = 0, attributes = node.attributes, alen = attributes.length;
@@ -128,7 +136,7 @@ function compile(template, sourceURL, depth) {
             for (ri = 0, rules = require('./compile-rules-attr'), rlen = rules.length;
                 ri < rlen; ri++) {
 
-              match = rules[ri].match(node, attributes[ai].name.toLowerCase());
+              match = rules[ri].match(node, attributes[ai].name);
 
               if (match) {
 
@@ -148,7 +156,7 @@ function compile(template, sourceURL, depth) {
             }
           }
 
-          if (node.nodeName !== 'INPUT') {
+          if (node.nodeName !== 'INPUT' && node.nodeName.toLowerCase() !== 'svg') {
             // Recursively compile
             func += indented(['node.appendChild(']);
             func +=
