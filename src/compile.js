@@ -10,7 +10,7 @@ function compile(template, sourceURL, depth) {
 
   var ri, rules, rlen;
   var match, block;
-  
+
   depth = (depth || 0) + 1;
 
   function indented(lines, fix) {
@@ -116,13 +116,14 @@ function compile(template, sourceURL, depth) {
 
         else {
           // Create element
-          if(node.nodeName === "svg"){
+          if (node.nodeName === 'svg') {
             func += indented([
               'node = document.createElementNS("http://www.w3.org/2000/svg", "' + node.nodeName + '");',
               'node.innerHTML = \'' + node.innerHTML.trim().replace(/\n/g, '\\') + '\';',
               'node.__jtmpl__ = model;'
             ]);
-          }else{
+          }
+          else {
             func += indented([
               'node = document.createElement("' + node.nodeName + '");',
               'node.__jtmpl__ = model;'
